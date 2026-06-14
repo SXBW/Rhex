@@ -1,0 +1,85 @@
+name: Upstream Sync
+
+permissions:
+    contents: write
+
+on:
+    schedule:
+        - cron: '0 * * * *'  # 每小时检查一次
+    workflow_dispatch:
+
+jobs:
+    sync_with_upstream:
+        name: Sync with Upstream
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout target repo
+              uses: actions/checkout@v3
+              with:
+                  persist-credentials: false
+                  fetch-depth: 0
+
+            - name: Configure Git
+              run: |
+                  git config user.name "GitHub Action"
+                  git config user.email "action@github.com"
+
+            - name: Add upstream remote
+              run: |
+                  git remote add upstream https://github.com/lovedevpanda/Rhex.git
+
+            - name: Fetch upstream changes
+              run: |
+                  git fetch upstream
+
+            - name: Check for new commits
+              id: check_commits
+              run: |
+                  LOCAL=$(git rev-parse HEAD)
+                  REMOTE=$(git rev-parse upstream/main)
+                  if [ "$LOCAL" != "$REMOTE" ]; then
+                      echo "has_new_commits=true" >> $GITHUB_OUTPUT
+                      echo "New commits found in upstream!"
+                  else
+                      echo "has_new_commits=false" >> $GITHUB_OUTPUT
+                      echo "No new commits in upstream."
+                  fi
+
+            - name: Save local workflow files
+              if: steps.check_commits.outputs.has_new_commits == 'true'
+              run: |
+                  # Save all local workflow files before reset
+                  mkdir -p /tmp/local-workflows
+                  for file in .github/workflows/*.yml; do
+                      if [ -f "$file" ]; then
+                          cp "$file" /tmp/local-workflows/
+                          echo "Saved $file"
+                      fi
+                  done
+
+            - name: Reset to upstream
+              if: steps.check_commits.outputs.has_new_commits == 'true'
+              run: |
+                  git reset --hard upstream/main
+
+            - name: Restore local workflow files
+              if: steps.check_commits.outputs.has_new_commits == 'true'
+              run: |
+                  # Restore all local workflow files
+                  if [ -d /tmp/local-workflows ]; then
+                      for file in /tmp/local-workflows/*.yml; do
+                          if [ -f "$file" ]; then
+                              cp "$file" .github/workflows/
+                              echo "Restored $(basename $file)"
+                          fi
+                      done
+                      git add .github/workflows/*.yml
+                      git commit -m "Restore local workflow files"
+                  fi
+
+            - name: Push to target repo
+              if: steps.check_commits.outputs.has_new_commits == 'true'
+              run: |
+                  git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+                  git push -f origin main
