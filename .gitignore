@@ -9,10 +9,15 @@ dist
 .env.test.local
 .env.production.local
 tsconfig.tsbuildinfo
-/public/uploads/
-addons/.runtime/
-addons/.staging/
-addons/.trash/
+# 插件目录
+addons/*/
+!addons/.runtime/
+!addons/.staging/
+!addons/.trash/
 !addons/*/dist/
+
+# 插件 ZIP 文件
+*.zip
+
 /uploads/
 /backups/
