@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - master
     tags:
       - "v*"
   workflow_dispatch:
@@ -35,13 +34,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/lovedevpanda/rhex
+          images: ghcr.io/${{ github.actor }}/rhex
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
             type=ref,event=tag
-            type=sha
+            type=raw,value={{date 'YYYYMMDD'}}
           labels: |
-            org.opencontainers.image.source=https://github.com/lovedevpanda/Rhex
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
