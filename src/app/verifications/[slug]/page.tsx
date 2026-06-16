@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import type { ReactNode } from "react"
 
+import { AddonSlotRenderer, AddonSurfaceRenderer } from "@/addons-host"
 import { ForumPageShell } from "@/components/forum/forum-page-shell"
 import { HomeSidebarPanels } from "@/components/home/home-sidebar-panels"
 import { LevelIcon } from "@/components/level-icon"
@@ -84,17 +85,29 @@ export default async function VerificationDetailPage(props: VerificationDetailPa
   const applicationCost = verification.pointsCost > 0
     ? `${formatCompactPointValue(verification.pointsCost)} ${settings.pointName}`
     : "免费申请"
+  const verificationSlotProps = {
+    slug: verification.slug,
+    verificationId: verification.id,
+    verificationName: verification.name,
+    requestedUsername,
+    currentUserId: currentUser?.id ?? null,
+    hasFeaturedApplication: Boolean(verification.featuredApplication),
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <div className="mx-auto max-w-[1200px] px-1">
+        <AddonSlotRenderer slot="verification.page.before" props={verificationSlotProps} />
+        <AddonSurfaceRenderer surface="verification.page" props={{ ...verificationSlotProps, verification }}>
         <ForumPageShell
           zones={zones}
           boards={boards}
           main={(
             <main className="mt-6 pb-12">
               <div className="flex flex-col gap-6">
+                <AddonSlotRenderer slot="verification.hero.before" props={verificationSlotProps} />
+                <AddonSurfaceRenderer surface="verification.hero" props={{ ...verificationSlotProps, verification }}>
                 <section className="rounded-xl border border-border bg-card px-5 py-6 shadow-xs sm:px-7 sm:py-8">
                   <div className="mx-auto max-w-3xl text-center">
                     <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
@@ -151,30 +164,45 @@ export default async function VerificationDetailPage(props: VerificationDetailPa
                     </div>
                   </div>
                 </section>
-                {verification.featuredApplication ? (
-                  <VerificationApplicationCard
-                    verification={{
-                      name: verification.name,
-                      color: verification.color,
-                      iconText: verification.iconText,
-                    }}
-                    application={verification.featuredApplication}
-                  />
-                ) : requestedUsername ? (
-                  <section className="rounded-xl border border-border bg-card px-5 py-5 shadow-xs sm:px-6">
-                    <div className="flex flex-col gap-1">
-                      <h2 className="text-base font-semibold text-foreground">未找到该用户的认证资料</h2>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        @{requestedUsername} 当前没有通过 {verification.name} 认证，或该认证资料已经变更。
-                      </p>
-                    </div>
-                  </section>
+                </AddonSurfaceRenderer>
+                <AddonSlotRenderer slot="verification.hero.after" props={verificationSlotProps} />
+                {verification.featuredApplication || requestedUsername ? (
+                  <>
+                    <AddonSlotRenderer slot="verification.application.before" props={verificationSlotProps} />
+                    <AddonSurfaceRenderer
+                      surface="verification.application"
+                      props={{ ...verificationSlotProps, application: verification.featuredApplication ?? null }}
+                    >
+                      {verification.featuredApplication ? (
+                        <VerificationApplicationCard
+                          verification={{
+                            name: verification.name,
+                            color: verification.color,
+                            iconText: verification.iconText,
+                          }}
+                          application={verification.featuredApplication}
+                        />
+                      ) : (
+                        <section className="rounded-xl border border-border bg-card px-5 py-5 shadow-xs sm:px-6">
+                          <div className="flex flex-col gap-1">
+                            <h2 className="text-base font-semibold text-foreground">未找到该用户的认证资料</h2>
+                            <p className="text-sm leading-6 text-muted-foreground">
+                              @{requestedUsername} 当前没有通过 {verification.name} 认证，或该认证资料已经变更。
+                            </p>
+                          </div>
+                        </section>
+                      )}
+                    </AddonSurfaceRenderer>
+                    <AddonSlotRenderer slot="verification.application.after" props={verificationSlotProps} />
+                  </>
                 ) : null}
               </div>
             </main>
           )}
           rightSidebar={(
             <aside className="mt-6 hidden pb-12 lg:block">
+              <AddonSlotRenderer slot="verification.sidebar.before" props={verificationSlotProps} />
+              <AddonSurfaceRenderer surface="verification.sidebar" props={{ ...verificationSlotProps, announcements, hotTopics, settings }}>
               <HomeSidebarPanels
                 user={sidebarUser}
                 hotTopics={hotTopics}
@@ -185,9 +213,13 @@ export default async function VerificationDetailPage(props: VerificationDetailPa
                 siteLogoPath={settings.siteLogoPath}
                 siteIconPath={settings.siteIconPath}
               />
+              </AddonSurfaceRenderer>
+              <AddonSlotRenderer slot="verification.sidebar.after" props={verificationSlotProps} />
             </aside>
           )}
         />
+        </AddonSurfaceRenderer>
+        <AddonSlotRenderer slot="verification.page.after" props={verificationSlotProps} />
       </div>
     </div>
   )

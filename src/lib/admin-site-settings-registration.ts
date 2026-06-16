@@ -27,13 +27,31 @@ import {
   resolveUsernameSensitiveWordSettings,
 } from "@/lib/site-settings-app-state"
 import { normalizeEmailBusinessSwitchSettings } from "@/lib/email-business-switches"
-import { mergeAuthProviderSensitiveConfig, mergeCaptchaSensitiveConfig, mergeSmsSensitiveConfig } from "@/lib/site-settings-sensitive-state"
+import { mergeAuthProviderSensitiveConfig, mergeCaptchaSensitiveConfig, mergeSmsSensitiveConfig, resolveSmsSensitiveConfig } from "@/lib/site-settings-sensitive-state"
 import { normalizeCaptchaMode } from "@/lib/shared/config-parsers"
 import { normalizeUsernameSensitiveWords } from "@/lib/username-sensitive-words"
 import { normalizePasswordMinLength, normalizePasswordStrength } from "@/lib/password-policy"
+import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
 
 function isSupportedInviteCodeHelpUrl(value: string) {
   return value.startsWith("/") || /^https?:\/\//i.test(value)
+}
+
+function normalizeSmsBuiltinProvider(value: unknown): SmsBuiltinProvider {
+  return typeof value === "string" && value.trim().toLowerCase() === "tencent"
+    ? "tencent"
+    : "aliyun"
+}
+
+function parseSmsTemplateParamKeys(value: string) {
+  const normalized = Array.from(new Set(
+    value
+      .split(/[，,\s]+/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+  ))
+
+  return normalized.length > 0 ? normalized : ["code"]
 }
 
 export async function updateRegistrationSiteSettingsSection(existing: SiteSettingsRecord, body: JsonObject, section: string) {
@@ -102,6 +120,26 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   const passwordChangeRequireEmailVerification = "passwordChangeRequireEmailVerification" in body
     ? Boolean(body.passwordChangeRequireEmailVerification)
     : existingSiteSecuritySettings.passwordChangeRequireEmailVerification
+  const oauthServerEnabled = "oauthServerEnabled" in body
+    ? Boolean(body.oauthServerEnabled)
+    : existingSiteSecuritySettings.oauthServerEnabled
+  const oauthClientApplicationEnabled = "oauthClientApplicationEnabled" in body
+    ? Boolean(body.oauthClientApplicationEnabled)
+    : existingSiteSecuritySettings.oauthClientApplicationEnabled
+  const oauthAccessTokenTtlMinutes = Math.min(
+    1440,
+    Math.max(
+      5,
+      Math.floor(readOptionalNumberField(body, "oauthAccessTokenTtlMinutes") ?? existingSiteSecuritySettings.oauthAccessTokenTtlMinutes),
+    ),
+  )
+  const oauthRefreshTokenTtlDays = Math.min(
+    365,
+    Math.max(
+      1,
+      Math.floor(readOptionalNumberField(body, "oauthRefreshTokenTtlDays") ?? existingSiteSecuritySettings.oauthRefreshTokenTtlDays),
+    ),
+  )
   const registerPasswordMinLength = normalizePasswordMinLength(
     "registerPasswordMinLength" in body ? body.registerPasswordMinLength : undefined,
     existingRegisterPasswordPolicySettings.minLength,
@@ -143,6 +181,9 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   const smsCaptchaMode = "smsCaptchaMode" in body
     ? normalizeCaptchaMode(body.smsCaptchaMode)
     : existingSmsProviderSettings.captchaMode
+  const smsProvider = "smsProvider" in body
+    ? normalizeSmsBuiltinProvider(body.smsProvider)
+    : existingSmsProviderSettings.provider
   const smsAliyunAccessKeyId = readOptionalStringField(body, "smsAliyunAccessKeyId") || null
   const smsAliyunAccessKeySecret = readOptionalStringField(body, "smsAliyunAccessKeySecret") || null
   const smsAliyunEndpoint = readOptionalStringField(body, "smsAliyunEndpoint") || existingSmsProviderSettings.aliyunEndpoint
@@ -150,6 +191,17 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   const smsAliyunSignName = readOptionalStringField(body, "smsAliyunSignName") || null
   const smsAliyunTemplateCode = readOptionalStringField(body, "smsAliyunTemplateCode") || null
   const smsAliyunCodeParamName = readOptionalStringField(body, "smsAliyunCodeParamName") || existingSmsProviderSettings.aliyunCodeParamName
+  const smsTencentSecretId = readOptionalStringField(body, "smsTencentSecretId") || null
+  const smsTencentSecretKey = readOptionalStringField(body, "smsTencentSecretKey") || null
+  const smsTencentRegion = readOptionalStringField(body, "smsTencentRegion") || existingSmsProviderSettings.tencentRegion
+  const smsTencentEndpoint = readOptionalStringField(body, "smsTencentEndpoint") || existingSmsProviderSettings.tencentEndpoint
+  const smsTencentSmsSdkAppId = readOptionalStringField(body, "smsTencentSmsSdkAppId") || null
+  const smsTencentSignName = readOptionalStringField(body, "smsTencentSignName") || null
+  const smsTencentTemplateId = readOptionalStringField(body, "smsTencentTemplateId") || null
+  const smsTencentTemplateParamKeys = parseSmsTemplateParamKeys(
+    readOptionalStringField(body, "smsTencentTemplateParamKeys")
+    || existingSmsProviderSettings.tencentTemplateParamKeys.join(","),
+  )
   const githubClientId = readOptionalStringField(body, "githubClientId") || null
   const githubClientSecret = readOptionalStringField(body, "githubClientSecret") || null
   const googleClientId = readOptionalStringField(body, "googleClientId") || null
@@ -216,8 +268,12 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
     apiError(400, "开启 SMTP 时请完整填写主机、端口、账号、密码和发件人地址")
   }
 
-  if (smsEnabled && (!smsAliyunAccessKeyId || !smsAliyunAccessKeySecret || !smsAliyunSignName || !smsAliyunTemplateCode)) {
+  if (smsEnabled && smsProvider === "aliyun" && (!smsAliyunAccessKeyId || !smsAliyunAccessKeySecret || !smsAliyunSignName || !smsAliyunTemplateCode)) {
     apiError(400, "开启内置阿里云短信时请完整填写 AccessKey、短信签名和模板 Code")
+  }
+
+  if (smsEnabled && smsProvider === "tencent" && (!smsTencentSecretId || !smsTencentSecretKey || !smsTencentSmsSdkAppId || !smsTencentSignName || !smsTencentTemplateId)) {
+    apiError(400, "开启内置腾讯云短信时请完整填写 SecretId、SecretKey、SDK AppID、短信签名和模板 ID")
   }
 
   if (registerNicknameMaxLength < registerNicknameMinLength) {
@@ -279,6 +335,10 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
     sessionIpMismatchLogoutEnabled,
     loginIpChangeEmailAlertEnabled,
     passwordChangeRequireEmailVerification,
+    oauthServerEnabled,
+    oauthClientApplicationEnabled,
+    oauthAccessTokenTtlMinutes,
+    oauthRefreshTokenTtlDays,
   })
   const appStateWithUsernameSensitiveWords = mergeUsernameSensitiveWordSettings(appStateWithSiteSecurity, {
     usernameSensitiveWordsEnabled,
@@ -290,12 +350,19 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   })
   const appStateWithSmsProvider = mergeSmsProviderSettings(appStateWithRegisterEmailWhitelist, {
     enabled: smsEnabled,
+    provider: smsProvider,
     captchaMode: smsCaptchaMode,
     aliyunEndpoint: smsAliyunEndpoint,
     aliyunRegionId: smsAliyunRegionId,
     aliyunSignName: smsAliyunSignName ?? "",
     aliyunTemplateCode: smsAliyunTemplateCode ?? "",
     aliyunCodeParamName: smsAliyunCodeParamName,
+    tencentRegion: smsTencentRegion,
+    tencentEndpoint: smsTencentEndpoint,
+    tencentSmsSdkAppId: smsTencentSmsSdkAppId ?? "",
+    tencentSignName: smsTencentSignName ?? "",
+    tencentTemplateId: smsTencentTemplateId ?? "",
+    tencentTemplateParamKeys: smsTencentTemplateParamKeys,
   })
   const appStateJson = mergeEmailBusinessSwitchSettings(appStateWithSmsProvider, emailBusinessSwitches)
   const currentSensitiveStateJson = ("sensitiveStateJson" in existing ? existing.sensitiveStateJson : null) ?? null
@@ -313,9 +380,12 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
       ? turnstileSecretKey
       : null,
   })
+  const existingSmsSensitiveConfig = resolveSmsSensitiveConfig(currentSensitiveStateJson)
   const sensitiveStateJson = mergeSmsSensitiveConfig(sensitiveStateWithCaptcha, {
-    aliyunAccessKeyId: smsEnabled ? smsAliyunAccessKeyId : null,
-    aliyunAccessKeySecret: smsEnabled ? smsAliyunAccessKeySecret : null,
+    aliyunAccessKeyId: smsEnabled ? smsAliyunAccessKeyId : existingSmsSensitiveConfig.aliyunAccessKeyId,
+    aliyunAccessKeySecret: smsEnabled ? smsAliyunAccessKeySecret : existingSmsSensitiveConfig.aliyunAccessKeySecret,
+    tencentSecretId: smsEnabled ? smsTencentSecretId : existingSmsSensitiveConfig.tencentSecretId,
+    tencentSecretKey: smsEnabled ? smsTencentSecretKey : existingSmsSensitiveConfig.tencentSecretKey,
   })
 
   const settings = await updateSiteSettingsRecord(existing.id, {

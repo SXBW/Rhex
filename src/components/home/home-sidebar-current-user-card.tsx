@@ -1,6 +1,7 @@
 "use client"
 
 import { useCurrentUser } from "@/components/current-user-provider"
+import { Skeleton } from "@/components/ui/skeleton"
 import { SidebarUserCard, type SidebarUserCardData } from "@/components/user/sidebar-user-card"
 import type { SiteSettingsData } from "@/lib/site-settings.types"
 import { getVipLevel, isVipActive } from "@/lib/vip-status"
@@ -63,8 +64,45 @@ function resolveCheckInReward(user: NonNullable<ReturnType<typeof useCurrentUser
   }
 }
 
+function HomeSidebarCurrentUserCardSkeleton() {
+  return (
+    <div
+      className="mobile-sidebar-section overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-black/5 dark:shadow-black/30"
+      aria-busy="true"
+      aria-label="正在加载用户信息"
+    >
+      <div className="sidebar-user-card-header p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <Skeleton className="size-11 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 pt-0.5">
+              <Skeleton className="h-4 w-24 rounded-full" />
+              <div className="mt-2 flex items-center gap-1.5">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+              </div>
+            </div>
+          </div>
+          <Skeleton className="size-8 rounded-lg" />
+        </div>
+      </div>
+      <div className="p-4 pt-0">
+        <div className="grid grid-cols-3 gap-2">
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Skeleton className="h-9 rounded-lg" />
+          <Skeleton className="h-9 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function HomeSidebarCurrentUserCard({ createPostHref, settings }: HomeSidebarCurrentUserCardProps) {
-  const { user, surface } = useCurrentUser()
+  const { user, surface, loading } = useCurrentUser()
   const reward = user ? resolveCheckInReward(user, settings) : null
   const sidebarUser: SidebarUserCardData | null = user
     ? {
@@ -104,6 +142,10 @@ export function HomeSidebarCurrentUserCard({ createPostHref, settings }: HomeSid
         maxCheckInStreak: surface?.maxCheckInStreak ?? 0,
       }
     : null
+
+  if (loading && !user) {
+    return <HomeSidebarCurrentUserCardSkeleton />
+  }
 
   return (
     <SidebarUserCard

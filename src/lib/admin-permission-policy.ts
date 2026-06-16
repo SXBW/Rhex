@@ -44,9 +44,12 @@ export interface AdminPermissionGrantInput {
 export interface TargetUserPermissionContext {
   actor: AdminActor
   actorIsFounder?: boolean
+  actorCanManageAdmins?: boolean
+  actorCanManageFounder?: boolean
   actorTier?: AdminManagementTier
   targetId: number
   targetRole: UserRole
+  targetIsFounder?: boolean
 }
 
 const ADMIN_PERMISSIONS = new Set<AdminPermissionKey>([
@@ -217,8 +220,12 @@ export function canManageTargetUser(input: TargetUserPermissionContext) {
     return true
   }
 
+  if (input.targetIsFounder) {
+    return Boolean(input.actorIsFounder || input.actorCanManageFounder)
+  }
+
   if (input.targetRole === "ADMIN") {
-    return Boolean(input.actorIsFounder)
+    return Boolean(input.actorIsFounder || input.actorCanManageAdmins)
   }
 
   if (input.actor.role === "ADMIN") {
@@ -235,8 +242,12 @@ export function canChangeTargetRole(input: TargetUserPermissionContext & {
     return false
   }
 
+  if (input.targetIsFounder) {
+    return Boolean(input.actorIsFounder || input.actorCanManageFounder)
+  }
+
   if (input.targetRole === "ADMIN" || input.nextRole === "ADMIN") {
-    return Boolean(input.actorIsFounder)
+    return Boolean(input.actorIsFounder || input.actorCanManageAdmins)
   }
 
   return canManageTargetUser(input)

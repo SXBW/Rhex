@@ -306,7 +306,7 @@ export function CommentThreadReplyBox({ postId, commentsVisibleToAuthorOnly, ano
         className={cn(
           "min-w-0 max-w-full rounded-xl bg-card",
           isPinnedLayout && "overflow-hidden rounded-xl border border-border/80 bg-card",
-          isFloatingPinnedLayout && "fixed inset-x-3 bottom-3 z-50 max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-x-hidden overflow-y-auto bg-card/95 shadow-[0_-18px_48px_rgba(15,23,42,0.16)] backdrop-blur-xl sm:inset-x-auto sm:[left:var(--comment-reply-box-left)] sm:[width:min(var(--comment-reply-box-width),calc(100vw-1.5rem))]",
+          isFloatingPinnedLayout && "fixed inset-x-3 bottom-3 z-50 max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-x-hidden overflow-y-auto overscroll-contain bg-card/95 shadow-[0_-18px_48px_rgba(15,23,42,0.16)] [scrollbar-width:none] backdrop-blur-xl [-ms-overflow-style:none] sm:inset-x-auto sm:[left:var(--comment-reply-box-left)] sm:[width:min(var(--comment-reply-box-width),calc(100vw-1.5rem))] [&::-webkit-scrollbar]:hidden",
         )}
         style={floatingPinnedStyle}
       >

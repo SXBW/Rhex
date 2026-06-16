@@ -106,7 +106,7 @@ export function PermissionsTab({
           <div className="flex flex-col gap-1">
             <h4 className="text-sm font-semibold">管理员动态权限</h4>
             <p className="text-xs text-muted-foreground">
-              只允许覆盖非核心权限。核心站点、应用、插件、主题和超级管理员权限固定由创始人持有。
+              超级管理员可以为管理员授予站点、应用、插件、主题等高风险权限；未授权的权限保持默认规则。
             </p>
           </div>
           {canEditAdminPermissions && Object.keys(groupedAdminPermissions).length > 0 ? (
@@ -131,6 +131,7 @@ export function PermissionsTab({
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-sm font-medium">{item.label}</p>
+                              {"highRisk" in item && item.highRisk ? <Badge variant="destructive" className="rounded-full text-[10px]">高风险</Badge> : null}
                               <Badge variant={grant === undefined ? "secondary" : "default"} className="rounded-full text-[10px]">
                                 {overrideText}
                               </Badge>
@@ -154,7 +155,7 @@ export function PermissionsTab({
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-dashed border-border bg-secondary/20 p-4 text-sm text-muted-foreground">
-              {activeUser.id === actorUserId ? "不能编辑自己的管理员权限。" : "只有创始人可以编辑其他管理员的动态权限。"}
+              {activeUser.id === actorUserId ? "不能编辑自己的管理员权限。" : "只有超级管理员可以编辑其他管理员的动态权限。"}
             </div>
           )}
         </section>

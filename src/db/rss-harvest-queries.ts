@@ -41,6 +41,7 @@ const rssSourceApplicationAdminSelect = {
   siteName: true,
   description: true,
   feedUrl: true,
+  logoPath: true,
   status: true,
   reviewNote: true,
   reviewedById: true,

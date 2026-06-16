@@ -62,6 +62,15 @@ export const HOST_APPS = [
     adminHref: "/admin/apps/payment-gateway",
     category: "交易",
   },
+  {
+    id: "oauth-server",
+    slug: "oauth-server",
+    name: "OAuth 授权服务",
+    description: "OAuth 2.0 Authorization Server，支持用户申请应用、后台审核、appid/key 与授权码 + PKCE 接入。",
+    href: "/admin/settings/oauth/clients",
+    adminHref: "/admin/settings/oauth/clients",
+    category: "开放平台",
+  },
 ] as const
 
 

@@ -453,6 +453,13 @@ enum AddonRegistryState {
   ERROR
 }
 
+enum OAuthClientStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISABLED
+}
+
 model User {
   id                               Int                            @id @default(autoincrement())
   username                         String                         @unique
@@ -536,6 +543,12 @@ model User {
   uploads                          Upload[]
   authAccounts                     AuthAccount[]
   authPasskeys                     AuthPasskey[]
+  oauthClients                     OAuthClient[]                 @relation("OAuthClientOwner")
+  reviewedOAuthClients             OAuthClient[]                 @relation("OAuthClientReviewer")
+  oauthAuthorizationCodes          OAuthAuthorizationCode[]
+  oauthAccessTokens                OAuthAccessToken[]
+  oauthRefreshTokens               OAuthRefreshToken[]
+  oauthConsents                    OAuthConsent[]
   userBadges                       UserBadge[]
   adminLogs                        AdminLog[]
   announcements                    Announcement[]                 @relation("announcementCreator")
@@ -617,6 +630,113 @@ model AuthPasskey {
 
   @@index([userId, createdAt])
   @@index([lastUsedAt])
+}
+
+model OAuthClient {
+  id               String                 @id @default(cuid())
+  ownerId          Int
+  clientId         String                 @unique
+  clientSecretHash String?
+  name             String
+  description      String?
+  homepageUrl      String?
+  logoUrl          String?
+  redirectUris     String[]
+  scopes           String[]
+  status           OAuthClientStatus      @default(PENDING)
+  reviewNote       String?
+  reviewedById     Int?
+  reviewedAt       DateTime?              @db.Timestamptz(3)
+  secretRotatedAt  DateTime?              @db.Timestamptz(3)
+  createdAt        DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime               @updatedAt @db.Timestamptz(3)
+  owner            User                   @relation("OAuthClientOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  reviewer         User?                  @relation("OAuthClientReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  authorizationCodes OAuthAuthorizationCode[]
+  accessTokens       OAuthAccessToken[]
+  refreshTokens      OAuthRefreshToken[]
+  consents           OAuthConsent[]
+
+  @@index([ownerId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([reviewedById, reviewedAt])
+}
+
+model OAuthAuthorizationCode {
+  id                  String      @id @default(cuid())
+  codeHash            String      @unique
+  clientId            String
+  userId              Int
+  redirectUri         String
+  scopes              String[]
+  codeChallenge       String
+  codeChallengeMethod String
+  nonce               String?
+  state               String?
+  expiresAt           DateTime    @db.Timestamptz(3)
+  consumedAt          DateTime?   @db.Timestamptz(3)
+  createdAt           DateTime    @default(now()) @db.Timestamptz(3)
+  client              OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model OAuthAccessToken {
+  id              String      @id @default(cuid())
+  tokenHash       String      @unique
+  clientId        String
+  userId          Int
+  scopes          String[]
+  expiresAt       DateTime    @db.Timestamptz(3)
+  revokedAt       DateTime?   @db.Timestamptz(3)
+  createdAt       DateTime    @default(now()) @db.Timestamptz(3)
+  client          OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens   OAuthRefreshToken[]
+
+  @@index([clientId, createdAt])
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model OAuthRefreshToken {
+  id            String            @id @default(cuid())
+  tokenHash     String            @unique
+  accessTokenId String?
+  clientId      String
+  userId        Int
+  scopes        String[]
+  expiresAt     DateTime          @db.Timestamptz(3)
+  revokedAt     DateTime?         @db.Timestamptz(3)
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  rotatedAt     DateTime?         @db.Timestamptz(3)
+  client        OAuthClient       @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken   OAuthAccessToken? @relation(fields: [accessTokenId], references: [id], onDelete: SetNull)
+
+  @@index([accessTokenId])
+  @@index([clientId, userId])
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model OAuthConsent {
+  id        String      @id @default(cuid())
+  clientId  String
+  userId    Int
+  scopes    String[]
+  createdAt DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime    @updatedAt @db.Timestamptz(3)
+  client    OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, userId])
+  @@index([userId, updatedAt])
 }
 
 model UserLevelProgress {
@@ -2032,6 +2152,7 @@ model RssSourceApplication {
   siteName     String
   description  String?
   feedUrl      String
+  logoPath     String?
   status       RssSourceApplicationStatus @default(PENDING)
   reviewNote   String?
   reviewedById Int?

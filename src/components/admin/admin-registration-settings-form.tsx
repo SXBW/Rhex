@@ -614,11 +614,34 @@ Passkey Origin = ${resolvedPasskeyOrigin}`}</code></pre>
         <div className="rounded-xl border border-border p-5 space-y-4">
           <div>
             <h3 className="text-sm font-semibold">短信发送配置</h3>
-            <p className="mt-1 text-xs leading-6 text-muted-foreground">配置宿主内置阿里云短信发送器，用于手机注册、短信登录、手机绑定和手机找回密码。插件注册 `sms` provider 后会优先接管发送；发送前校验用于降低短信轰炸风险。</p>
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">配置宿主内置短信发送器，用于手机注册、短信登录、手机绑定和手机找回密码。插件注册 `sms` provider 后仍会优先接管发送；发送前校验用于降低短信轰炸风险。</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <AdminBooleanSelectField label="启用内置阿里云短信" checked={draft.smsEnabled} onChange={(value) => updateDraftField("smsEnabled", value)} />
+            <AdminBooleanSelectField label="启用内置短信" checked={draft.smsEnabled} onChange={(value) => updateDraftField("smsEnabled", value)} />
+            <SettingsSelectField
+              label="内置短信服务商"
+              value={draft.smsProvider}
+              onChange={(value) => updateDraftField("smsProvider", value === "tencent" ? "tencent" : "aliyun")}
+              options={[
+                { value: "aliyun", label: "阿里云短信" },
+                { value: "tencent", label: "腾讯云短信" },
+              ]}
+            />
             <CaptchaModeField label="短信发送前校验" value={draft.smsCaptchaMode} onChange={(value) => updateDraftField("smsCaptchaMode", value)} />
+          </div>
+          {draft.smsProvider === "tencent" ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <TextField label="SecretId" value={draft.smsTencentSecretId} onChange={(value) => updateDraftField("smsTencentSecretId", value)} placeholder="填写腾讯云 SecretId" />
+              <TextField label="SecretKey" type="password" value={draft.smsTencentSecretKey} onChange={(value) => updateDraftField("smsTencentSecretKey", value)} placeholder="填写腾讯云 SecretKey" />
+              <TextField label="Region" value={draft.smsTencentRegion} onChange={(value) => updateDraftField("smsTencentRegion", value)} placeholder="ap-guangzhou" />
+              <TextField label="Endpoint" value={draft.smsTencentEndpoint} onChange={(value) => updateDraftField("smsTencentEndpoint", value)} placeholder="sms.tencentcloudapi.com" />
+              <TextField label="短信 SDK AppID" value={draft.smsTencentSmsSdkAppId} onChange={(value) => updateDraftField("smsTencentSmsSdkAppId", value)} placeholder="如 1400000000" />
+              <TextField label="短信签名" value={draft.smsTencentSignName} onChange={(value) => updateDraftField("smsTencentSignName", value)} placeholder="填写已审核通过的短信签名" />
+              <TextField label="验证码模板 ID" value={draft.smsTencentTemplateId} onChange={(value) => updateDraftField("smsTencentTemplateId", value)} placeholder="如 123456" />
+              <TextField label="模板参数顺序" value={draft.smsTencentTemplateParamKeys} onChange={(value) => updateDraftField("smsTencentTemplateParamKeys", value)} placeholder="code" />
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <TextField label="AccessKey ID" value={draft.smsAliyunAccessKeyId} onChange={(value) => updateDraftField("smsAliyunAccessKeyId", value)} placeholder="填写阿里云 AccessKey ID" />
             <TextField label="AccessKey Secret" type="password" value={draft.smsAliyunAccessKeySecret} onChange={(value) => updateDraftField("smsAliyunAccessKeySecret", value)} placeholder="填写阿里云 AccessKey Secret" />
             <TextField label="Endpoint" value={draft.smsAliyunEndpoint} onChange={(value) => updateDraftField("smsAliyunEndpoint", value)} placeholder="dysmsapi.aliyuncs.com" />
@@ -626,8 +649,13 @@ Passkey Origin = ${resolvedPasskeyOrigin}`}</code></pre>
             <TextField label="短信签名" value={draft.smsAliyunSignName} onChange={(value) => updateDraftField("smsAliyunSignName", value)} placeholder="填写已审核通过的短信签名" />
             <TextField label="验证码模板 Code" value={draft.smsAliyunTemplateCode} onChange={(value) => updateDraftField("smsAliyunTemplateCode", value)} placeholder="如 SMS_123456789" />
             <TextField label="验证码变量名" value={draft.smsAliyunCodeParamName} onChange={(value) => updateDraftField("smsAliyunCodeParamName", value)} placeholder="code" />
-          </div>
-          <p className="text-xs leading-6 text-muted-foreground">阿里云验证码模板中需要有一个变量，默认变量名为 `code`；如果模板使用 <code>{'${verifyCode}'}</code> 之类的变量名，请在这里改成对应名称。AccessKey 会写入站点敏感配置，仅服务端读取。</p>
+            </div>
+          )}
+          {draft.smsProvider === "tencent" ? (
+            <p className="text-xs leading-6 text-muted-foreground">腾讯云验证码模板变量按顺序传入，默认只传 `code`，对应模板里的 <code>{"{1}"}</code>。如模板有多个变量，用英文逗号分隔变量 key，例如 <code>code,minutes</code>。Secret 会写入站点敏感配置，仅服务端读取。</p>
+          ) : (
+            <p className="text-xs leading-6 text-muted-foreground">阿里云验证码模板中需要有一个变量，默认变量名为 `code`；如果模板使用 <code>{'${verifyCode}'}</code> 之类的变量名，请在这里改成对应名称。AccessKey 会写入站点敏感配置，仅服务端读取。</p>
+          )}
         </div>
       ) : null}
 

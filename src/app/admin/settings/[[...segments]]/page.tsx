@@ -10,6 +10,7 @@ import { AdminFriendLinksSettingsForm } from "@/components/admin/admin-friend-li
 import { AdminMarkdownEmojiSettingsForm } from "@/components/admin/admin-markdown-emoji-settings-form"
 import { AdminMessageSettingsForm } from "@/components/admin/admin-message-settings-form"
 import { AdminModuleSearch } from "@/components/admin/admin-module-search"
+import { AdminOAuthSettingsPage } from "@/components/admin/admin-oauth-settings-page"
 import { AdminSettingsWorkspace } from "@/components/admin/admin-settings-workspace"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { AdminUploadSettingsForm } from "@/components/admin/admin-upload-settings-form"
@@ -18,7 +19,9 @@ import { getAdminTaskList } from "@/lib/admin-task-center"
 import { getBoards } from "@/lib/boards"
 import { getInviteCodeList } from "@/lib/invite-codes"
 import { getLevelDefinitions } from "@/lib/level-system"
+import { getAdminOAuthClientPageData } from "@/lib/oauth-server"
 import { getRedeemCodeList } from "@/lib/redeem-codes"
+import { readSearchParam } from "@/lib/search-params"
 import {
   getAdminSettingsHref,
   getDefaultAdminSettingsHref,
@@ -39,6 +42,7 @@ interface AdminSettingsPageProps {
   params: Promise<{
     segments?: string[]
   }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 function buildSettingsPath(segments?: string[]) {
@@ -62,7 +66,7 @@ export async function generateMetadata(
 export default async function AdminSettingsPage(
   props: AdminSettingsPageProps
 ) {
-  const params = await props.params
+  const [params, searchParams] = await Promise.all([props.params, props.searchParams])
   const currentPath = buildSettingsPath(params.segments)
   const admin = await requireAdminActor()
 
@@ -102,6 +106,7 @@ export default async function AdminSettingsPage(
     taskBoards,
     friendLinks,
     levelDefinitions,
+    oauthClients,
   ] = await Promise.all([
     sectionsRequiringSiteSettings.has(resolved.section)
       ? getServerSiteSettings()
@@ -124,6 +129,14 @@ export default async function AdminSettingsPage(
     resolved.section === "upload"
       ? getLevelDefinitions()
       : Promise.resolve<Awaited<ReturnType<typeof getLevelDefinitions>>>([]),
+    resolved.section === "oauth" && resolved.subTab === "clients"
+      ? getAdminOAuthClientPageData({
+          keyword: readSearchParam(searchParams?.keyword),
+          status: readSearchParam(searchParams?.status),
+          page: readSearchParam(searchParams?.page),
+          pageSize: readSearchParam(searchParams?.pageSize),
+        })
+      : Promise.resolve<Awaited<ReturnType<typeof getAdminOAuthClientPageData>> | null>(null),
   ])
 
   const uploadLevelOptions = buildUserLevelThresholdOptions(levelDefinitions)
@@ -302,6 +315,19 @@ export default async function AdminSettingsPage(
             vipLevelOptions={uploadVipLevelOptions}
             initialSubTab={resolved.subTab}
             tabRouteSection="upload"
+          />
+        ) : null}
+
+        {resolved.section === "oauth" ? (
+          <AdminOAuthSettingsPage
+            activeSubTab={resolved.subTab}
+            initialSettings={{
+              oauthServerEnabled: Boolean(siteSettings!.oauthServerEnabled),
+              oauthClientApplicationEnabled: Boolean(siteSettings!.oauthClientApplicationEnabled),
+              oauthAccessTokenTtlMinutes: Number(siteSettings!.oauthAccessTokenTtlMinutes ?? 60),
+              oauthRefreshTokenTtlDays: Number(siteSettings!.oauthRefreshTokenTtlDays ?? 30),
+            }}
+            initialClients={oauthClients}
           />
         ) : null}
       </AdminSettingsWorkspace>

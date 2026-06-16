@@ -103,6 +103,14 @@ const adminSettingsSectionDetails: Record<
       { key: "redeem-codes", label: "兑换码管理" },
     ],
   },
+  oauth: {
+    label: "OAuth",
+    defaultSubTab: "settings",
+    subTabs: [
+      { key: "settings", label: "服务设置" },
+      { key: "clients", label: "应用审核" },
+    ],
+  },
   upload: {
     label: "上传",
     defaultSubTab: "storage",

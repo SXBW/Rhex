@@ -28,7 +28,7 @@ type AppPageRenderResult = {
   content: ReactNode
 }
 
-type AppPageRenderer = () => Promise<AppPageRenderResult>
+type AppPageRenderer = (searchParams: Awaited<PageProps<"/admin/apps/[app]">["searchParams"]>) => Promise<AppPageRenderResult>
 
 function renderConfigPage(
   AppAdminComponent: ComponentType<ConfigAdminComponentProps>,
@@ -81,7 +81,11 @@ export async function generateMetadata(props: PageProps<"/admin/apps/[app]">): P
 }
 
 export default async function AdminAppPage(props: PageProps<"/admin/apps/[app]">) {
-  const params = await props.params
+  const [params, searchParams] = await Promise.all([props.params, props.searchParams])
+  if (params.app === "oauth-server") {
+    redirect("/admin/settings/oauth/clients")
+  }
+
   const auth = await getAdminActorPermissionState("admin.apps.manage")
   if (!auth.actor) {
     redirect(`/login?redirect=/admin/apps/${params.app}`)
@@ -125,7 +129,7 @@ export default async function AdminAppPage(props: PageProps<"/admin/apps/[app]">
     notFound()
   }
 
-  const { content } = await renderAppPage()
+  const { content } = await renderAppPage(searchParams)
 
   return renderAdminAppShell({
     adminName: admin.nickname ?? admin.username,

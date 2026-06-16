@@ -2,6 +2,7 @@ import type { RegistrationEmailTemplateSettings } from "@/lib/site-settings-app-
 import type { UsernameSensitiveWordSettings } from "@/lib/username-sensitive-words"
 import type { PasswordStrength } from "@/lib/password-policy"
 import type { EmailBusinessSwitchSettings } from "@/lib/email-business-switches"
+import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
 
 export interface SiteSettingsRegistrationData extends UsernameSensitiveWordSettings {
   registrationEnabled: boolean
@@ -23,6 +24,10 @@ export interface SiteSettingsRegistrationData extends UsernameSensitiveWordSetti
   sessionIpMismatchLogoutEnabled: boolean
   loginIpChangeEmailAlertEnabled: boolean
   passwordChangeRequireEmailVerification: boolean
+  oauthServerEnabled: boolean
+  oauthClientApplicationEnabled: boolean
+  oauthAccessTokenTtlMinutes: number
+  oauthRefreshTokenTtlDays: number
   registerPasswordMinLength: number
   registerPasswordStrength: PasswordStrength
   registerEmailWhitelistEnabled: boolean
@@ -43,11 +48,18 @@ export interface SiteSettingsRegistrationData extends UsernameSensitiveWordSetti
   authGoogleEnabled: boolean
   authPasskeyEnabled: boolean
   smsEnabled: boolean
+  smsProvider: SmsBuiltinProvider
   smsCaptchaMode: "OFF" | "TURNSTILE" | "BUILTIN" | "POW"
   smsAliyunEndpoint: string
   smsAliyunRegionId: string
   smsAliyunSignName: string
   smsAliyunTemplateCode: string
   smsAliyunCodeParamName: string
+  smsTencentRegion: string
+  smsTencentEndpoint: string
+  smsTencentSmsSdkAppId: string
+  smsTencentSignName: string
+  smsTencentTemplateId: string
+  smsTencentTemplateParamKeys: string[]
   smtpEnabled: boolean
 }

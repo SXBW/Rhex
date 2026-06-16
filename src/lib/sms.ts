@@ -35,11 +35,28 @@ function normalizeOptionalString(value: unknown) {
 function hasAliyunSmsConfig(settings: ServerSiteSettingsData) {
   return Boolean(
     settings.smsEnabled
+    && settings.smsProvider === "aliyun"
     && normalizeOptionalString(settings.smsAliyunAccessKeyId)
     && normalizeOptionalString(settings.smsAliyunAccessKeySecret)
     && normalizeOptionalString(settings.smsAliyunSignName)
     && normalizeOptionalString(settings.smsAliyunTemplateCode),
   )
+}
+
+function hasTencentSmsConfig(settings: ServerSiteSettingsData) {
+  return Boolean(
+    settings.smsEnabled
+    && settings.smsProvider === "tencent"
+    && normalizeOptionalString(settings.smsTencentSecretId)
+    && normalizeOptionalString(settings.smsTencentSecretKey)
+    && normalizeOptionalString(settings.smsTencentSmsSdkAppId)
+    && normalizeOptionalString(settings.smsTencentSignName)
+    && normalizeOptionalString(settings.smsTencentTemplateId),
+  )
+}
+
+function hasBuiltinSmsConfig(settings: ServerSiteSettingsData) {
+  return hasAliyunSmsConfig(settings) || hasTencentSmsConfig(settings)
 }
 
 function buildTemplateParam(input: SmsSendInput, settings: ServerSiteSettingsData) {
@@ -53,6 +70,45 @@ function buildTemplateParam(input: SmsSendInput, settings: ServerSiteSettingsDat
   }
 
   return {}
+}
+
+function normalizeTencentTemplateParamValue(value: unknown) {
+  if (value == null) {
+    return ""
+  }
+
+  if (typeof value === "string") {
+    return value
+  }
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value)
+  }
+
+  return JSON.stringify(value)
+}
+
+function buildTencentTemplateParamSet(input: SmsSendInput, settings: ServerSiteSettingsData) {
+  const templateParam = buildTemplateParam(input, settings)
+  const keys = settings.smsTencentTemplateParamKeys.length > 0
+    ? settings.smsTencentTemplateParamKeys
+    : ["code"]
+
+  return keys.map((key) => normalizeTencentTemplateParamValue(templateParam[key]))
+}
+
+function normalizeTencentPhoneNumber(phone: string) {
+  const normalized = phone.trim().replace(/[\s-]/g, "")
+
+  if (!normalized) {
+    return normalized
+  }
+
+  if (normalized.startsWith("+")) {
+    return normalized
+  }
+
+  return `+86${normalized}`
 }
 
 async function sendWithAliyun(input: SmsSendInput, settings: ServerSiteSettingsData): Promise<SmsSendResult> {
@@ -91,6 +147,61 @@ async function sendWithAliyun(input: SmsSendInput, settings: ServerSiteSettingsD
   }
 }
 
+async function sendWithTencent(input: SmsSendInput, settings: ServerSiteSettingsData): Promise<SmsSendResult> {
+  if (!hasTencentSmsConfig(settings)) {
+    throw new Error("站点未配置腾讯云短信发送能力")
+  }
+
+  const tencentcloud = await import("tencentcloud-sdk-nodejs")
+  const SmsClient = tencentcloud.default?.sms?.v20210111?.Client
+    ?? tencentcloud.sms?.v20210111?.Client
+
+  if (typeof SmsClient !== "function") {
+    throw new Error("腾讯云短信 SDK 加载失败")
+  }
+
+  const client = new SmsClient({
+    credential: {
+      secretId: normalizeOptionalString(settings.smsTencentSecretId),
+      secretKey: normalizeOptionalString(settings.smsTencentSecretKey),
+    },
+    region: normalizeOptionalString(settings.smsTencentRegion) || "ap-guangzhou",
+    profile: {
+      httpProfile: {
+        endpoint: normalizeOptionalString(settings.smsTencentEndpoint) || "sms.tencentcloudapi.com",
+      },
+    },
+  })
+  const response = await client.SendSms({
+    PhoneNumberSet: [normalizeTencentPhoneNumber(input.phone)],
+    SmsSdkAppId: normalizeOptionalString(settings.smsTencentSmsSdkAppId),
+    SignName: input.signName || normalizeOptionalString(settings.smsTencentSignName),
+    TemplateId: input.templateCode || normalizeOptionalString(settings.smsTencentTemplateId),
+    TemplateParamSet: buildTencentTemplateParamSet(input, settings),
+  })
+  const firstStatus = Array.isArray(response?.SendStatusSet) ? response.SendStatusSet[0] : null
+  const statusCode = typeof firstStatus?.Code === "string" ? firstStatus.Code : ""
+
+  if (statusCode && statusCode !== "Ok") {
+    throw new Error(firstStatus?.Message || statusCode || "腾讯云短信发送失败")
+  }
+
+  return {
+    provider: "tencent",
+    sent: true,
+    messageId: firstStatus?.SerialNo ?? null,
+    requestId: response?.RequestId ?? null,
+  }
+}
+
+async function sendWithBuiltinProvider(input: SmsSendInput, settings: ServerSiteSettingsData): Promise<SmsSendResult> {
+  if (settings.smsProvider === "tencent") {
+    return sendWithTencent(input, settings)
+  }
+
+  return sendWithAliyun(input, settings)
+}
+
 function normalizeProviderResult(provider: string, value: AddonSmsProviderSendResult | void | null | undefined): SmsSendResult {
   if (!value) {
     return {
@@ -110,7 +221,7 @@ function normalizeProviderResult(provider: string, value: AddonSmsProviderSendRe
 export async function canSendSms() {
   const settings = await getServerSiteSettings()
 
-  if (hasAliyunSmsConfig(settings)) {
+  if (hasBuiltinSmsConfig(settings)) {
     return true
   }
 
@@ -144,7 +255,7 @@ export async function deliverSms(input: SmsSendInput): Promise<SmsSendResult> {
     return normalizeProviderResult(item.provider.code, result as AddonSmsProviderSendResult | void | null | undefined)
   }
 
-  return sendWithAliyun(input, await getServerSiteSettings())
+  return sendWithBuiltinProvider(input, await getServerSiteSettings())
 }
 
 export async function sendSms(input: SmsSendInput): Promise<SmsSendResult> {

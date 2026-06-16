@@ -8,6 +8,7 @@ import { BoardApplicationsSettingsSection } from "@/app/settings/sections/board-
 import { FollowsSettingsSection } from "@/app/settings/sections/follows-settings-section"
 import { InviteSettingsSection } from "@/app/settings/sections/invite-settings-section"
 import { LevelSettingsSection } from "@/app/settings/sections/level-settings-section"
+import { OAuthApplicationsSettingsSection } from "@/app/settings/sections/oauth-applications-settings-section"
 import { PointsSettingsSection } from "@/app/settings/sections/points-settings-section"
 import { PostManagementSettingsSection } from "@/app/settings/sections/post-management-settings-section"
 import { ProfileSettingsSection } from "@/app/settings/sections/profile-settings-section"
@@ -23,6 +24,7 @@ type SettingsSectionSlotBase =
   | "settings.verifications"
   | "settings.points"
   | "settings.follows"
+  | "settings.oauth-apps"
 
 function renderSectionWithSlots(
   slotBase: SettingsSectionSlotBase,
@@ -63,6 +65,8 @@ export function SettingsPageContent({ data }: { data: SettingsPageData }) {
       return renderSectionWithSlots("settings.points", <PointsSettingsSection data={data} />, data)
     case "follows":
       return renderSectionWithSlots("settings.follows", <FollowsSettingsSection data={data} />, data)
+    case "oauth-apps":
+      return renderSectionWithSlots("settings.oauth-apps", <OAuthApplicationsSettingsSection data={data} />, data)
     default:
       return null
   }

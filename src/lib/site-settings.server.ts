@@ -11,6 +11,8 @@ export interface ServerSiteSettingsSensitiveData {
   uploadS3SecretAccessKey?: string | null
   smsAliyunAccessKeyId?: string | null
   smsAliyunAccessKeySecret?: string | null
+  smsTencentSecretId?: string | null
+  smsTencentSecretKey?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   smtpUser?: string | null

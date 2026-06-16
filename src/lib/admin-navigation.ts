@@ -61,6 +61,7 @@ export type AdminSettingsSectionKey =
   | "redeem-codes"
   | "vip"
   | "upload"
+  | "oauth"
 
 export type AdminVerificationSubTabKey = "types" | "reviews"
 
@@ -123,6 +124,7 @@ export const adminSettingsSections: AdminSettingsSectionKey[] = [
   "redeem-codes",
   "vip",
   "upload",
+  "oauth",
 ]
 
 export const sectionsRequiringSiteSettings = new Set<AdminSettingsSectionKey>([
@@ -137,6 +139,7 @@ export const sectionsRequiringSiteSettings = new Set<AdminSettingsSectionKey>([
   "messages",
   "vip",
   "upload",
+  "oauth",
 ])
 
 export const adminTabLabels: Record<AdminTabKey, string> = {
@@ -196,10 +199,13 @@ export const adminSettingsGroups = [
     sections: [{ key: "vip", label: "积分与VIP" }],
   },
   {
-    key: "upload",
-    label: "上传",
+    key: "components",
+    label: "组件",
     defaultSection: "upload",
-    sections: [{ key: "upload", label: "上传" }],
+    sections: [
+      { key: "upload", label: "上传" },
+      { key: "oauth", label: "OAuth" },
+    ],
   },
 ] as const satisfies ReadonlyArray<{
   key: string
@@ -234,6 +240,7 @@ const adminSettingsSectionsByTier: Record<AdminManagementTier, ReadonlySet<Admin
     "invite-codes",
     "redeem-codes",
     "vip",
+    "oauth",
   ]),
   SUPER_MODERATOR: new Set([]),
   MODERATOR: new Set([]),
@@ -256,6 +263,7 @@ const adminSettingsSectionPermissions: Record<AdminSettingsSectionKey, AdminPerm
   "redeem-codes": "admin.operations.manage",
   vip: "admin.operations.manage",
   upload: "admin.operations.manage",
+  oauth: "admin.operations.manage",
 }
 
 export const adminNavigation: AdminNavigationItem[] = [
@@ -440,7 +448,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     key: "settings",
     href: getAdminSettingsHref("profile"),
     label: "站点设置",
-    description: "展示、注册、互动和上传配置。",
+    description: "展示、注册、互动和组件配置。",
     icon: Settings,
     group: "system",
     adminOnly: true,

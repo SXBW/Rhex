@@ -39,6 +39,7 @@ import type {
   RegistrationRewardSettings,
   SiteSecuritySettings,
   SiteEmailBusinessSwitchSettings,
+  SmsBuiltinProvider,
   SmsProviderSettings,
 } from "@/lib/site-settings-app-state.types"
 
@@ -465,6 +466,10 @@ export function resolveSiteSecuritySettings(options: {
   sessionIpMismatchLogoutEnabledFallback?: boolean
   loginIpChangeEmailAlertEnabledFallback?: boolean
   passwordChangeRequireEmailVerificationFallback?: boolean
+  oauthServerEnabledFallback?: boolean
+  oauthClientApplicationEnabledFallback?: boolean
+  oauthAccessTokenTtlMinutesFallback?: number
+  oauthRefreshTokenTtlDaysFallback?: number
 } = {}): SiteSecuritySettings {
   const siteSettingsState = readSiteSettingsState(options.appStateJson)
   const siteSecurity = isRecord(siteSettingsState.siteSecurity)
@@ -484,6 +489,34 @@ export function resolveSiteSecuritySettings(options: {
       typeof siteSecurity.passwordChangeRequireEmailVerification === "boolean"
         ? siteSecurity.passwordChangeRequireEmailVerification
         : options.passwordChangeRequireEmailVerificationFallback ?? false,
+    oauthServerEnabled:
+      typeof siteSecurity.oauthServerEnabled === "boolean"
+        ? siteSecurity.oauthServerEnabled
+        : options.oauthServerEnabledFallback ?? false,
+    oauthClientApplicationEnabled:
+      typeof siteSecurity.oauthClientApplicationEnabled === "boolean"
+        ? siteSecurity.oauthClientApplicationEnabled
+        : options.oauthClientApplicationEnabledFallback ?? false,
+    oauthAccessTokenTtlMinutes: Math.min(
+      1440,
+      Math.max(
+        5,
+        normalizeNonNegativeInteger(
+          siteSecurity.oauthAccessTokenTtlMinutes,
+          options.oauthAccessTokenTtlMinutesFallback ?? 60,
+        ),
+      ),
+    ),
+    oauthRefreshTokenTtlDays: Math.min(
+      365,
+      Math.max(
+        1,
+        normalizeNonNegativeInteger(
+          siteSecurity.oauthRefreshTokenTtlDays,
+          options.oauthRefreshTokenTtlDaysFallback ?? 30,
+        ),
+      ),
+    ),
   }
 }
 
@@ -499,6 +532,10 @@ export function mergeSiteSecuritySettings(
       sessionIpMismatchLogoutEnabled: Boolean(input.sessionIpMismatchLogoutEnabled),
       loginIpChangeEmailAlertEnabled: Boolean(input.loginIpChangeEmailAlertEnabled),
       passwordChangeRequireEmailVerification: Boolean(input.passwordChangeRequireEmailVerification),
+      oauthServerEnabled: Boolean(input.oauthServerEnabled),
+      oauthClientApplicationEnabled: Boolean(input.oauthClientApplicationEnabled),
+      oauthAccessTokenTtlMinutes: Math.min(1440, Math.max(5, normalizeNonNegativeInteger(input.oauthAccessTokenTtlMinutes, 60))),
+      oauthRefreshTokenTtlDays: Math.min(365, Math.max(1, normalizeNonNegativeInteger(input.oauthRefreshTokenTtlDays, 30))),
     },
   })
 }
@@ -537,6 +574,25 @@ export function mergeAuthProviderSettings(
   })
 }
 
+function normalizeSmsBuiltinProvider(value: unknown): SmsBuiltinProvider {
+  return typeof value === "string" && value.trim().toLowerCase() === "tencent"
+    ? "tencent"
+    : "aliyun"
+}
+
+function normalizeStringList(value: unknown, fallback: string[]) {
+  const rawItems = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[，,\s]+/)
+      : []
+  const normalized = rawItems
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter(Boolean)
+
+  return normalized.length > 0 ? normalized : fallback
+}
+
 export function resolveSmsProviderSettings(options: {
   appStateJson?: string | null
 } = {}): SmsProviderSettings {
@@ -547,6 +603,7 @@ export function resolveSmsProviderSettings(options: {
 
   return {
     enabled: typeof smsProvider.enabled === "boolean" ? smsProvider.enabled : false,
+    provider: normalizeSmsBuiltinProvider(smsProvider.provider),
     captchaMode: normalizeCaptchaMode(smsProvider.captchaMode),
     aliyunEndpoint: typeof smsProvider.aliyunEndpoint === "string" && smsProvider.aliyunEndpoint.trim()
       ? smsProvider.aliyunEndpoint.trim()
@@ -559,6 +616,16 @@ export function resolveSmsProviderSettings(options: {
     aliyunCodeParamName: typeof smsProvider.aliyunCodeParamName === "string" && smsProvider.aliyunCodeParamName.trim()
       ? smsProvider.aliyunCodeParamName.trim()
       : "code",
+    tencentRegion: typeof smsProvider.tencentRegion === "string" && smsProvider.tencentRegion.trim()
+      ? smsProvider.tencentRegion.trim()
+      : "ap-guangzhou",
+    tencentEndpoint: typeof smsProvider.tencentEndpoint === "string" && smsProvider.tencentEndpoint.trim()
+      ? smsProvider.tencentEndpoint.trim()
+      : "sms.tencentcloudapi.com",
+    tencentSmsSdkAppId: typeof smsProvider.tencentSmsSdkAppId === "string" ? smsProvider.tencentSmsSdkAppId.trim() : "",
+    tencentSignName: typeof smsProvider.tencentSignName === "string" ? smsProvider.tencentSignName.trim() : "",
+    tencentTemplateId: typeof smsProvider.tencentTemplateId === "string" ? smsProvider.tencentTemplateId.trim() : "",
+    tencentTemplateParamKeys: normalizeStringList(smsProvider.tencentTemplateParamKeys, ["code"]),
   }
 }
 
@@ -572,12 +639,19 @@ export function mergeSmsProviderSettings(
     ...siteSettingsState,
     smsProvider: {
       enabled: Boolean(input.enabled),
+      provider: normalizeSmsBuiltinProvider(input.provider),
       captchaMode: normalizeCaptchaMode(input.captchaMode),
       aliyunEndpoint: input.aliyunEndpoint.trim() || "dysmsapi.aliyuncs.com",
       aliyunRegionId: input.aliyunRegionId.trim() || "cn-hangzhou",
       aliyunSignName: input.aliyunSignName.trim(),
       aliyunTemplateCode: input.aliyunTemplateCode.trim(),
       aliyunCodeParamName: input.aliyunCodeParamName.trim() || "code",
+      tencentRegion: input.tencentRegion.trim() || "ap-guangzhou",
+      tencentEndpoint: input.tencentEndpoint.trim() || "sms.tencentcloudapi.com",
+      tencentSmsSdkAppId: input.tencentSmsSdkAppId.trim(),
+      tencentSignName: input.tencentSignName.trim(),
+      tencentTemplateId: input.tencentTemplateId.trim(),
+      tencentTemplateParamKeys: normalizeStringList(input.tencentTemplateParamKeys, ["code"]),
     },
   })
 }
