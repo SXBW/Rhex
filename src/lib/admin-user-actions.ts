@@ -42,6 +42,11 @@ import { getBlockedUserStatusChangeMessage, type RestrictiveUserStatus } from "@
 import { getBlockedAdminRoleChangeMessage } from "@/lib/admin-user-permission-policy"
 import { canManageTargetUser } from "@/lib/admin-permission-policy"
 import { canAdminWithPermissionOverrides } from "@/lib/admin-permission-overrides"
+import {
+  formatUserBanCleanupSummary,
+  runUserBanCleanupActions,
+  type UserBanCleanupOptions,
+} from "@/lib/admin-user-ban-cleanup"
 import { revalidateUserBadgeMutation } from "@/lib/badge-cache-revalidation"
 import { formatBrowserLocalDateTimeInput, parseBrowserLocalDateTime } from "@/lib/browser-local-datetime"
 import { enforceSensitiveText } from "@/lib/content-safety"
@@ -219,6 +224,15 @@ function buildAdminPointAdjustReason(message: string) {
   return trimmedMessage ? `管理员调整用户积分：${trimmedMessage}` : "管理员调整用户积分"
 }
 
+function readUserBanCleanupOptions(context: AdminActionContext): UserBanCleanupOptions {
+  return {
+    offlineAllPosts: Boolean(context.body.offlineAllPosts),
+    offlineAllComments: Boolean(context.body.offlineAllComments),
+    clearProfile: Boolean(context.body.clearProfile),
+    clearSiteChatMessages: Boolean(context.body.clearSiteChatMessages),
+  }
+}
+
 function buildAdminPointAdjustNotification(params: {
   pointName: string
   beforePoints: number
@@ -285,10 +299,21 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     await ensureCanManageTargetUserRecord(context, user, "无权封禁该用户")
     const statusExpiration = readStatusExpiration(context)
     setStatusActionDetail(context, "管理员拉黑用户", getDefaultUserStatusReason(UserStatus.BANNED), statusExpiration)
-    await updateUserStatus(userId, UserStatus.BANNED, statusExpiration?.expiresAt ?? null, readStatusReason(context, getDefaultUserStatusReason(UserStatus.BANNED)))
+    const statusReason = readStatusReason(context, getDefaultUserStatusReason(UserStatus.BANNED))
+    await updateUserStatus(userId, UserStatus.BANNED, statusExpiration?.expiresAt ?? null, statusReason)
+    const cleanupResult = await runUserBanCleanupActions({
+      userId,
+      adminUserId: context.adminUserId,
+      options: readUserBanCleanupOptions(context),
+      reason: statusReason,
+    })
+    const cleanupSummary = formatUserBanCleanupSummary(cleanupResult)
+    if (cleanupSummary) {
+      context.detailOverride = `${context.detailOverride ?? buildStatusActionDetail(context, "管理员拉黑用户", getDefaultUserStatusReason(UserStatus.BANNED))}；附加处理：${cleanupSummary}`
+    }
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.ban"].metadata)
-    return { message: "用户已拉黑" }
+    return { message: cleanupSummary ? `用户已拉黑，${cleanupSummary}` : "用户已拉黑" }
   }),
   "user.promoteModerator": defineAdminAction({ targetType: "USER", buildDetail: () => "管理员提升为版主" }, async (context) => {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可设置版主")

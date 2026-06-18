@@ -31,6 +31,7 @@ import { mergeAuthProviderSensitiveConfig, mergeCaptchaSensitiveConfig, mergeSms
 import { normalizeCaptchaMode } from "@/lib/shared/config-parsers"
 import { normalizeUsernameSensitiveWords } from "@/lib/username-sensitive-words"
 import { normalizePasswordMinLength, normalizePasswordStrength } from "@/lib/password-policy"
+import { getTurnstileCaptchaConfigError } from "@/lib/admin-captcha-settings"
 import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
 
 function isSupportedInviteCodeHelpUrl(value: string) {
@@ -249,11 +250,15 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
     apiError(400, "邀请码输入框链接仅支持以 /、http:// 或 https:// 开头")
   }
 
-  if (
-    (registerCaptchaMode === "TURNSTILE" || loginCaptchaMode === "TURNSTILE" || smsCaptchaMode === "TURNSTILE")
-    && (!turnstileSiteKey || !turnstileSecretKey)
-  ) {
-    apiError(400, "启用 Turnstile 验证码时，必须同时填写 Turnstile Site Key 和 Secret Key")
+  const turnstileConfigError = getTurnstileCaptchaConfigError({
+    registerCaptchaMode,
+    loginCaptchaMode,
+    smsCaptchaMode,
+    turnstileSiteKey,
+    turnstileSecretKey,
+  })
+  if (turnstileConfigError) {
+    apiError(400, turnstileConfigError)
   }
 
   if (invalidRegisterEmailWhitelistDomains.length > 0) {
