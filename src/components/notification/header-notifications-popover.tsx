@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Bell, ChevronRight, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/rbutton"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-const NOTIFICATIONS_HREF = "http://localhost:3000/notifications"
+const NOTIFICATIONS_HREF = "/notifications"
 const UNREAD_PREVIEW_LIMIT = 5
 
 interface HeaderNotificationsPopoverProps {
@@ -71,10 +72,12 @@ function HeaderUnreadBadge({ count, className }: { count: number; className?: st
 }
 
 export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: HeaderNotificationsPopoverProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<HeaderNotificationItem[]>([])
   const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [markingReadId, setMarkingReadId] = useState("")
   const [markingAllRead, setMarkingAllRead] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [visibleUnreadCount, setVisibleUnreadCount] = useState(unreadCount)
@@ -159,6 +162,46 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
     }
   }
 
+  async function handleNotificationClick(event: React.MouseEvent<HTMLAnchorElement>, item: HeaderNotificationItem) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
+
+    event.preventDefault()
+
+    if (markingReadId) {
+      return
+    }
+
+    setMarkingReadId(item.id)
+    setErrorMessage("")
+
+    try {
+      const response = await fetch("/api/notifications/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notificationId: item.id }),
+      })
+      const payload = await response.json().catch(() => null) as HeaderNotificationsActionResponse | null
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "标记通知失败")
+      }
+
+      setItems((current) => current.filter((candidate) => candidate.id !== item.id))
+      setVisibleUnreadCount((current) => Math.max(0, current - 1))
+      setOpen(false)
+      router.push(item.relatedUrl)
+      router.refresh()
+    } catch (error: unknown) {
+      setErrorMessage(error instanceof Error ? error.message : "标记通知失败")
+    } finally {
+      setMarkingReadId("")
+    }
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -230,7 +273,7 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
                   key={item.id}
                   href={item.relatedUrl}
                   className="group rounded-xl px-3 py-2.5 outline-hidden transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-                  onClick={() => setOpen(false)}
+                  onClick={(event) => handleNotificationClick(event, item)}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="truncate text-xs text-muted-foreground">{item.typeLabel}</span>

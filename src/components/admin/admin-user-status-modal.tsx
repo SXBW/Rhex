@@ -5,6 +5,7 @@ import { useState, useTransition } from "react"
 
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { buildUserStatusExpirationDraft, USER_STATUS_EXPIRATION_PRESETS } from "@/lib/user-status-expiration-presets"
@@ -23,14 +24,63 @@ interface AdminUserStatusDialogProps extends Omit<AdminUserStatusModalProps, "tr
   onOpenChange: (open: boolean) => void
 }
 
+interface BanCleanupOptions {
+  offlineAllPosts: boolean
+  offlineAllComments: boolean
+  clearProfile: boolean
+  clearSiteChatMessages: boolean
+}
+
+const defaultBanCleanupOptions: BanCleanupOptions = {
+  offlineAllPosts: false,
+  offlineAllComments: false,
+  clearProfile: false,
+  clearSiteChatMessages: false,
+}
+
+const banCleanupOptionItems: Array<{
+  key: keyof BanCleanupOptions
+  label: string
+  description: string
+}> = [
+  {
+    key: "offlineAllPosts",
+    label: "下线该用户所有帖子",
+    description: "把该用户仍在线或待审核的帖子统一标记为已下线。",
+  },
+  {
+    key: "offlineAllComments",
+    label: "下线该用户所有评论",
+    description: "把该用户仍可见或待审核的评论统一隐藏。",
+  },
+  {
+    key: "clearProfile",
+    label: "清空个人签名和个人介绍",
+    description: "清空个人简介；个人介绍功能开启时同步清空主页介绍。",
+  },
+  {
+    key: "clearSiteChatMessages",
+    label: "清空全站聊天室发言",
+    description: "全站聊天室开启时删除该用户在聊天室里的所有发言。",
+  },
+]
+
 export function AdminUserStatusDialog({ userId, username, action, postId, commentId, open, onOpenChange }: AdminUserStatusDialogProps) {
   const [message, setMessage] = useState("")
   const [feedback, setFeedback] = useState("")
   const [statusExpiresAt, setStatusExpiresAt] = useState("")
+  const [banCleanupOptions, setBanCleanupOptions] = useState<BanCleanupOptions>(defaultBanCleanupOptions)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
   const actionText = action === "ban" ? "封禁" : "禁言"
+  function setBanCleanupOption(key: keyof BanCleanupOptions, checked: boolean) {
+    setBanCleanupOptions((current) => ({
+      ...current,
+      [key]: checked,
+    }))
+  }
+
   function setPresetExpiration(days: number | null) {
     if (!days) {
       setStatusExpiresAt("")
@@ -65,6 +115,7 @@ export function AdminUserStatusDialog({ userId, username, action, postId, commen
                     message,
                     statusExpiresAt: statusExpiresAt || null,
                     statusExpiresAtTimezoneOffsetMinutes: statusExpiresAt ? new Date().getTimezoneOffset() : null,
+                    ...(action === "ban" ? banCleanupOptions : {}),
                     ...(postId ? { postId } : {}),
                     ...(commentId ? { commentId } : {}),
                   }),
@@ -74,6 +125,7 @@ export function AdminUserStatusDialog({ userId, username, action, postId, commen
                   onOpenChange(false)
                   setMessage("")
                   setStatusExpiresAt("")
+                  setBanCleanupOptions(defaultBanCleanupOptions)
                   router.refresh()
                   return
                 }
@@ -124,6 +176,31 @@ export function AdminUserStatusDialog({ userId, username, action, postId, commen
             永久
           </Button>
         </div>
+        {action === "ban" ? (
+          <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted/30 p-3">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-medium text-foreground">封禁附加处理</p>
+              <p className="text-xs leading-5 text-muted-foreground">按需勾选会立即批量处理该用户的历史内容。</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {banCleanupOptionItems.map((item) => (
+                <label key={item.key} className="flex items-start gap-2 rounded-lg px-1 py-1">
+                  <Checkbox
+                    checked={banCleanupOptions[item.key]}
+                    onCheckedChange={(checked) => setBanCleanupOption(item.key, checked === true)}
+                    disabled={isPending}
+                    aria-label={item.label}
+                    className="mt-0.5"
+                  />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-xs font-medium text-foreground">{item.label}</span>
+                    <span className="text-xs leading-5 text-muted-foreground">{item.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <Textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder={`填写${actionText}原因，不填写会使用默认公开原因`} className="min-h-[120px] rounded-xl bg-background px-4 py-3" />
         {feedback ? <p className="text-xs text-muted-foreground">{feedback}</p> : null}
       </div>
