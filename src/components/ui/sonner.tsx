@@ -5,13 +5,15 @@ import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon
 
 import { useTheme } from "@/components/theme-provider"
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ closeButton, toastOptions, ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
+  const resolvedToastOptions = toastOptions ?? {}
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      closeButton={closeButton ?? true}
       icons={{
         success: (
           <CircleCheckIcon className="size-4" />
@@ -38,9 +40,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        ...resolvedToastOptions,
         classNames: {
+          ...resolvedToastOptions.classNames,
           toast: "cn-toast",
         },
+        closeButtonAriaLabel: resolvedToastOptions.closeButtonAriaLabel ?? "关闭通知",
       }}
       {...props}
     />

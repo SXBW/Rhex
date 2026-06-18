@@ -15,6 +15,7 @@ import { DEFAULT_THEME_CUSTOMIZATION_SETTINGS, type BuiltInThemePreset, type Edi
 import type { InteractionGateCondition, InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings"
 import type { LeftSidebarDisplayMode, LeftSidebarHomeSettings, LeftSidebarNavigationMode, PostSlugGenerationMode, RegistrationEmailTemplateSettings, SiteSearchSettings, SiteTippingGiftItem } from "@/lib/site-settings"
 import type { PasswordStrength } from "@/lib/password-policy"
+import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
 
 export interface AdminBasicSettingsInitialSettings {
   siteName: string
@@ -114,6 +115,10 @@ export interface AdminBasicSettingsInitialSettings {
   sessionIpMismatchLogoutEnabled: boolean
   loginIpChangeEmailAlertEnabled: boolean
   passwordChangeRequireEmailVerification: boolean
+  oauthServerEnabled: boolean
+  oauthClientApplicationEnabled: boolean
+  oauthAccessTokenTtlMinutes: number
+  oauthRefreshTokenTtlDays: number
   registerPasswordMinLength: number
   registerPasswordStrength: PasswordStrength
   usernameSensitiveWordsEnabled: boolean
@@ -143,6 +148,7 @@ export interface AdminBasicSettingsInitialSettings {
   passkeyRpName?: string | null
   passkeyOrigin?: string | null
   smsEnabled: boolean
+  smsProvider: SmsBuiltinProvider
   smsCaptchaMode: "OFF" | "TURNSTILE" | "BUILTIN" | "POW"
   smsAliyunAccessKeyId?: string | null
   smsAliyunAccessKeySecret?: string | null
@@ -151,6 +157,14 @@ export interface AdminBasicSettingsInitialSettings {
   smsAliyunSignName: string
   smsAliyunTemplateCode: string
   smsAliyunCodeParamName: string
+  smsTencentSecretId?: string | null
+  smsTencentSecretKey?: string | null
+  smsTencentRegion: string
+  smsTencentEndpoint: string
+  smsTencentSmsSdkAppId: string
+  smsTencentSignName: string
+  smsTencentTemplateId: string
+  smsTencentTemplateParamKeys: string[]
   smtpEnabled: boolean
   smtpHost?: string | null
   smtpPort?: number | null
@@ -275,6 +289,10 @@ export interface AdminBasicSettingsDraft {
   sessionIpMismatchLogoutEnabled: boolean
   loginIpChangeEmailAlertEnabled: boolean
   passwordChangeRequireEmailVerification: boolean
+  oauthServerEnabled: boolean
+  oauthClientApplicationEnabled: boolean
+  oauthAccessTokenTtlMinutes: string
+  oauthRefreshTokenTtlDays: string
   registerPasswordMinLength: string
   registerPasswordStrength: PasswordStrength
   usernameSensitiveWordsEnabled: boolean
@@ -318,6 +336,7 @@ export interface AdminBasicSettingsDraft {
   passkeyRpName: string
   passkeyOrigin: string
   smsEnabled: boolean
+  smsProvider: SmsBuiltinProvider
   smsCaptchaMode: "OFF" | "TURNSTILE" | "BUILTIN" | "POW"
   smsAliyunAccessKeyId: string
   smsAliyunAccessKeySecret: string
@@ -326,6 +345,14 @@ export interface AdminBasicSettingsDraft {
   smsAliyunSignName: string
   smsAliyunTemplateCode: string
   smsAliyunCodeParamName: string
+  smsTencentSecretId: string
+  smsTencentSecretKey: string
+  smsTencentRegion: string
+  smsTencentEndpoint: string
+  smsTencentSmsSdkAppId: string
+  smsTencentSignName: string
+  smsTencentTemplateId: string
+  smsTencentTemplateParamKeys: string
   smtpEnabled: boolean
   smtpHost: string
   smtpPort: string
@@ -517,6 +544,10 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     sessionIpMismatchLogoutEnabled: coerceBoolean(initialSettings.sessionIpMismatchLogoutEnabled, true),
     loginIpChangeEmailAlertEnabled: coerceBoolean(initialSettings.loginIpChangeEmailAlertEnabled, false),
     passwordChangeRequireEmailVerification: coerceBoolean(initialSettings.passwordChangeRequireEmailVerification, false),
+    oauthServerEnabled: coerceBoolean(initialSettings.oauthServerEnabled, false),
+    oauthClientApplicationEnabled: coerceBoolean(initialSettings.oauthClientApplicationEnabled, false),
+    oauthAccessTokenTtlMinutes: coerceNumberString(initialSettings.oauthAccessTokenTtlMinutes, 60),
+    oauthRefreshTokenTtlDays: coerceNumberString(initialSettings.oauthRefreshTokenTtlDays, 30),
     registerPasswordMinLength: coerceNumberString(initialSettings.registerPasswordMinLength, 6),
     registerPasswordStrength: initialSettings.registerPasswordStrength ?? "LOW",
     usernameSensitiveWordsEnabled: coerceBoolean(initialSettings.usernameSensitiveWordsEnabled, false),
@@ -564,6 +595,7 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     passkeyRpName: initialSettings.passkeyRpName ?? "",
     passkeyOrigin: initialSettings.passkeyOrigin ?? "",
     smsEnabled: coerceBoolean(initialSettings.smsEnabled, false),
+    smsProvider: initialSettings.smsProvider ?? "aliyun",
     smsCaptchaMode: initialSettings.smsCaptchaMode ?? "OFF",
     smsAliyunAccessKeyId: initialSettings.smsAliyunAccessKeyId ?? "",
     smsAliyunAccessKeySecret: initialSettings.smsAliyunAccessKeySecret ?? "",
@@ -572,6 +604,14 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     smsAliyunSignName: initialSettings.smsAliyunSignName ?? "",
     smsAliyunTemplateCode: initialSettings.smsAliyunTemplateCode ?? "",
     smsAliyunCodeParamName: initialSettings.smsAliyunCodeParamName || "code",
+    smsTencentSecretId: initialSettings.smsTencentSecretId ?? "",
+    smsTencentSecretKey: initialSettings.smsTencentSecretKey ?? "",
+    smsTencentRegion: initialSettings.smsTencentRegion || "ap-guangzhou",
+    smsTencentEndpoint: initialSettings.smsTencentEndpoint || "sms.tencentcloudapi.com",
+    smsTencentSmsSdkAppId: initialSettings.smsTencentSmsSdkAppId ?? "",
+    smsTencentSignName: initialSettings.smsTencentSignName ?? "",
+    smsTencentTemplateId: initialSettings.smsTencentTemplateId ?? "",
+    smsTencentTemplateParamKeys: (initialSettings.smsTencentTemplateParamKeys ?? ["code"]).join(","),
     smtpEnabled: coerceBoolean(initialSettings.smtpEnabled, false),
     smtpHost: initialSettings.smtpHost ?? "",
     smtpPort: initialSettings.smtpPort ? String(initialSettings.smtpPort) : "",
@@ -653,6 +693,10 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       sessionIpMismatchLogoutEnabled: draft.sessionIpMismatchLogoutEnabled,
       loginIpChangeEmailAlertEnabled: draft.loginIpChangeEmailAlertEnabled,
       passwordChangeRequireEmailVerification: draft.passwordChangeRequireEmailVerification,
+      oauthServerEnabled: draft.oauthServerEnabled,
+      oauthClientApplicationEnabled: draft.oauthClientApplicationEnabled,
+      oauthAccessTokenTtlMinutes: Number(draft.oauthAccessTokenTtlMinutes),
+      oauthRefreshTokenTtlDays: Number(draft.oauthRefreshTokenTtlDays),
       registerPasswordMinLength: Number(draft.registerPasswordMinLength),
       registerPasswordStrength: draft.registerPasswordStrength,
       usernameSensitiveWordsEnabled: draft.usernameSensitiveWordsEnabled,
@@ -696,6 +740,7 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       passkeyRpName: draft.passkeyRpName,
       passkeyOrigin: draft.passkeyOrigin,
       smsEnabled: draft.smsEnabled,
+      smsProvider: draft.smsProvider,
       smsCaptchaMode: draft.smsCaptchaMode,
       smsAliyunAccessKeyId: draft.smsAliyunAccessKeyId,
       smsAliyunAccessKeySecret: draft.smsAliyunAccessKeySecret,
@@ -704,6 +749,14 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       smsAliyunSignName: draft.smsAliyunSignName,
       smsAliyunTemplateCode: draft.smsAliyunTemplateCode,
       smsAliyunCodeParamName: draft.smsAliyunCodeParamName,
+      smsTencentSecretId: draft.smsTencentSecretId,
+      smsTencentSecretKey: draft.smsTencentSecretKey,
+      smsTencentRegion: draft.smsTencentRegion,
+      smsTencentEndpoint: draft.smsTencentEndpoint,
+      smsTencentSmsSdkAppId: draft.smsTencentSmsSdkAppId,
+      smsTencentSignName: draft.smsTencentSignName,
+      smsTencentTemplateId: draft.smsTencentTemplateId,
+      smsTencentTemplateParamKeys: draft.smsTencentTemplateParamKeys,
       smtpEnabled: draft.smtpEnabled,
       smtpHost: draft.smtpHost,
       smtpPort: Number(draft.smtpPort),

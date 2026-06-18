@@ -1,7 +1,7 @@
 import "server-only"
 
 import { findPostCardEmbedSourceByRouteSegment } from "@/db/post-card-embed-queries"
-import { buildInlinePostCardEmbedToken, buildPostCardEmbedToken, extractInternalPostUrlsFromLine, type EmbeddedPostCardSnapshot, type InternalPostUrlInlineMatch } from "@/lib/post-card-embed"
+import { applyPostCardEmbedTokensToContent, buildInlinePostCardEmbedToken, buildPostCardEmbedToken, extractInternalPostUrlsFromLine, type EmbeddedPostCardSnapshot, type PostCardEmbedTokenEntry } from "@/lib/post-card-embed"
 import { extractSummaryFromContent } from "@/lib/content"
 import { getAllPostContentText } from "@/lib/post-content"
 import { getUserAvatarPath, getUserDisplayName } from "@/lib/user-display"
@@ -161,7 +161,7 @@ export async function processInternalPostCardEmbeds(content: string, options: Pr
     return content
   }
 
-  const tokenByRouteSegment = new Map<string, { normal: string; inline: string }>()
+  const tokenByRouteSegment = new Map<string, PostCardEmbedTokenEntry>()
   await Promise.all(Array.from(routeSegments).map(async (routeSegment) => {
     const post = await findPostCardEmbedSourceByRouteSegment(routeSegment)
     if (!post || post.id === options.currentPostId) {
@@ -176,6 +176,7 @@ export async function processInternalPostCardEmbeds(content: string, options: Pr
     tokenByRouteSegment.set(routeSegment, {
       normal: buildPostCardEmbedToken(snapshot),
       inline: buildInlinePostCardEmbedToken(snapshot),
+      snapshot,
     })
   }))
 
@@ -183,41 +184,5 @@ export async function processInternalPostCardEmbeds(content: string, options: Pr
     return content
   }
 
-  inFence = false
-  function appendLinePostCards(line: string, matches: InternalPostUrlInlineMatch[]) {
-    const inlineTokenSet = new Set<string>()
-    for (const matched of matches) {
-      const tokens = tokenByRouteSegment.get(matched.routeSegment)
-      if (tokens) {
-        inlineTokenSet.add(tokens.inline)
-      }
-    }
-
-    const inlineTokens = Array.from(inlineTokenSet)
-    if (inlineTokens.length === 0) {
-      return line
-    }
-
-    if (matches.length === 1 && line.trim() === matches[0]?.url) {
-      return tokenByRouteSegment.get(matches[0].routeSegment)?.normal ?? line
-    }
-
-    return [line, ...inlineTokens].join("\n")
-  }
-
-  return lines
-    .map((line) => {
-      const trimmed = line.trim()
-      if (/^```/.test(trimmed)) {
-        inFence = !inFence
-        return line
-      }
-
-      if (inFence) {
-        return line
-      }
-
-      return appendLinePostCards(line, extractInternalPostUrlsFromLine(line, extractionOptions))
-    })
-    .join("\n")
+  return applyPostCardEmbedTokensToContent(content, tokenByRouteSegment, extractionOptions)
 }

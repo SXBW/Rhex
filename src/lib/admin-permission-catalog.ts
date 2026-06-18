@@ -5,7 +5,7 @@ export interface AdminPermissionCatalogItem {
   label: string
   description: string
   group: "dashboard" | "content" | "users" | "operations" | "system"
-  coreOnly?: boolean
+  highRisk?: boolean
 }
 
 export const ADMIN_PERMISSION_CATALOG = [
@@ -48,9 +48,9 @@ export const ADMIN_PERMISSION_CATALOG = [
   {
     key: "admin.structure.delete",
     label: "删除版块",
-    description: "删除分区和节点，仅超级管理员可用。",
+    description: "删除分区和节点，建议只授予可信管理员。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.structure.assignModerators",
@@ -67,16 +67,16 @@ export const ADMIN_PERMISSION_CATALOG = [
   {
     key: "admin.users.manageAdmins",
     label: "管理管理员",
-    description: "调整管理员角色和管理员动态权限，仅超级管理员可用。",
+    description: "调整管理员角色和管理员动态权限。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.users.manageFounder",
     label: "管理超级管理员",
-    description: "保护创始人账号的专用权限，仅超级管理员持有。",
+    description: "允许管理创始人账号，属于最高风险授权。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.users.grantBadges",
@@ -93,37 +93,37 @@ export const ADMIN_PERMISSION_CATALOG = [
   {
     key: "admin.siteSettings.manage",
     label: "站点信息",
-    description: "修改站点基础信息、注册、上传和互动设置，仅超级管理员可用。",
+    description: "修改站点基础信息、注册、上传和互动设置。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.forumCore.manage",
     label: "论坛核心",
-    description: "修改论坛核心配置，仅超级管理员可用。",
+    description: "修改论坛核心配置。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.apps.manage",
     label: "应用中心",
-    description: "管理内置应用和应用配置，仅超级管理员可用。",
+    description: "管理内置应用和应用配置。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.addons.manage",
     label: "插件管理",
-    description: "安装、启用和配置插件，仅超级管理员可用。",
+    description: "安装、启用和配置插件。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.theme.manage",
     label: "主题管理",
-    description: "管理主题和外观扩展，仅超级管理员可用。",
+    description: "管理主题和外观扩展。",
     group: "system",
-    coreOnly: true,
+    highRisk: true,
   },
   {
     key: "admin.logs.view",
@@ -143,20 +143,6 @@ export const ADMIN_PERMISSION_KEYS = ADMIN_PERMISSION_CATALOG.map((item) => item
 
 export const ADMIN_PERMISSION_KEY_SET: ReadonlySet<AdminPermissionKey> = new Set(ADMIN_PERMISSION_KEYS)
 
-export function isCorePermissionCatalogItem(item: AdminPermissionCatalogItem) {
-  return item.coreOnly === true
-}
-
-export const CORE_ADMIN_PERMISSION_KEYS: ReadonlySet<AdminPermissionKey> = new Set(
-  ADMIN_PERMISSION_CATALOG
-    .filter(isCorePermissionCatalogItem)
-    .map((item) => item.key),
-)
-
 export function isAdminPermissionKey(value: unknown): value is AdminPermissionKey {
   return typeof value === "string" && ADMIN_PERMISSION_KEY_SET.has(value as AdminPermissionKey)
-}
-
-export function isCoreAdminPermission(permission: AdminPermissionKey) {
-  return CORE_ADMIN_PERMISSION_KEYS.has(permission)
 }

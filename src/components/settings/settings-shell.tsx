@@ -20,6 +20,7 @@ interface SettingsShellProps {
   }
   pointName: string
   boardApplicationEnabled: boolean
+  oauthApplicationsVisible: boolean
   sidebarTop?: ReactNode
   sidebarBottom?: ReactNode
   contentBefore?: ReactNode
@@ -31,6 +32,7 @@ export function SettingsShell({
   children,
   pointName,
   boardApplicationEnabled,
+  oauthApplicationsVisible,
   sidebarTop,
   sidebarBottom,
   contentBefore,
@@ -52,6 +54,7 @@ export function SettingsShell({
     { key: "points", label: `${pointName}明细`, description: `查看当前${pointName}余额与全部变动记录。` },
     { key: "follows", label: "我的关注", description: "查看你关注的节点、用户、标签与帖子。" },
     { key: "tasks", label: "任务中心", description: "查看新手任务、日常任务与挑战任务进度。", href: "/tasks" },
+    ...(oauthApplicationsVisible ? [{ key: "oauth-apps", label: "开发者应用", description: "申请和管理 OAuth appid/key。" }] : []),
   ] satisfies SettingsNavItem[]
   const currentItem = navItems.find((item) => item.key === currentTab) ?? navItems[0]
 
@@ -62,6 +65,7 @@ export function SettingsShell({
         surface="settings.content"
         surfaceProps={{
           boardApplicationEnabled,
+          oauthApplicationsVisible,
           currentItem,
           currentTab,
           pointName,
@@ -74,10 +78,10 @@ export function SettingsShell({
   )
 
   const fallback = (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="lg:hidden">
         {showMobileDetail ? (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <div className="sticky top-16 z-20 -mx-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-sm supports-backdrop-filter:bg-background/80">
               <div className="flex items-center gap-3">
                 <Button
@@ -99,7 +103,7 @@ export function SettingsShell({
             {contentSection("min-w-0")}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {sidebarTop}
        
 
@@ -132,6 +136,7 @@ export function SettingsShell({
       surface="settings.page"
       surfaceProps={{
         boardApplicationEnabled,
+        oauthApplicationsVisible,
         currentItem,
         currentTab,
         navItems,

@@ -239,6 +239,10 @@ export interface SiteSecuritySettings {
   sessionIpMismatchLogoutEnabled: boolean
   loginIpChangeEmailAlertEnabled: boolean
   passwordChangeRequireEmailVerification: boolean
+  oauthServerEnabled: boolean
+  oauthClientApplicationEnabled: boolean
+  oauthAccessTokenTtlMinutes: number
+  oauthRefreshTokenTtlDays: number
 }
 
 export type SiteEmailBusinessSwitchSettings = EmailBusinessSwitchSettings
@@ -330,14 +334,23 @@ export interface AuthProviderSettings {
   passkeyEnabled: boolean
 }
 
+export type SmsBuiltinProvider = "aliyun" | "tencent"
+
 export interface SmsProviderSettings {
   enabled: boolean
+  provider: SmsBuiltinProvider
   captchaMode: CaptchaMode
   aliyunEndpoint: string
   aliyunRegionId: string
   aliyunSignName: string
   aliyunTemplateCode: string
   aliyunCodeParamName: string
+  tencentRegion: string
+  tencentEndpoint: string
+  tencentSmsSdkAppId: string
+  tencentSignName: string
+  tencentTemplateId: string
+  tencentTemplateParamKeys: string[]
 }
 
 export interface AuthPageShowcaseSettings {

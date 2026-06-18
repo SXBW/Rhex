@@ -221,7 +221,7 @@ export function EditorBody({
         onSelect={onSelect}
         onPaste={onPaste}
         disabled={disabled}
-        className="w-full resize-none overflow-y-auto rounded-none border-0 bg-transparent pl-2 pr-0 py-1 font-mono text-sm leading-7 outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full resize-none overflow-y-auto rounded-none border-0 bg-transparent pl-2 pr-0 py-1 font-mono text-sm leading-7 outline-hidden [scrollbar-width:none] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         placeholder={placeholder}
         style={textareaStyle}
       />
@@ -253,7 +253,7 @@ export function EditorBody({
     <div
       ref={previewPanelRef}
       key="preview-panel"
-      className="min-h-0 min-w-0 overflow-y-auto"
+      className="min-h-0 min-w-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       style={previewStyle}
       onScroll={(event) => {
         if (!isLivePreview || scrollSyncSourceRef.current === "editor") {

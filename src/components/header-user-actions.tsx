@@ -2,10 +2,12 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Bell, Gem, LayoutDashboard, LogOut, Medal, MessageSquareMore, Settings, TrendingUp, User, Wallet } from "lucide-react"
+import { Gem, LayoutDashboard, LogOut, Medal, MessageSquareMore, Settings, TrendingUp, User, Wallet } from "lucide-react"
 
 import { useInboxRealtime } from "@/components/inbox-realtime-provider"
 import { useCurrentUser, type CurrentUserClient } from "@/components/current-user-provider"
+import { HeaderNotificationsPopover } from "@/components/notification/header-notifications-popover"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +59,24 @@ function HeaderUnreadBadge({ count, className }: { count: number; className?: st
     >
       {label}
     </span>
+  )
+}
+
+function HeaderUserActionsSkeleton({ messageEnabled }: { messageEnabled: boolean }) {
+  return (
+    <>
+      <div className="flex items-center gap-1 sm:hidden" aria-busy="true" aria-label="正在加载用户信息">
+        <Skeleton className="size-8 rounded-md" />
+        {messageEnabled ? <Skeleton className="size-8 rounded-md" /> : null}
+        <Skeleton className="size-8 rounded-md" />
+      </div>
+
+      <div className="hidden items-center gap-1.5 sm:flex" aria-busy="true" aria-label="正在加载用户信息">
+        <Skeleton className="size-8 rounded-md" />
+        {messageEnabled ? <Skeleton className="h-8 w-12 rounded-md" /> : null}
+        <Skeleton className="size-8 rounded-full" />
+      </div>
+    </>
   )
 }
 
@@ -186,9 +206,7 @@ export function HeaderUserActions({ user: userOverride, messageEnabled = true }:
   }
 
   if (!user && loading) {
-    return (
-      <div className="size-8 rounded-md bg-muted/60" aria-hidden="true" />
-    )
+    return <HeaderUserActionsSkeleton messageEnabled={messageEnabled} />
   }
 
   if (!user) {
@@ -216,12 +234,7 @@ export function HeaderUserActions({ user: userOverride, messageEnabled = true }:
   return (
     <>
       <div className="flex items-center gap-1 sm:hidden">
-        <Link href="/notifications" className="relative">
-          <Button variant="ghost" size="icon" className="size-8 rounded-md">
-            <Bell className={unreadNotificationCount > 0 ? "h-4 w-4 text-rose-600 dark:text-rose-300" : "h-4 w-4"} />
-          </Button>
-          <HeaderUnreadBadge count={unreadNotificationCount} className="right-0.5 top-0.5" />
-        </Link>
+        <HeaderNotificationsPopover unreadCount={unreadNotificationCount} badgeClassName="right-0.5 top-0.5" />
 
         {messageEnabled ? (
           <Link href="/messages" className="relative">
@@ -250,12 +263,7 @@ export function HeaderUserActions({ user: userOverride, messageEnabled = true }:
       </div>
 
       <div className="hidden items-center gap-1.5 sm:flex">
-        <Link href="/notifications" className="relative">
-          <Button variant="ghost" size="icon" className="size-8 rounded-md">
-            <Bell className={unreadNotificationCount > 0 ? "h-4 w-4 text-rose-600 dark:text-rose-300" : "h-4 w-4"} />
-          </Button>
-          <HeaderUnreadBadge count={unreadNotificationCount} className="right-0.5 top-0.5" />
-        </Link>
+        <HeaderNotificationsPopover unreadCount={unreadNotificationCount} badgeClassName="right-0.5 top-0.5" />
 
         {messageEnabled ? (
           <Link href="/messages" className="relative">

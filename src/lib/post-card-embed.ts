@@ -189,6 +189,11 @@ export function parsePostCardEmbedToken(line: string) {
   return parsePostCardEmbedTokenWithMode(line)?.snapshot ?? null
 }
 
+export function parseInlinePostCardEmbedToken(line: string) {
+  const parsed = parsePostCardEmbedTokenWithMode(line)
+  return parsed?.inline ? parsed.snapshot : null
+}
+
 function isInlinePostCardEmbedTokenLine(line: string) {
   return parsePostCardEmbedTokenWithMode(line)?.inline ?? false
 }
@@ -422,6 +427,84 @@ export function extractInternalPostUrlsFromLine(line: string, options?: string |
 export function extractInternalPostUrlFromLine(line: string, options?: string | InternalPostUrlExtractionOptions): InternalPostUrlMatch | null {
   const matched = extractInternalPostUrlsFromLine(line, options)[0]
   return matched ? { routeSegment: matched.routeSegment } : null
+}
+
+export interface PostCardEmbedTokenEntry {
+  normal: string
+  inline: string
+  snapshot: EmbeddedPostCardSnapshot
+}
+
+function buildLinePostCardEmbedResult(line: string, matches: InternalPostUrlInlineMatch[], tokenByRouteSegment: ReadonlyMap<string, PostCardEmbedTokenEntry>) {
+  const entries: PostCardEmbedTokenEntry[] = []
+  const seenPostIds = new Set<string>()
+
+  for (const matched of matches) {
+    const entry = tokenByRouteSegment.get(matched.routeSegment)
+    if (!entry || seenPostIds.has(entry.snapshot.postId)) {
+      continue
+    }
+
+    entries.push(entry)
+    seenPostIds.add(entry.snapshot.postId)
+  }
+
+  const postIds = new Set(entries.map((entry) => entry.snapshot.postId))
+  if (entries.length === 0) {
+    return { lines: [line], postIds }
+  }
+
+  if (matches.length === 1 && line.trim() === matches[0]?.url) {
+    return { lines: [entries[0]?.normal ?? line], postIds }
+  }
+
+  return {
+    lines: [line, ...entries.map((entry) => entry.inline)],
+    postIds,
+  }
+}
+
+function isInlinePostCardForPosts(line: string, postIds: ReadonlySet<string>) {
+  const snapshot = parseInlinePostCardEmbedToken(line)
+  return Boolean(snapshot && postIds.has(snapshot.postId))
+}
+
+export function applyPostCardEmbedTokensToContent(
+  content: string,
+  tokenByRouteSegment: ReadonlyMap<string, PostCardEmbedTokenEntry>,
+  options?: string | InternalPostUrlExtractionOptions,
+) {
+  if (tokenByRouteSegment.size === 0) {
+    return content
+  }
+
+  const lines = content.replace(/\r\n/g, "\n").split("\n")
+  const outputLines: string[] = []
+  let inFence = false
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? ""
+    const trimmed = line.trim()
+    if (/^```/.test(trimmed)) {
+      inFence = !inFence
+      outputLines.push(line)
+      continue
+    }
+
+    if (inFence) {
+      outputLines.push(line)
+      continue
+    }
+
+    const result = buildLinePostCardEmbedResult(line, extractInternalPostUrlsFromLine(line, options), tokenByRouteSegment)
+    outputLines.push(...result.lines)
+
+    while (result.postIds.size > 0 && lineIndex + 1 < lines.length && isInlinePostCardForPosts((lines[lineIndex + 1] ?? "").trim(), result.postIds)) {
+      lineIndex += 1
+    }
+  }
+
+  return outputLines.join("\n")
 }
 
 export function replacePostCardEmbedTokensWithUrls(content: string) {

@@ -66,6 +66,11 @@ export const ADDON_SURFACE_CATALOG = [
   surface("badge.hero", "接管勋章详情顶部介绍区。"),
   surface("badge.sidebar", "接管勋章详情右侧栏。"),
 
+  surface("verification.page", "接管认证详情页主体区域。"),
+  surface("verification.hero", "接管认证详情顶部介绍区。"),
+  surface("verification.application", "接管认证用户展示卡片。"),
+  surface("verification.sidebar", "接管认证详情页右侧栏。"),
+
   surface("board.page", "接管节点页主体区域。"),
   surface("board.hero", "接管节点顶部介绍卡。"),
   surface("board.content", "接管节点帖子流区域。"),
@@ -193,6 +198,7 @@ export const ADDON_SURFACE_CATALOG = [
   surface("vip.hero", "接管 VIP 顶部介绍区。"),
   surface("vip.actions", "接管 VIP 购买操作区。"),
   surface("vip.levels", "接管 VIP 等级权益区。"),
+  surface("vip.sidebar", "接管 VIP 页面右栏。"),
 
   surface("leaderboard.page", "接管榜单页主体区域。"),
   surface("leaderboard.hero", "接管榜单页头图区。"),

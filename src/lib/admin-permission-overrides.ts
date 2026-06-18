@@ -11,8 +11,6 @@ import { apiError } from "@/lib/api-route"
 import {
   ADMIN_PERMISSION_CATALOG,
   isAdminPermissionKey,
-  isCoreAdminPermission,
-  isCorePermissionCatalogItem,
 } from "@/lib/admin-permission-catalog"
 import {
   canAdmin,
@@ -45,11 +43,10 @@ export async function resolveAdminPermissionState(actor: AdminActor): Promise<Ad
   const isFounder = actor.role === "ADMIN" ? await isFounderAdminId(actor.id) : false
   const tier = getAdminManagementTier(actor, { isFounder })
   const grants = tier === "SUPER_ADMIN" ? [] : await getAdminPermissionGrants(actor.id)
-  const effectiveGrants = filterEffectiveAdminPermissionGrants(grants, isFounder)
   const effectivePermissions = getEffectiveAdminPermissionKeys(
     tier,
     ADMIN_PERMISSION_CATALOG.map((item) => item.key),
-    effectiveGrants,
+    grants,
   )
 
   return {
@@ -74,7 +71,7 @@ export async function canAdminWithPermissionOverrides(
     return true
   }
 
-  const grants = filterEffectiveAdminPermissionGrants(await getAdminPermissionGrants(actor.id), false)
+  const grants = await getAdminPermissionGrants(actor.id)
   return canAdmin(actor, permission, { isFounder: false, grants })
 }
 
@@ -109,7 +106,6 @@ export function getEditableAdminPermissionKeys(params: {
   }
 
   return ADMIN_PERMISSION_CATALOG
-    .filter((item) => !isCorePermissionCatalogItem(item))
     .map((item) => item.key)
 }
 
@@ -135,8 +131,8 @@ export function normalizeAdminPermissionGrantDrafts(
       apiError(400, "包含不支持的权限项")
     }
 
-    if (!editableSet.has(permissionKey) || isCoreAdminPermission(permissionKey)) {
-      apiError(403, "不能修改核心权限")
+    if (!editableSet.has(permissionKey)) {
+      apiError(403, "不能修改该权限")
     }
 
     if (typeof record.allowed !== "boolean") {
@@ -180,15 +176,4 @@ export async function saveAdminPermissionGrants(
 
 async function isFounderAdminId(userId: number) {
   return await findFounderAdminId() === userId
-}
-
-function filterEffectiveAdminPermissionGrants(
-  grants: AdminPermissionGrantRecord[],
-  isFounder: boolean,
-) {
-  if (isFounder) {
-    return grants
-  }
-
-  return grants.filter((grant) => !isCoreAdminPermission(grant.permissionKey))
 }

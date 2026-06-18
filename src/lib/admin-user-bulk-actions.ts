@@ -189,9 +189,12 @@ async function countDeletionBlockers(userId: number) {
 
 async function runRoleBulkAction(actor: AdminActor, users: BulkUserRecord[], role: UserRole, skippedReasons: Map<string, number>) {
   const targetUsers: BulkUserRecord[] = []
-  const actorIsFounder = await findFounderAdminId() === actor.id
+  const founderAdminId = await findFounderAdminId()
+  const actorIsFounder = founderAdminId === actor.id
+  const actorCanManageAdmins = await canAdminWithPermissionOverrides(actor, "admin.users.manageAdmins", { isFounder: actorIsFounder })
+  const actorCanManageFounder = await canAdminWithPermissionOverrides(actor, "admin.users.manageFounder", { isFounder: actorIsFounder })
   const touchesAdminRole = role === UserRole.ADMIN || users.some((user) => user.role === UserRole.ADMIN)
-  if (touchesAdminRole && !await canAdminWithPermissionOverrides(actor, "admin.users.manageAdmins", { isFounder: actorIsFounder })) {
+  if (touchesAdminRole && !actorCanManageAdmins) {
     apiError(403, "无权批量调整管理员账号")
   }
 
@@ -202,6 +205,9 @@ async function runRoleBulkAction(actor: AdminActor, users: BulkUserRecord[], rol
       targetRole: user.role,
       nextRole: role,
       actorIsFounder,
+      actorCanManageAdmins,
+      actorCanManageFounder,
+      targetIsFounder: founderAdminId === user.id,
     })
 
     if (blockedMessage) {
@@ -269,7 +275,10 @@ async function runStatusBulkAction(
   skippedReasons: Map<string, number>,
 ) {
   const targetUsers: BulkUserRecord[] = []
-  const actorIsFounder = await findFounderAdminId() === actor.id
+  const founderAdminId = await findFounderAdminId()
+  const actorIsFounder = founderAdminId === actor.id
+  const actorCanManageAdmins = await canAdminWithPermissionOverrides(actor, "admin.users.manageAdmins", { isFounder: actorIsFounder })
+  const actorCanManageFounder = await canAdminWithPermissionOverrides(actor, "admin.users.manageFounder", { isFounder: actorIsFounder })
 
   for (const user of users) {
     if (user.id === actor.id && (status === UserStatus.BANNED || status === UserStatus.MUTED || status === UserStatus.INACTIVE)) {
@@ -280,8 +289,11 @@ async function runStatusBulkAction(
     if (!canManageTargetUser({
       actor,
       actorIsFounder,
+      actorCanManageAdmins,
+      actorCanManageFounder,
       targetId: user.id,
       targetRole: user.role,
+      targetIsFounder: founderAdminId === user.id,
     })) {
       pushSkipped(skippedReasons, "无权批量管理管理员账号")
       continue
@@ -305,7 +317,10 @@ async function runStatusBulkAction(
 async function runDeleteBulkAction(actor: AdminActor, users: BulkUserRecord[], skippedReasons: Map<string, number>) {
   const affectedUsers: BulkUserRecord[] = []
   let failedCount = 0
-  const actorIsFounder = await findFounderAdminId() === actor.id
+  const founderAdminId = await findFounderAdminId()
+  const actorIsFounder = founderAdminId === actor.id
+  const actorCanManageAdmins = await canAdminWithPermissionOverrides(actor, "admin.users.manageAdmins", { isFounder: actorIsFounder })
+  const actorCanManageFounder = await canAdminWithPermissionOverrides(actor, "admin.users.manageFounder", { isFounder: actorIsFounder })
 
   for (const user of users) {
     if (user.id === actor.id) {
@@ -316,8 +331,11 @@ async function runDeleteBulkAction(actor: AdminActor, users: BulkUserRecord[], s
     if (!canManageTargetUser({
       actor,
       actorIsFounder,
+      actorCanManageAdmins,
+      actorCanManageFounder,
       targetId: user.id,
       targetRole: user.role,
+      targetIsFounder: founderAdminId === user.id,
     }) || user.role !== UserRole.USER) {
       pushSkipped(skippedReasons, "不能批量删除管理员或版主账号")
       continue

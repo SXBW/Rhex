@@ -93,12 +93,17 @@ async function ensureCanChangeTargetRole(context: AdminActionContext, user: User
     apiError(400, "用户标识不合法")
   }
 
+  const founderAdminId = await findFounderAdminId()
+  const actorIsFounder = founderAdminId === context.actor.id
   const blockedMessage = getBlockedAdminRoleChangeMessage({
     actorId: context.actor.id,
     targetId,
     targetRole: user.role,
     nextRole,
-    actorIsFounder: await findFounderAdminId() === context.actor.id,
+    actorIsFounder,
+    actorCanManageAdmins: await canAdminWithPermissionOverrides(context.actor, "admin.users.manageAdmins", { isFounder: actorIsFounder }),
+    actorCanManageFounder: await canAdminWithPermissionOverrides(context.actor, "admin.users.manageFounder", { isFounder: actorIsFounder }),
+    targetIsFounder: founderAdminId === targetId,
   })
 
   if (blockedMessage) {
@@ -112,12 +117,16 @@ async function ensureCanManageTargetUserRecord(context: AdminActionContext, user
     apiError(400, "用户标识不合法")
   }
 
-  const actorIsFounder = await findFounderAdminId() === context.actor.id
+  const founderAdminId = await findFounderAdminId()
+  const actorIsFounder = founderAdminId === context.actor.id
   if (!canManageTargetUser({
     actor: context.actor,
     actorIsFounder,
+    actorCanManageAdmins: await canAdminWithPermissionOverrides(context.actor, "admin.users.manageAdmins", { isFounder: actorIsFounder }),
+    actorCanManageFounder: await canAdminWithPermissionOverrides(context.actor, "admin.users.manageFounder", { isFounder: actorIsFounder }),
     targetId,
     targetRole: user.role,
+    targetIsFounder: founderAdminId === targetId,
   })) {
     apiError(403, message)
   }
@@ -129,8 +138,15 @@ async function ensureCanResetTargetPassword(context: AdminActionContext, user: U
     apiError(400, "用户标识不合法")
   }
 
-  const actorIsFounder = await findFounderAdminId() === context.actor.id
-  if (user.role === UserRole.ADMIN && context.actor.id !== targetId && !actorIsFounder) {
+  const founderAdminId = await findFounderAdminId()
+  const actorIsFounder = founderAdminId === context.actor.id
+  const actorCanManageAdmins = await canAdminWithPermissionOverrides(context.actor, "admin.users.manageAdmins", { isFounder: actorIsFounder })
+  const actorCanManageFounder = await canAdminWithPermissionOverrides(context.actor, "admin.users.manageFounder", { isFounder: actorIsFounder })
+  if (founderAdminId === targetId && context.actor.id !== targetId && !actorCanManageFounder) {
+    apiError(403, "不能重置超级管理员账号的密码")
+  }
+
+  if (user.role === UserRole.ADMIN && context.actor.id !== targetId && !actorCanManageAdmins) {
     apiError(403, "不能重置其他管理员账号的密码")
   }
 

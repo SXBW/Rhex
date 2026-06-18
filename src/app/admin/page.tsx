@@ -41,7 +41,6 @@ import { getAdminLogCenter } from "@/lib/admin-logs"
 import { getAdminMessages } from "@/lib/admin-messages"
 import { getAdminAttachmentManagement } from "@/lib/admin-attachments"
 import { getAdminUsers } from "@/lib/admin-users"
-import { isFounderAdmin } from "@/lib/admin-founder"
 import { getAllBadges, type BadgeEffectRuleItem, type BadgeItem, type BadgeRuleItem } from "@/lib/badges"
 import { getLevelDefinitions } from "@/lib/level-system"
 import { minuteOfDayToTimeInput } from "@/lib/point-effect-definitions"
@@ -71,7 +70,6 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     redirect("/login?redirect=/admin")
   }
 
-  const actorIsFounder = admin.role === "ADMIN" ? await isFounderAdmin(admin.id) : false
   const permissionState = await resolveAdminPermissionState(admin)
   const adminTier = permissionState.tier
   const effectivePermissionSet = new Set(permissionState.effectivePermissions)
@@ -158,7 +156,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const currentAttachmentReferenceStatus = readSearchParam(searchParams?.attachmentReferenceStatus) ?? "ALL"
   const currentAttachmentPage = readSearchParam(searchParams?.attachmentPage) ?? "1"
   const currentAttachmentPageSize = readSearchParam(searchParams?.attachmentPageSize) ?? "20"
-  const actorCanDemoteAdmins = actorIsFounder && tab === "users"
+  const actorCanDemoteAdmins = canAccess("admin.users.manageAdmins") && tab === "users"
   const canManageUsers = canAccess("admin.users.manage")
   const canManageOperations = canAccess("admin.operations.manage")
   const canViewLogs = canAccess("admin.logs.view")

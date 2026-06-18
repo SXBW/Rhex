@@ -22,6 +22,13 @@ function normalizeApplicationInput(input: Record<string, unknown>) {
     allowCredentials: false,
     clearHash: true,
   })
+  const rawLogoPath = typeof input.logoPath === "string" ? input.logoPath.trim() : ""
+  const logoPath = rawLogoPath
+    ? normalizeHttpUrl(rawLogoPath, {
+        allowCredentials: false,
+        clearHash: true,
+      })
+    : null
 
   if (!siteName) {
     apiError(400, "博客名称不能为空")
@@ -39,10 +46,15 @@ function normalizeApplicationInput(input: Record<string, unknown>) {
     apiError(400, "RSS 地址格式不正确")
   }
 
+  if (rawLogoPath && !logoPath) {
+    apiError(400, "Logo 地址格式不正确")
+  }
+
   return {
     siteName,
     description: description || null,
     feedUrl,
+    logoPath,
   }
 }
 
@@ -70,6 +82,7 @@ export async function createRssSourceApplication(input: {
       siteName: normalized.siteName,
       description: normalized.description,
       feedUrl: normalized.feedUrl,
+      logoPath: normalized.logoPath,
     },
     select: {
       id: true,
@@ -92,6 +105,7 @@ export async function approveRssSourceApplication(input: {
       siteName: true,
       description: true,
       feedUrl: true,
+      logoPath: true,
       status: true,
     },
   })
@@ -105,14 +119,36 @@ export async function approveRssSourceApplication(input: {
   }
 
   const existingSource = await findRssSourceByFeedUrl(application.feedUrl)
-  const source = existingSource ?? await createRssSource({
-    siteName: application.siteName,
-    description: application.description ?? "",
-    feedUrl: application.feedUrl,
-    intervalMinutes: 30,
-    requiresReview: true,
-    enabled: true,
-  })
+  let source = existingSource
+  if (!source) {
+    source = await createRssSource({
+      siteName: application.siteName,
+      description: application.description ?? "",
+      feedUrl: application.feedUrl,
+      logoPath: application.logoPath,
+      intervalMinutes: 30,
+      requiresReview: true,
+      enabled: true,
+    })
+  } else if (!source.logoPath && application.logoPath) {
+    source = await prisma.rssSource.update({
+      where: { id: source.id },
+      data: { logoPath: application.logoPath },
+      select: {
+        id: true,
+        siteName: true,
+        description: true,
+        feedUrl: true,
+        logoPath: true,
+        intervalMinutes: true,
+        requiresReview: true,
+        requestTimeoutMs: true,
+        maxRetryCount: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+  }
 
   await prisma.rssSourceApplication.update({
     where: { id: application.id },

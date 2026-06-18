@@ -41,11 +41,18 @@ export async function countUnreadNotificationsByUserIds(userIds: number[]) {
   return unreadCountByUserId
 }
 
-function buildNotificationCursorWhere(userId: number, cursor: TimestampCursorPayload, direction: "after" | "before"): Prisma.NotificationWhereInput {
+function buildNotificationCursorWhere(params: {
+  userId: number
+  cursor: TimestampCursorPayload
+  direction: "after" | "before"
+  unreadOnly?: boolean
+}): Prisma.NotificationWhereInput {
+  const { cursor, direction, unreadOnly, userId } = params
   const createdAt = new Date(cursor.createdAt)
 
   return {
     userId,
+    ...(unreadOnly ? { isRead: false } : {}),
     OR: direction === "after"
       ? [
           { createdAt: { lt: createdAt } },
@@ -63,12 +70,23 @@ export async function findNotificationsByUserIdCursor(params: {
   take: number
   after?: TimestampCursorPayload | null
   before?: TimestampCursorPayload | null
+  unreadOnly?: boolean
 }) {
   const normalizedTake = Math.min(Math.max(1, params.take), 50)
   const pagingDirection = params.before ? "before" : "after"
   const cursor = params.before ?? params.after
   const rows = await prisma.notification.findMany({
-    where: cursor ? buildNotificationCursorWhere(params.userId, cursor, pagingDirection) : { userId: params.userId },
+    where: cursor
+      ? buildNotificationCursorWhere({
+          userId: params.userId,
+          cursor,
+          direction: pagingDirection,
+          unreadOnly: params.unreadOnly,
+        })
+      : {
+          userId: params.userId,
+          ...(params.unreadOnly ? { isRead: false } : {}),
+        },
     include: {
       sender: {
         select: {

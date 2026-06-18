@@ -25,6 +25,7 @@ export interface RssSourceApplicationAdminListItem {
   siteName: string
   description: string | null
   feedUrl: string
+  logoPath: string | null
   status: string
   reviewNote: string | null
   reviewerName: string | null
@@ -102,6 +103,7 @@ function mapApplicationItem(record: Awaited<ReturnType<typeof listApplicationsPa
     siteName: record.siteName,
     description: record.description ?? null,
     feedUrl: record.feedUrl,
+    logoPath: record.logoPath ?? null,
     status: record.status,
     reviewNote: record.reviewNote ?? null,
     reviewerName: record.reviewer ? (record.reviewer.nickname ?? record.reviewer.username) : null,
@@ -142,6 +144,7 @@ function listApplicationsPage(where: Prisma.RssSourceApplicationWhereInput, skip
       siteName: true,
       description: true,
       feedUrl: true,
+      logoPath: true,
       status: true,
       reviewNote: true,
       reviewedAt: true,

@@ -150,6 +150,7 @@ export async function getUserNotifications(
     pageSize: number
     after?: string | null
     before?: string | null
+    unreadOnly?: boolean
   },
 ): Promise<UserNotificationsResult> {
   try {
@@ -163,6 +164,7 @@ export async function getUserNotifications(
         take: normalizedPageSize,
         after: beforeCursor ? null : afterCursor,
         before: beforeCursor,
+        unreadOnly: options.unreadOnly,
       }),
       getSiteSettings(),
     ])

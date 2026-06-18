@@ -45,6 +45,8 @@ export interface UploadStorageSensitiveConfig {
 export interface SmsSensitiveConfig {
   aliyunAccessKeyId: string | null
   aliyunAccessKeySecret: string | null
+  tencentSecretId: string | null
+  tencentSecretKey: string | null
 }
 
 function normalizeNullableString(value: unknown) {
@@ -100,6 +102,8 @@ export function resolveSmsSensitiveConfig(sensitiveStateJson?: string | null): S
   return {
     aliyunAccessKeyId: normalizeNullableString(smsConfig.aliyunAccessKeyId),
     aliyunAccessKeySecret: normalizeNullableString(smsConfig.aliyunAccessKeySecret),
+    tencentSecretId: normalizeNullableString(smsConfig.tencentSecretId),
+    tencentSecretKey: normalizeNullableString(smsConfig.tencentSecretKey),
   }
 }
 
@@ -173,6 +177,8 @@ export function mergeSmsSensitiveConfig(
     smsConfig: {
       aliyunAccessKeyId: normalizeNullableString(input.aliyunAccessKeyId),
       aliyunAccessKeySecret: normalizeNullableString(input.aliyunAccessKeySecret),
+      tencentSecretId: normalizeNullableString(input.tencentSecretId),
+      tencentSecretKey: normalizeNullableString(input.tencentSecretKey),
     },
   }
 

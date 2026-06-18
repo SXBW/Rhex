@@ -111,6 +111,18 @@ function normalizeLegacyServerSiteSettings(data: ServerSiteSettingsData): Server
     passwordChangeRequireEmailVerification: typeof data.passwordChangeRequireEmailVerification === "boolean"
       ? data.passwordChangeRequireEmailVerification
       : defaults.passwordChangeRequireEmailVerification,
+    oauthServerEnabled: typeof data.oauthServerEnabled === "boolean"
+      ? data.oauthServerEnabled
+      : defaults.oauthServerEnabled,
+    oauthClientApplicationEnabled: typeof data.oauthClientApplicationEnabled === "boolean"
+      ? data.oauthClientApplicationEnabled
+      : defaults.oauthClientApplicationEnabled,
+    oauthAccessTokenTtlMinutes: typeof data.oauthAccessTokenTtlMinutes === "number" && Number.isFinite(data.oauthAccessTokenTtlMinutes)
+      ? Math.min(1440, Math.max(5, Math.floor(data.oauthAccessTokenTtlMinutes)))
+      : defaults.oauthAccessTokenTtlMinutes,
+    oauthRefreshTokenTtlDays: typeof data.oauthRefreshTokenTtlDays === "number" && Number.isFinite(data.oauthRefreshTokenTtlDays)
+      ? Math.min(365, Math.max(1, Math.floor(data.oauthRefreshTokenTtlDays)))
+      : defaults.oauthRefreshTokenTtlDays,
     registerPasswordMinLength: typeof data.registerPasswordMinLength === "number" && Number.isFinite(data.registerPasswordMinLength)
       ? data.registerPasswordMinLength
       : defaults.registerPasswordMinLength,
@@ -582,6 +594,10 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     sessionIpMismatchLogoutEnabled: siteSecuritySettings.sessionIpMismatchLogoutEnabled,
     loginIpChangeEmailAlertEnabled: siteSecuritySettings.loginIpChangeEmailAlertEnabled,
     passwordChangeRequireEmailVerification: siteSecuritySettings.passwordChangeRequireEmailVerification,
+    oauthServerEnabled: siteSecuritySettings.oauthServerEnabled,
+    oauthClientApplicationEnabled: siteSecuritySettings.oauthClientApplicationEnabled,
+    oauthAccessTokenTtlMinutes: siteSecuritySettings.oauthAccessTokenTtlMinutes,
+    oauthRefreshTokenTtlDays: siteSecuritySettings.oauthRefreshTokenTtlDays,
     registerPasswordMinLength: registerPasswordPolicySettings.minLength,
     registerPasswordStrength: registerPasswordPolicySettings.strength,
     usernameSensitiveWordsEnabled: usernameSensitiveWordSettings.usernameSensitiveWordsEnabled,
@@ -604,14 +620,23 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     authGoogleEnabled: authProviderSettings.googleEnabled,
     authPasskeyEnabled: authProviderSettings.passkeyEnabled,
     smsEnabled: smsProviderSettings.enabled,
+    smsProvider: smsProviderSettings.provider,
     smsCaptchaMode: smsProviderSettings.captchaMode,
     smsAliyunEndpoint: smsProviderSettings.aliyunEndpoint,
     smsAliyunRegionId: smsProviderSettings.aliyunRegionId,
     smsAliyunSignName: smsProviderSettings.aliyunSignName,
     smsAliyunTemplateCode: smsProviderSettings.aliyunTemplateCode,
     smsAliyunCodeParamName: smsProviderSettings.aliyunCodeParamName,
+    smsTencentRegion: smsProviderSettings.tencentRegion,
+    smsTencentEndpoint: smsProviderSettings.tencentEndpoint,
+    smsTencentSmsSdkAppId: smsProviderSettings.tencentSmsSdkAppId,
+    smsTencentSignName: smsProviderSettings.tencentSignName,
+    smsTencentTemplateId: smsProviderSettings.tencentTemplateId,
+    smsTencentTemplateParamKeys: smsProviderSettings.tencentTemplateParamKeys,
     smsAliyunAccessKeyId: smsSensitiveConfig.aliyunAccessKeyId,
     smsAliyunAccessKeySecret: smsSensitiveConfig.aliyunAccessKeySecret,
+    smsTencentSecretId: smsSensitiveConfig.tencentSecretId,
+    smsTencentSecretKey: smsSensitiveConfig.tencentSecretKey,
     githubClientId: authProviderSensitiveConfig.githubClientId,
     githubClientSecret: authProviderSensitiveConfig.githubClientSecret,
     googleClientId: authProviderSensitiveConfig.googleClientId,
@@ -735,6 +760,8 @@ function toPublicSiteSettings(data: ServerSiteSettingsData): SiteSettingsData {
     uploadS3SecretAccessKey,
     smsAliyunAccessKeyId,
     smsAliyunAccessKeySecret,
+    smsTencentSecretId,
+    smsTencentSecretKey,
     smtpHost,
     smtpPort,
     smtpUser,
@@ -755,6 +782,8 @@ function toPublicSiteSettings(data: ServerSiteSettingsData): SiteSettingsData {
   void uploadS3SecretAccessKey
   void smsAliyunAccessKeyId
   void smsAliyunAccessKeySecret
+  void smsTencentSecretId
+  void smsTencentSecretKey
   void smtpHost
   void smtpPort
   void smtpUser

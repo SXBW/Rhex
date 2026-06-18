@@ -14,6 +14,7 @@ import { canSendSms } from "@/lib/sms"
 import { getCurrentUserLevelProgressView } from "@/lib/user-level-view"
 import { getUserFavoriteCollectionManageData } from "@/lib/favorite-collections"
 import { getMonthKey } from "@/lib/date-key"
+import { getOAuthClientApplicationPageData } from "@/lib/oauth-server"
 import { getUserBlocks, getUserBoardFollows, getUserFavoritePosts, getUserFollowers, getUserLikedPosts, getUserPostFollows, getUserPosts, getUserReplies, getUserTagFollows, getUserUserFollows } from "@/lib/user-panel"
 import { getUserAccountSettings, getUserProfile } from "@/lib/users"
 import { getCurrentUserVerificationData } from "@/lib/verifications"
@@ -22,7 +23,7 @@ import { getVipLevel, isVipActive } from "@/lib/vip-status"
 import { getZones } from "@/lib/zones"
 import type { SessionActor } from "@/lib/auth"
 
-export type SettingsTabKey = "profile" | "invite" | "post-management" | "board-applications" | "level" | "badges" | "verifications" | "points" | "follows"
+export type SettingsTabKey = "profile" | "invite" | "post-management" | "board-applications" | "level" | "badges" | "verifications" | "points" | "follows" | "oauth-apps"
 export type ProfileTabKey = "basic" | "privacy" | "notifications" | "accounts" | "browsing"
 export type BuiltInPostManagementTabKey = "posts" | "replies" | "favorites" | "collections" | "likes"
 export type PostManagementTabKey = string
@@ -50,7 +51,7 @@ const BUILT_IN_POST_MANAGEMENT_TAB_KEYS = new Set<string>([
   "likes",
 ])
 
-export const settingsTabs: SettingsTabKey[] = ["profile", "invite", "post-management", "board-applications", "level", "badges", "verifications", "points", "follows"]
+export const settingsTabs: SettingsTabKey[] = ["profile", "invite", "post-management", "board-applications", "level", "badges", "verifications", "points", "follows", "oauth-apps"]
 export const profileTabs: Array<{ key: ProfileTabKey; label: string }> = [
   { key: "basic", label: "资料设置" },
   { key: "privacy", label: "隐私设置" },
@@ -85,6 +86,7 @@ export const settingsTabTitles: Record<SettingsTabKey, string> = {
   verifications: "认证中心",
   points: "积分记录",
   follows: "关注管理",
+  "oauth-apps": "开发者应用",
 }
 
 type SettingsMobileView = "detail"
@@ -278,6 +280,7 @@ export interface SettingsPageData {
   pointsDashboard: Awaited<ReturnType<typeof getUserPointsDashboard>> | null
   pointLogs: Awaited<ReturnType<typeof getUserPointLogs>> | null
   accountBindings: Awaited<ReturnType<typeof getUserAccountBindingView>> | null
+  oauthApplications: Awaited<ReturnType<typeof getOAuthClientApplicationPageData>>
   smsDeliveryEnabled: boolean
   profileIntroductionEditPermission: Awaited<ReturnType<typeof resolveUserProfileIntroductionPermission>>
 }
@@ -384,6 +387,7 @@ async function loadSettingsTabData(
     pointsDashboard,
     pointLogs,
     accountBindings,
+    oauthApplications,
   ] = await Promise.all([
     currentTab === "post-management" && currentPostTab === "posts"
       ? getUserPosts(userId, { pageSize: 10, after: listAfter, before: listBefore })
@@ -451,6 +455,16 @@ async function loadSettingsTabData(
           authPasskeyEnabled: settings.authPasskeyEnabled,
         })
       : Promise.resolve(null),
+    currentTab === "oauth-apps"
+      ? getOAuthClientApplicationPageData(userId)
+      : Promise.resolve({
+          enabled: settings.oauthServerEnabled && settings.oauthClientApplicationEnabled,
+          oauthServerEnabled: settings.oauthServerEnabled,
+          oauthClientApplicationEnabled: settings.oauthClientApplicationEnabled,
+          clients: [],
+          authorizedSites: [],
+          supportedScopes: ["openid", "profile", "email"] as const,
+        }),
   ])
 
   return {
@@ -473,6 +487,7 @@ async function loadSettingsTabData(
     pointsDashboard,
     pointLogs,
     accountBindings,
+    oauthApplications,
   }
 }
 
@@ -556,6 +571,10 @@ export async function loadSettingsPageData(searchParams?: RawSettingsSearchParam
   }
 
   if (!settings.boardApplicationEnabled && route.currentTab === "board-applications") {
+    redirect("/settings?tab=profile")
+  }
+
+  if (!settings.oauthServerEnabled && route.currentTab === "oauth-apps") {
     redirect("/settings?tab=profile")
   }
 

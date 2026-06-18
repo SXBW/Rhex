@@ -11,6 +11,7 @@ import { updateBoardApplicationSiteSettingsSection } from "@/lib/admin-site-sett
 import { defaultSiteSettingsCreateInput } from "@/lib/site-settings-defaults"
 import { updateInteractionSiteSettingsSection } from "@/lib/admin-site-settings-interaction"
 import { updateMessageSiteSettingsSection } from "@/lib/admin-site-settings-messages"
+import { updateOAuthSiteSettingsSection } from "@/lib/admin-site-settings-oauth"
 import { updateProfileSiteSettingsSection } from "@/lib/admin-site-settings-profile"
 import { updateRegistrationSiteSettingsSection } from "@/lib/admin-site-settings-registration"
 import { updateUploadSiteSettingsSection } from "@/lib/admin-site-settings-upload"
@@ -101,6 +102,7 @@ const siteSettingsSectionMap: Record<string, AdminSettingsSectionKey> = {
   "site-friend-links": "friend-links",
   vip: "vip",
   upload: "upload",
+  "site-oauth": "oauth",
 }
 
 function resolveAdminSettingsSectionForMutation(section: string) {
@@ -131,6 +133,7 @@ export async function updateSiteSettingsBySection(
     updateMessageSiteSettingsSection,
     updateVipSiteSettingsSection,
     updateUploadSiteSettingsSection,
+    updateOAuthSiteSettingsSection,
   ]
 
   for (const handler of handlers) {

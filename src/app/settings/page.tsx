@@ -10,7 +10,10 @@ import { getSiteSettings } from "@/lib/site-settings"
 export async function generateMetadata(props: PageProps<"/settings">): Promise<Metadata> {
   const [searchParams, settings] = await Promise.all([props.searchParams, getSiteSettings()])
   const route = resolveSettingsRoute(searchParams)
-  const currentTab = !settings.boardApplicationEnabled && route.currentTab === "board-applications"
+  const currentTab = (
+    (!settings.boardApplicationEnabled && route.currentTab === "board-applications")
+    || (!settings.oauthServerEnabled && route.currentTab === "oauth-apps")
+  )
     ? "profile"
     : route.currentTab
 
@@ -33,6 +36,7 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
             profile={data.profile}
             pointName={data.settings.pointName}
             boardApplicationEnabled={data.settings.boardApplicationEnabled}
+            oauthApplicationsVisible={data.settings.oauthServerEnabled}
             sidebarTop={<AddonSlotRenderer slot="settings.sidebar.top" />}
             sidebarBottom={<AddonSlotRenderer slot="settings.sidebar.bottom" />}
             contentBefore={<AddonSlotRenderer slot="settings.content.before" />}

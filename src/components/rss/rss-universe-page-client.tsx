@@ -114,7 +114,7 @@ export function RssUniversePageClient({
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("")
   const [applicationOpen, setApplicationOpen] = useState(false)
-  const [applicationDraft, setApplicationDraft] = useState({ siteName: "", description: "", feedUrl: "" })
+  const [applicationDraft, setApplicationDraft] = useState({ siteName: "", description: "", feedUrl: "", logoPath: "" })
   const [isPending, startTransition] = useTransition()
   const initializedRef = useRef(false)
 
@@ -175,7 +175,7 @@ export function RssUniversePageClient({
         }
 
         setApplicationOpen(false)
-        setApplicationDraft({ siteName: "", description: "", feedUrl: "" })
+        setApplicationDraft({ siteName: "", description: "", feedUrl: "", logoPath: "" })
         toast.success(result.message ?? "申请已提交，等待后台审核", "提交成功")
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "提交失败，请稍后重试", "提交失败")
@@ -347,6 +347,10 @@ export function RssUniversePageClient({
           <label className="flex flex-col gap-2 text-sm">
             <span className="font-medium">RSS 地址</span>
             <input type="url" value={applicationDraft.feedUrl} onChange={(event) => setApplicationDraft((current) => ({ ...current, feedUrl: event.target.value }))} className="h-11 rounded-lg border border-border bg-background px-3 outline-hidden" />
+          </label>
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium">Logo 地址（可选）</span>
+            <input type="url" value={applicationDraft.logoPath} onChange={(event) => setApplicationDraft((current) => ({ ...current, logoPath: event.target.value }))} placeholder="https://example.com/logo.png" className="h-11 rounded-lg border border-border bg-background px-3 outline-hidden" />
           </label>
         </div>
       </FormModal>

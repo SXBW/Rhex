@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
@@ -9,6 +10,7 @@ import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
 import { formatDateTime } from "@/lib/formatters"
+import { getAvatarUrl } from "@/lib/avatar"
 import type { RssSourceApplicationAdminListItem, RssSourceApplicationAdminPageData } from "@/lib/rss-source-application-admin"
 
 interface RssSourceApplicationAdminPageProps {
@@ -135,14 +137,20 @@ export function RssSourceApplicationAdminPage({ initialData }: RssSourceApplicat
         <div className="divide-y divide-border">
           {initialData.applications.map((application) => (
             <article key={application.id} className="grid gap-3 px-4 py-4 xl:grid-cols-[minmax(0,1.5fr)_220px_130px_210px]">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] text-muted-foreground">{application.siteName}</span>
-                  <ApplicationStatusBadge status={application.status} />
+              <div className="flex min-w-0 gap-3">
+                <div className="relative size-11 shrink-0 overflow-hidden rounded-lg border border-border bg-background">
+                  <Image src={getAvatarUrl(application.logoPath, application.siteName)} alt={`${application.siteName} logo`} fill sizes="44px" className="object-cover" unoptimized />
                 </div>
-                <p className="mt-2 break-all text-sm font-medium text-foreground">{application.feedUrl}</p>
-                {application.description ? <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{application.description}</p> : null}
-                {application.reviewNote ? <p className="mt-2 text-xs text-amber-700">审核备注：{application.reviewNote}</p> : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] text-muted-foreground">{application.siteName}</span>
+                    <ApplicationStatusBadge status={application.status} />
+                  </div>
+                  <p className="mt-2 break-all text-sm font-medium text-foreground">{application.feedUrl}</p>
+                  {application.logoPath ? <p className="mt-1 break-all text-xs text-muted-foreground">Logo：{application.logoPath}</p> : null}
+                  {application.description ? <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{application.description}</p> : null}
+                  {application.reviewNote ? <p className="mt-2 text-xs text-amber-700">审核备注：{application.reviewNote}</p> : null}
+                </div>
               </div>
               <div className="space-y-1 text-xs text-muted-foreground">
                 <p>申请人：{application.applicantName}</p>

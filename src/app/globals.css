@@ -1438,6 +1438,19 @@
       linear-gradient(180deg, hsl(var(--sidebar-foreground) / 0.32), hsl(var(--sidebar-foreground) / 0.5));
   }
 
+  [data-comment-reply-box='true'],
+  [data-comment-reply-box='true'] * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  [data-comment-reply-box='true']::-webkit-scrollbar,
+  [data-comment-reply-box='true'] *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   .reactEasyCrop_CropArea {
     position: absolute;
     top: 50%;
