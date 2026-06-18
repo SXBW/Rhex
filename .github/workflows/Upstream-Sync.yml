@@ -2,7 +2,6 @@ name: Upstream Sync
 
 permissions:
     contents: write
-    workflows: write
 
 on:
     schedule:
@@ -36,9 +35,10 @@ jobs:
             - name: Backup local files
               run: |
                   mkdir -p /tmp/keep
-                  for f in .gitignore .sync-ignore .github/workflows/publish-image.yml; do
+                  for f in .gitignore .sync-ignore; do
                       [ -f "$f" ] && cp "$f" /tmp/keep/ && echo "Backed up: $f"
                   done
+                  cp -r .github/workflows /tmp/keep/ 2>/dev/null && echo "Backed up: .github/workflows"
 
             - name: Sync
               run: |
@@ -49,6 +49,7 @@ jobs:
                   for f in /tmp/keep/*; do
                       [ -f "$f" ] && cp "$f" . && echo "Restored: $(basename $f)"
                   done
+                  [ -d /tmp/keep/.github/workflows ] && cp -r /tmp/keep/.github/workflows .github/ && echo "Restored: .github/workflows"
 
             - name: Commit and push
               env:
