@@ -47,7 +47,6 @@ export function NotificationListItem({ id, href, isRead, typeLabel, title, conte
       }
 
       router.push(href)
-      router.refresh()
     } finally {
       setIsPending(false)
     }

@@ -235,7 +235,9 @@ export interface AdminBasicSettingsDraft {
   anonymousPostAllowReplySwitch: boolean
   anonymousPostDefaultReplyAnonymous: boolean
   postCreateRequireEmailVerified: boolean
+  postCreateRequirePhoneVerified: boolean
   commentCreateRequireEmailVerified: boolean
+  commentCreateRequirePhoneVerified: boolean
   postCreateMinRegisteredMinutes: string
   commentCreateMinRegisteredMinutes: string
   inviteRewardInviter: string
@@ -415,7 +417,9 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
   const postCreateConditions = interactionGates.actions.POST_CREATE?.conditions ?? []
   const commentCreateConditions = interactionGates.actions.COMMENT_CREATE?.conditions ?? []
   const postCreateRequireEmailVerified = postCreateConditions.some((condition) => condition.type === "EMAIL_VERIFIED")
+  const postCreateRequirePhoneVerified = postCreateConditions.some((condition) => condition.type === "PHONE_VERIFIED")
   const commentCreateRequireEmailVerified = commentCreateConditions.some((condition) => condition.type === "EMAIL_VERIFIED")
+  const commentCreateRequirePhoneVerified = commentCreateConditions.some((condition) => condition.type === "PHONE_VERIFIED")
   const postCreateMinRegisteredMinutes = getRegisteredMinutesConditionValue(interactionGates, "POST_CREATE")
   const commentCreateMinRegisteredMinutes = getRegisteredMinutesConditionValue(interactionGates, "COMMENT_CREATE")
   const defaultTippingAmounts = String(defaultSiteSettingsCreateInput.tippingAmounts)
@@ -490,7 +494,9 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     anonymousPostAllowReplySwitch: coerceBoolean(initialSettings.anonymousPostAllowReplySwitch, true),
     anonymousPostDefaultReplyAnonymous: coerceBoolean(initialSettings.anonymousPostDefaultReplyAnonymous, true),
     postCreateRequireEmailVerified,
+    postCreateRequirePhoneVerified,
     commentCreateRequireEmailVerified,
+    commentCreateRequirePhoneVerified,
     postCreateMinRegisteredMinutes: coerceNumberString(postCreateMinRegisteredMinutes, 0),
     commentCreateMinRegisteredMinutes: coerceNumberString(commentCreateMinRegisteredMinutes, 0),
     inviteRewardInviter: coerceNumberString(initialSettings.inviteRewardInviter, 0),
@@ -792,7 +798,9 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
     anonymousPostAllowReplySwitch: draft.anonymousPostAllowReplySwitch,
     anonymousPostDefaultReplyAnonymous: draft.anonymousPostDefaultReplyAnonymous,
     postCreateRequireEmailVerified: draft.postCreateRequireEmailVerified,
+    postCreateRequirePhoneVerified: draft.postCreateRequirePhoneVerified,
     commentCreateRequireEmailVerified: draft.commentCreateRequireEmailVerified,
+    commentCreateRequirePhoneVerified: draft.commentCreateRequirePhoneVerified,
     postCreateMinRegisteredMinutes: Number(draft.postCreateMinRegisteredMinutes),
     commentCreateMinRegisteredMinutes: Number(draft.commentCreateMinRegisteredMinutes),
     commentPageSize: Number(draft.commentPageSize),

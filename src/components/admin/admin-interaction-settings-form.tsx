@@ -275,19 +275,21 @@ export function AdminInteractionSettingsForm({
         <div className="rounded-xl border border-border p-5 space-y-4">
           <div>
             <h3 className="text-sm font-semibold">发布门槛</h3>
-            <p className="mt-1 text-xs leading-6 text-muted-foreground">按发帖和回复分别控制邮箱验证与注册时长门槛。后续新的互动验证规则也会继续挂在这一层扩展，不需要再改主设置表。</p>
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">按发帖和回复分别控制邮箱验证、手机验证与注册时长门槛。后续新的互动验证规则也会继续挂在这一层扩展，不需要再改主设置表。</p>
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
             <FieldGroup title="发帖">
               <AdminBooleanSelectField label="发帖需已验证邮箱" checked={draft.postCreateRequireEmailVerified} onChange={(value) => updateDraftField("postCreateRequireEmailVerified", value)} />
+              <AdminBooleanSelectField label="发帖需已验证手机" checked={draft.postCreateRequirePhoneVerified} onChange={(value) => updateDraftField("postCreateRequirePhoneVerified", value)} />
               <TextField label="注册满多少分钟才能发帖" value={draft.postCreateMinRegisteredMinutes} onChange={(value) => updateDraftField("postCreateMinRegisteredMinutes", value)} placeholder="填 0 表示不限制" />
             </FieldGroup>
             <FieldGroup title="回复">
               <AdminBooleanSelectField label="回复需已验证邮箱" checked={draft.commentCreateRequireEmailVerified} onChange={(value) => updateDraftField("commentCreateRequireEmailVerified", value)} />
+              <AdminBooleanSelectField label="回复需已验证手机" checked={draft.commentCreateRequirePhoneVerified} onChange={(value) => updateDraftField("commentCreateRequirePhoneVerified", value)} />
               <TextField label="注册满多少分钟才能回复" value={draft.commentCreateMinRegisteredMinutes} onChange={(value) => updateDraftField("commentCreateMinRegisteredMinutes", value)} placeholder="填 0 表示不限制" />
             </FieldGroup>
           </div>
-          <p className="text-xs leading-6 text-muted-foreground">邮箱门槛只校验账号的 `emailVerifiedAt`；分钟门槛按注册时间到当前时间计算，`0` 表示关闭该限制。</p>
+          <p className="text-xs leading-6 text-muted-foreground">邮箱和手机门槛分别校验账号的 `emailVerifiedAt`、`phoneVerifiedAt`；分钟门槛按注册时间到当前时间计算，`0` 表示关闭该限制。</p>
         </div>
       ) : null}
 

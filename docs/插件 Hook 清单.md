@@ -43,6 +43,7 @@
 | `auth.identity.bind.after` | auth | 第三方身份绑定完成后执行副作用逻辑 | `void` |
 | `auth.identity.unbind.before` | auth | 第三方身份解绑前执行副作用或拦截逻辑 | `void` |
 | `auth.identity.unbind.after` | auth | 第三方身份解绑后执行副作用逻辑 | `void` |
+| `oauth.client.application.changed` | oauth | OAuth 开发者应用创建、重提、审核、编辑或重置密钥后执行副作用逻辑 | `void` |
 | `auth.password.change.before` | auth | 已登录用户修改密码前执行副作用或拦截逻辑 | `void` |
 | `auth.password.change.after` | auth | 已登录用户修改密码后执行副作用逻辑 | `void` |
 | `auth.password.reset.before` | auth | 通过找回密码流程重置密码前执行副作用或拦截逻辑 | `void` |
@@ -58,6 +59,9 @@
 | `task.complete.after` | task | 任务完成并结算奖励后执行副作用逻辑（含 task / progress 快照与奖励结果） | `void` |
 | `check-in.submit.before` | check-in | 签到或补签写入前执行副作用或拦截逻辑 | `void` |
 | `check-in.submit.after` | check-in | 签到或补签成功后执行副作用逻辑（含奖励、积分与连续签到结果） | `void` |
+| `payment.application.changed` | payment | Payment 开发者应用创建、重提、审核、编辑或重置密钥后执行副作用逻辑 | `void` |
+| `payment.transaction.created` | payment | Payment 外部下单创建交易后执行副作用逻辑 | `void` |
+| `payment.transaction.completed` | payment | Payment 用户确认支付并完成交易后执行副作用逻辑 | `void` |
 | `payment.paid.before` | payment | 支付到账后的宿主处理前执行副作用逻辑 | `void` |
 | `payment.paid.after` | payment | 支付到账后执行副作用逻辑 | `void` |
 | `invite-code.purchase.before` | invite | 邀请码购买扣点前执行副作用或拦截逻辑 | `void` |
@@ -120,6 +124,9 @@
 - `task.complete.after` 只会在本轮任务首次完成并完成奖励结算后触发；重复事件、重复点赞、已完成任务不会再次派发。
 - `check-in.submit.before` 会以 `throwOnError: true` 执行，可阻断普通签到或补签；payload 含 `userId/username/action/date/reward/pointName`，补签额外含 `makeUpCost`。
 - `check-in.submit.after` 只在签到动作成功返回前触发；payload 含 `finalReward/points/currentStreak/maxStreak/alreadyCheckedIn`，其中 `alreadyCheckedIn` 可用于识别普通签到重复提交。
+- `oauth.client.application.changed` 和 `payment.application.changed` 不会暴露 `client_secret` 或 Payment `Secret Key`；payload 只包含应用 ID、公开标识、ownerId、状态变化和审核动作。
+- `payment.transaction.created` / `payment.transaction.completed` 只覆盖开发者 Payment 外部订单；支付网关充值仍使用 `payment.paid.before` / `payment.paid.after`。
+- `payment.transaction.*` payload 包含 `amount`、`platformFee`、`externalReference`、`transactionId` 和应用公开标识，不包含商户入账字段。
 
 ## Waterfall
 

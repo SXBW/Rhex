@@ -14,6 +14,7 @@ import {
   Info,
   Loader2,
   MessageSquareLock,
+  PanelRightClose,
   PanelRightOpen,
   Paperclip,
   RotateCcw,
@@ -32,6 +33,7 @@ import { formatCompactPointValue } from "@/lib/formatters"
 import { getPostRewardPoolModeLabel } from "@/lib/post-reward-pool-config"
 
 const DESKTOP_PANEL_STORAGE_KEY = "post-enhancements-panel-position"
+const DESKTOP_PANEL_COLLAPSED_STORAGE_KEY = "post-enhancements-panel-collapsed"
 const DESKTOP_PANEL_WIDTH = 202
 const DESKTOP_PANEL_MARGIN = 12
 const DESKTOP_PANEL_DEFAULT_TOP = 112
@@ -272,6 +274,7 @@ export function PostEnhancementsSection({
   actions,
 }: PostEnhancementsSectionProps) {
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
+  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
   const [desktopPanelPosition, setDesktopPanelPosition] = useState<DesktopPanelPosition | null>(null)
   const desktopPanelRef = useRef<HTMLDivElement | null>(null)
   const desktopPanelDragRef = useRef<{
@@ -346,7 +349,7 @@ export function PostEnhancementsSection({
     : Number(minViewLevel) > 0
       ? `Lv.${Number(minViewLevel)}`
       : "公开可见"
-  const mobileConfiguredCount = [
+  const configuredCount = [
     finalTags.length > 0,
     redPacketEnabled,
     attachmentCount > 0,
@@ -390,6 +393,17 @@ export function PostEnhancementsSection({
     const nextPosition = clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
     setDesktopPanelPosition(nextPosition)
     window.localStorage.removeItem(DESKTOP_PANEL_STORAGE_KEY)
+  }
+  const collapseDesktopPanel = () => {
+    const currentPosition = desktopPanelPosition ?? getDefaultDesktopPanelPosition()
+    setDesktopPanelPosition(
+      clampDesktopPanelPosition({
+        left: window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN,
+        top: currentPosition.top,
+      }),
+    )
+    desktopPanelDragRef.current = null
+    setDesktopPanelCollapsed(true)
   }
   const handleDesktopPanelPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) {
@@ -442,22 +456,30 @@ export function PostEnhancementsSection({
         top: desktopPanelPosition.top,
       } satisfies CSSProperties)
     : undefined
+  const desktopDockStyle = desktopPanelPosition
+    ? ({
+        top: desktopPanelPosition.top,
+      } satisfies CSSProperties)
+    : undefined
 
   useEffect(() => {
+    let nextPosition = clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
     const storedPosition = window.localStorage.getItem(DESKTOP_PANEL_STORAGE_KEY)
     if (storedPosition) {
       try {
         const parsedPosition = JSON.parse(storedPosition) as Partial<DesktopPanelPosition>
         if (typeof parsedPosition.left === "number" && typeof parsedPosition.top === "number") {
-          setDesktopPanelPosition(clampDesktopPanelPosition(parsedPosition as DesktopPanelPosition))
-          return
+          nextPosition = clampDesktopPanelPosition(parsedPosition as DesktopPanelPosition)
         }
       } catch {
         window.localStorage.removeItem(DESKTOP_PANEL_STORAGE_KEY)
       }
     }
 
-    setDesktopPanelPosition(clampDesktopPanelPosition(getDefaultDesktopPanelPosition()))
+    setDesktopPanelPosition(nextPosition)
+
+    const storedCollapsed = window.localStorage.getItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY)
+    setDesktopPanelCollapsed(storedCollapsed === "true")
   }, [])
 
   useEffect(() => {
@@ -482,6 +504,15 @@ export function PostEnhancementsSection({
     )
   }, [desktopPanelPosition])
 
+  useEffect(() => {
+    if (desktopPanelCollapsed) {
+      window.localStorage.setItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY, "true")
+      return
+    }
+
+    window.localStorage.removeItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY)
+  }, [desktopPanelCollapsed])
+
   return (
     <div
       className={cn(
@@ -499,9 +530,9 @@ export function PostEnhancementsSection({
           className="fixed right-3 top-1/2 z-30 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           <PanelRightOpen className="h-5 w-5" />
-          {mobileConfiguredCount > 0 ? (
+          {configuredCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
-              {mobileConfiguredCount > 9 ? "9+" : mobileConfiguredCount}
+              {configuredCount > 9 ? "9+" : configuredCount}
             </span>
           ) : null}
         </button>
@@ -687,56 +718,86 @@ export function PostEnhancementsSection({
           </div>
         ) : null}
 
-        <div
-          ref={desktopPanelRef}
-          className={cn(
-            "fixed z-30 w-[202px]",
-            desktopPanelPosition ? "" : "left-[calc(50%+444px)] top-28",
-          )}
-          style={desktopPanelStyle}
-        >
-          <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
-            <div className="flex items-center justify-between gap-2 px-0.5">
-              <button
-                type="button"
-                aria-label="拖动功能区"
-                title="拖动功能区"
-                onPointerDown={handleDesktopPanelPointerDown}
-                onPointerMove={handleDesktopPanelPointerMove}
-                onPointerUp={handleDesktopPanelPointerEnd}
-                onPointerCancel={handleDesktopPanelPointerEnd}
-                className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
-              >
-                <GripVertical className="size-3.5 shrink-0" />
-                <p className="truncate text-[10px] font-medium tracking-[0.12em]">
-                  功能区
-                </p>
-              </button>
-              <button
-                type="button"
-                aria-label="重置功能区位置"
-                title="重置功能区位置"
-                onClick={resetDesktopPanelPosition}
-                className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <RotateCcw className="size-3" />
-              </button>
-            </div>
+        {desktopPanelCollapsed ? (
+          <button
+            type="button"
+            aria-label="展开功能区"
+            title="展开功能区"
+            onClick={() => setDesktopPanelCollapsed(false)}
+            className={cn(
+              "fixed right-0 z-30 inline-flex min-h-24 items-center gap-2 rounded-l-xl border border-r-0 border-border bg-background/92 px-2 py-3 text-xs font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:-translate-x-0.5 active:translate-x-0",
+              desktopPanelPosition ? "" : "top-28",
+            )}
+            style={desktopDockStyle}
+          >
+            <PanelRightOpen className="size-4 shrink-0" />
+            <span className="[writing-mode:vertical-rl]">功能区</span>
+            {configuredCount > 0 ? (
+              <span className="absolute -left-2 -top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
+                {configuredCount > 9 ? "9+" : configuredCount}
+              </span>
+            ) : null}
+          </button>
+        ) : (
+          <div
+            ref={desktopPanelRef}
+            className={cn(
+              "fixed z-30 w-[202px]",
+              desktopPanelPosition ? "" : "left-[calc(50%+444px)] top-28",
+            )}
+            style={desktopPanelStyle}
+          >
+            <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
+              <div className="flex items-center justify-between gap-2 px-0.5">
+                <button
+                  type="button"
+                  aria-label="拖动功能区"
+                  title="拖动功能区"
+                  onPointerDown={handleDesktopPanelPointerDown}
+                  onPointerMove={handleDesktopPanelPointerMove}
+                  onPointerUp={handleDesktopPanelPointerEnd}
+                  onPointerCancel={handleDesktopPanelPointerEnd}
+                  className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
+                >
+                  <GripVertical className="size-3.5 shrink-0" />
+                  <p className="truncate text-[10px] font-medium tracking-[0.12em]">
+                    功能区
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  aria-label="收起功能区"
+                  title="收起功能区"
+                  onClick={collapseDesktopPanel}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <PanelRightClose className="size-3" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="重置功能区位置"
+                  title="重置功能区位置"
+                  onClick={resetDesktopPanelPosition}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <RotateCcw className="size-3" />
+                </button>
+              </div>
 
-            <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto pr-0.5">
-              <DesktopActionCard
-                icon={<Sparkles className="h-4 w-4" />}
-                title="标签提取"
-                summary={
-                  finalTags.length > 0
-                    ? `已选 ${finalTags.length} 个`
-                    : autoExtractedTags.length > 0
-                      ? `候选 ${autoExtractedTags.length} 个`
-                      : "提取候选标签"
-                }
-                active={finalTags.length > 0}
-                onClick={actions.onOpenTagModal}
-              />
+              <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto pr-0.5">
+                <DesktopActionCard
+                  icon={<Sparkles className="h-4 w-4" />}
+                  title="标签提取"
+                  summary={
+                    finalTags.length > 0
+                      ? `已选 ${finalTags.length} 个`
+                      : autoExtractedTags.length > 0
+                        ? `候选 ${autoExtractedTags.length} 个`
+                        : "提取候选标签"
+                  }
+                  active={finalTags.length > 0}
+                  onClick={actions.onOpenTagModal}
+                />
 
               {rewardPoolEnabled ? (
                 <DesktopActionCard
@@ -825,9 +886,10 @@ export function PostEnhancementsSection({
                 onClick={actions.onOpenViewLevelModal}
                 onClear={actions.onClearViewLevel}
               />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
     </div>

@@ -229,6 +229,10 @@ function normalizeInteractionGateCondition(value: unknown): InteractionGateCondi
     return value.enabled === false ? null : { type: "EMAIL_VERIFIED", enabled: true }
   }
 
+  if (value.type === "PHONE_VERIFIED") {
+    return value.enabled === false ? null : { type: "PHONE_VERIFIED", enabled: true }
+  }
+
   if (value.type === "REGISTERED_MINUTES") {
     const minutes = normalizeNonNegativeInteger(value.value, 0)
     return minutes > 0 ? { type: "REGISTERED_MINUTES", value: minutes } : null

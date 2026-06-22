@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 
 import { OAuthServerAdminPage } from "@/components/admin/oauth-server-admin-page"
+import { PaymentApplicationsAdminPage } from "@/components/admin/payment-applications-admin-page"
 import {
   AdminBooleanSelectField,
   SettingsInputField as TextField,
@@ -13,10 +14,13 @@ import { Button } from "@/components/ui/rbutton"
 import { useAdminMutation } from "@/hooks/use-admin-mutation"
 import { adminPost } from "@/lib/admin-client"
 import type { OAuthClientAdminPageData } from "@/lib/oauth-server"
+import type { PaymentApplicationAdminPageData } from "@/lib/payment-applications"
 
 interface AdminOAuthSettingsInitialSettings {
   oauthServerEnabled: boolean
   oauthClientApplicationEnabled: boolean
+  paymentApplicationEnabled: boolean
+  paymentPlatformFeePercent: number
   oauthAccessTokenTtlMinutes: number
   oauthRefreshTokenTtlDays: number
 }
@@ -25,12 +29,14 @@ interface AdminOAuthSettingsPageProps {
   activeSubTab?: string
   initialSettings: AdminOAuthSettingsInitialSettings
   initialClients?: OAuthClientAdminPageData | null
+  initialPaymentApplications?: PaymentApplicationAdminPageData | null
 }
 
 export function AdminOAuthSettingsPage({
   activeSubTab = "settings",
   initialSettings,
   initialClients,
+  initialPaymentApplications,
 }: AdminOAuthSettingsPageProps) {
   if (activeSubTab === "clients") {
     if (!initialClients) {
@@ -41,6 +47,20 @@ export function AdminOAuthSettingsPage({
       <OAuthServerAdminPage
         initialData={initialClients}
         basePath="/admin/settings/oauth/clients"
+        settingsHref="/admin/settings/oauth/settings"
+      />
+    )
+  }
+
+  if (activeSubTab === "payment") {
+    if (!initialPaymentApplications) {
+      return null
+    }
+
+    return (
+      <PaymentApplicationsAdminPage
+        initialData={initialPaymentApplications}
+        basePath="/admin/settings/oauth/payment"
         settingsHref="/admin/settings/oauth/settings"
       />
     )
@@ -57,6 +77,8 @@ function AdminOAuthSettingsForm({
   const [draft, setDraft] = useState(() => ({
     oauthServerEnabled: Boolean(initialSettings.oauthServerEnabled),
     oauthClientApplicationEnabled: Boolean(initialSettings.oauthClientApplicationEnabled),
+    paymentApplicationEnabled: Boolean(initialSettings.paymentApplicationEnabled),
+    paymentPlatformFeePercent: String(initialSettings.paymentPlatformFeePercent ?? 0),
     oauthAccessTokenTtlMinutes: String(initialSettings.oauthAccessTokenTtlMinutes ?? 60),
     oauthRefreshTokenTtlDays: String(initialSettings.oauthRefreshTokenTtlDays ?? 30),
   }))
@@ -79,6 +101,8 @@ function AdminOAuthSettingsForm({
                 section: "site-oauth",
                 oauthServerEnabled: draft.oauthServerEnabled,
                 oauthClientApplicationEnabled: draft.oauthClientApplicationEnabled,
+                paymentApplicationEnabled: draft.paymentApplicationEnabled,
+                paymentPlatformFeePercent: Number(draft.paymentPlatformFeePercent),
                 oauthAccessTokenTtlMinutes: Number(draft.oauthAccessTokenTtlMinutes),
                 oauthRefreshTokenTtlDays: Number(draft.oauthRefreshTokenTtlDays),
               },
@@ -97,9 +121,14 @@ function AdminOAuthSettingsForm({
         title="OAuth 授权服务"
         description="集中控制 OAuth 2.0 授权服务、用户应用申请入口，以及 access_token / refresh_token 生命周期。"
         action={
-          <Link href="/admin/settings/oauth/clients">
-            <Button type="button" variant="outline">查看应用审核</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/settings/oauth/clients">
+              <Button type="button" variant="outline">OAuth 审核</Button>
+            </Link>
+            <Link href="/admin/settings/oauth/payment">
+              <Button type="button" variant="outline">Payment 审核</Button>
+            </Link>
+          </div>
         }
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -114,6 +143,23 @@ function AdminOAuthSettingsForm({
             checked={draft.oauthClientApplicationEnabled}
             onChange={(value) => updateDraft("oauthClientApplicationEnabled", value)}
             description="关闭后，已有应用仍可继续工作，但用户不能提交新的应用申请。"
+          />
+          <AdminBooleanSelectField
+            label="开启 Payment"
+            checked={draft.paymentApplicationEnabled}
+            onChange={(value) => updateDraft("paymentApplicationEnabled", value)}
+            description="关闭后，用户不能提交 Payment 应用，外部支付接口也会拒绝新的支付请求。"
+          />
+          <TextField
+            label="Payment 平台手续费（%）"
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={draft.paymentPlatformFeePercent}
+            onChange={(value) => updateDraft("paymentPlatformFeePercent", value)}
+            placeholder="如 5"
+            description="按每笔支付金额计算，0 表示不收取平台手续费。"
           />
           <TextField
             label="access_token 有效期（分钟）"

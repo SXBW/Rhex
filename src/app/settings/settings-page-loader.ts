@@ -15,6 +15,7 @@ import { getCurrentUserLevelProgressView } from "@/lib/user-level-view"
 import { getUserFavoriteCollectionManageData } from "@/lib/favorite-collections"
 import { getMonthKey } from "@/lib/date-key"
 import { getOAuthClientApplicationPageData } from "@/lib/oauth-server"
+import { getPaymentApplicationPageData } from "@/lib/payment-applications"
 import { getUserBlocks, getUserBoardFollows, getUserFavoritePosts, getUserFollowers, getUserLikedPosts, getUserPostFollows, getUserPosts, getUserReplies, getUserTagFollows, getUserUserFollows } from "@/lib/user-panel"
 import { getUserAccountSettings, getUserProfile } from "@/lib/users"
 import { getCurrentUserVerificationData } from "@/lib/verifications"
@@ -107,6 +108,10 @@ interface RawSettingsSearchParams {
   pointsRecordTab?: string | string[]
   pointsChangeType?: string | string[]
   pointsEventType?: string | string[]
+  paymentOrderKeyword?: string | string[]
+  paymentOrderStatus?: string | string[]
+  paymentOrderPage?: string | string[]
+  paymentOrderPageSize?: string | string[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -219,6 +224,10 @@ export interface ResolvedSettingsRoute {
   pointsRecordTab: "today" | "history"
   pointsChangeType: string | null
   pointsEventType: string | null
+  paymentOrderKeyword: string | null
+  paymentOrderStatus: string | null
+  paymentOrderPage: string | null
+  paymentOrderPageSize: string | null
 }
 
 export interface SettingsPageData {
@@ -281,6 +290,7 @@ export interface SettingsPageData {
   pointLogs: Awaited<ReturnType<typeof getUserPointLogs>> | null
   accountBindings: Awaited<ReturnType<typeof getUserAccountBindingView>> | null
   oauthApplications: Awaited<ReturnType<typeof getOAuthClientApplicationPageData>>
+  paymentApplications: Awaited<ReturnType<typeof getPaymentApplicationPageData>>
   smsDeliveryEnabled: boolean
   profileIntroductionEditPermission: Awaited<ReturnType<typeof resolveUserProfileIntroductionPermission>>
 }
@@ -319,6 +329,10 @@ export function resolveSettingsRoute(
   const pointsRecordTab = readSearchParam(searchParams?.pointsRecordTab) === "history" ? "history" : "today"
   const pointsChangeType = readSearchParam(searchParams?.pointsChangeType) ?? null
   const pointsEventType = readSearchParam(searchParams?.pointsEventType) ?? null
+  const paymentOrderKeyword = readSearchParam(searchParams?.paymentOrderKeyword) ?? null
+  const paymentOrderStatus = readSearchParam(searchParams?.paymentOrderStatus) ?? null
+  const paymentOrderPage = readSearchParam(searchParams?.paymentOrderPage) ?? null
+  const paymentOrderPageSize = readSearchParam(searchParams?.paymentOrderPageSize) ?? null
 
   return {
     currentTab,
@@ -336,6 +350,10 @@ export function resolveSettingsRoute(
     pointsRecordTab,
     pointsChangeType,
     pointsEventType,
+    paymentOrderKeyword,
+    paymentOrderStatus,
+    paymentOrderPage,
+    paymentOrderPageSize,
   }
 }
 
@@ -388,6 +406,7 @@ async function loadSettingsTabData(
     pointLogs,
     accountBindings,
     oauthApplications,
+    paymentApplications,
   ] = await Promise.all([
     currentTab === "post-management" && currentPostTab === "posts"
       ? getUserPosts(userId, { pageSize: 10, after: listAfter, before: listBefore })
@@ -465,6 +484,45 @@ async function loadSettingsTabData(
           authorizedSites: [],
           supportedScopes: ["openid", "profile", "email"] as const,
         }),
+    currentTab === "oauth-apps"
+      ? getPaymentApplicationPageData(userId, {
+          transactionKeyword: route.paymentOrderKeyword,
+          transactionStatus: route.paymentOrderStatus,
+          transactionPage: route.paymentOrderPage,
+          transactionPageSize: route.paymentOrderPageSize,
+        })
+      : Promise.resolve({
+          enabled: settings.paymentApplicationEnabled,
+          applications: [],
+          transactions: {
+            transactions: [],
+            filters: {
+              keyword: "",
+              status: "ALL" as const,
+              page: 1,
+              pageSize: 10,
+            },
+            summary: {
+              total: 0,
+              pending: 0,
+              processing: 0,
+              completed: 0,
+              failed: 0,
+              cancelled: 0,
+              refunded: 0,
+              totalAmount: 0,
+              totalPlatformFee: 0,
+            },
+            pagination: {
+              page: 1,
+              pageSize: 10,
+              total: 0,
+              totalPages: 1,
+              hasPrevPage: false,
+              hasNextPage: false,
+            },
+          },
+        }),
   ])
 
   return {
@@ -488,6 +546,7 @@ async function loadSettingsTabData(
     pointLogs,
     accountBindings,
     oauthApplications,
+    paymentApplications,
   }
 }
 

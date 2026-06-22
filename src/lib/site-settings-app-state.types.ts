@@ -241,6 +241,8 @@ export interface SiteSecuritySettings {
   passwordChangeRequireEmailVerification: boolean
   oauthServerEnabled: boolean
   oauthClientApplicationEnabled: boolean
+  paymentApplicationEnabled: boolean
+  paymentPlatformFeePercent: number
   oauthAccessTokenTtlMinutes: number
   oauthRefreshTokenTtlDays: number
 }
@@ -311,6 +313,10 @@ export type InteractionGateAction = "POST_CREATE" | "COMMENT_CREATE"
 export type InteractionGateCondition =
   | {
       type: "EMAIL_VERIFIED"
+      enabled: true
+    }
+  | {
+      type: "PHONE_VERIFIED"
       enabled: true
     }
   | {

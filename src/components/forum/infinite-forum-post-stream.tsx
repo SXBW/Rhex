@@ -37,23 +37,28 @@ export function InfiniteForumPostStream({
   sortLinks,
 }: InfiniteForumPostStreamProps) {
   const [items, setItems] = useState(initialItems)
-  const [page, setPage] = useState(initialPage)
   const [hasNextPage, setHasNextPage] = useState(initialHasNextPage)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const pageRef = useRef(initialPage)
+  const hasNextPageRef = useRef(initialHasNextPage)
+  const isLoadingRef = useRef(false)
 
   const loadMore = useCallback(async () => {
-    if (isLoading || !hasNextPage) {
+    if (isLoadingRef.current || !hasNextPageRef.current) {
       return
     }
 
+    const currentPage = pageRef.current
+    const nextPage = currentPage + 1
+    isLoadingRef.current = true
     setIsLoading(true)
     setError("")
 
     try {
       const nextUrl = new URL(apiPath, window.location.origin)
-      nextUrl.searchParams.set("page", String(page + 1))
+      nextUrl.searchParams.set("page", String(nextPage))
 
       const response = await fetch(nextUrl.toString(), {
         credentials: "same-origin",
@@ -65,19 +70,30 @@ export function InfiniteForumPostStream({
         return
       }
 
-      setItems((current) => [...current, ...result.data!.items])
-      setPage(result.data.page)
-      setHasNextPage(result.data.hasNextPage)
+      const nextResultPage = result.data.page
+      const nextHasNextPage = result.data.hasNextPage && nextResultPage > currentPage
+      setItems((current) => {
+        const existingIds = new Set(current.map((item) => item.id))
+        const nextItems = result.data!.items.filter((item) => !existingIds.has(item.id))
+
+        return [...current, ...nextItems]
+      })
+      pageRef.current = Math.max(currentPage, nextResultPage)
+      hasNextPageRef.current = nextHasNextPage
+      setHasNextPage(nextHasNextPage)
     } catch {
       setError("加载更多帖子失败")
     } finally {
+      isLoadingRef.current = false
       setIsLoading(false)
     }
-  }, [apiPath, hasNextPage, isLoading, page])
+  }, [apiPath])
 
   useEffect(() => {
+    pageRef.current = initialPage
+    hasNextPageRef.current = initialHasNextPage
+    isLoadingRef.current = false
     setItems(initialItems)
-    setPage(initialPage)
     setHasNextPage(initialHasNextPage)
     setIsLoading(false)
     setError("")

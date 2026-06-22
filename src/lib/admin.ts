@@ -31,7 +31,7 @@ import {
 import { mapAdminDashboardData, mapAdminStructureData, type AdminDashboardData, type AdminStructureData } from "@/lib/admin-dashboard"
 import {
   buildManagedBoardWhereInput,
-  buildManagedZoneWhereInput,
+  buildVisibleStructureZoneWhereInput,
   requireAdminActor,
   requireSiteAdminActor,
   type AdminActor,
@@ -89,7 +89,7 @@ export async function getAdminStructureData(): Promise<AdminStructureData> {
   const canReviewBoardApplications = await canAdminWithPermissionOverrides(currentUser, "admin.operations.manage", { isFounder: actorIsFounder })
   const [data, boardApplications] = await Promise.all([
     getAdminStructureRawData({
-      zoneWhere: buildManagedZoneWhereInput(currentUser),
+      zoneWhere: buildVisibleStructureZoneWhereInput(currentUser),
       boardWhere: buildManagedBoardWhereInput(currentUser),
     }),
     canReviewBoardApplications

@@ -7,8 +7,11 @@ export function OAuthApplicationsSettingsSection({ data }: { data: SettingsPageD
       enabled={data.oauthApplications.enabled}
       oauthServerEnabled={data.oauthApplications.oauthServerEnabled}
       oauthClientApplicationEnabled={data.oauthApplications.oauthClientApplicationEnabled}
+      paymentApplicationEnabled={data.paymentApplications.enabled}
       clients={data.oauthApplications.clients}
       authorizedSites={data.oauthApplications.authorizedSites}
+      paymentApplications={data.paymentApplications.applications}
+      paymentTransactions={data.paymentApplications.transactions}
     />
   )
 }

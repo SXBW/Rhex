@@ -49,6 +49,12 @@ interface CommentThreadProps {
 
 const REPLY_BOX_FOLLOW_ENTER_OFFSET = 72
 const REPLY_BOX_FOLLOW_EXIT_OFFSET = 20
+const COMMENT_ANCHOR_SCROLL_RETRY_MS = 120
+const COMMENT_ANCHOR_SCROLL_MIN_SETTLE_MS = 1200
+const COMMENT_ANCHOR_SCROLL_MAX_MS = 3200
+const COMMENT_ANCHOR_SCROLL_TOLERANCE = 2
+const COMMENT_ANCHOR_SCROLL_STABLE_ATTEMPTS = 3
+const COMMENT_HIGHLIGHT_CLEAR_DELAY_MS = 4200
 
 type PaginationToken = number | "ellipsis"
 
@@ -129,6 +135,32 @@ function shouldIgnoreReplyShortcut(target: EventTarget | null) {
   }
 
   return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+}
+
+function getCommentAnchorScrollTop(target: HTMLElement) {
+  const scrollElement = document.scrollingElement ?? document.documentElement
+  const targetTop = target.getBoundingClientRect().top + scrollElement.scrollTop
+  const scrollMarginTop = Number.parseFloat(window.getComputedStyle(target).scrollMarginTop)
+  const targetMarginTop = Number.isFinite(scrollMarginTop) ? scrollMarginTop : 0
+  const maxScrollTop = Math.max(0, scrollElement.scrollHeight - window.innerHeight)
+
+  return Math.min(Math.max(0, targetTop - targetMarginTop), maxScrollTop)
+}
+
+function scrollCommentAnchorIntoView(target: HTMLElement, behavior: ScrollBehavior) {
+  const scrollElement = document.scrollingElement ?? document.documentElement
+  const nextScrollTop = getCommentAnchorScrollTop(target)
+
+  if (Math.abs(scrollElement.scrollTop - nextScrollTop) <= COMMENT_ANCHOR_SCROLL_TOLERANCE) {
+    return true
+  }
+
+  window.scrollTo({
+    top: nextScrollTop,
+    behavior,
+  })
+
+  return false
 }
 
 export function CommentThread({ threadId, comments, flatComments = [], postId, postPath, pointName, tipping, canReply, currentPage, pageSize, total, currentSort, currentDisplayMode, commentLoadMode = COMMENT_LOAD_MODE_PAGINATION, currentUserId, canAcceptAnswer = false, commentsVisibleToAuthorOnly = false, canOfflineOwnComment = false, canOfflineUserComment = false, anonymousReplyEnabled = false, anonymousReplyDefaultChecked = false, anonymousReplySwitchVisible = false, isAdmin = false, adminRole = null, canPinComment = false, markdownEmojiMap, commentEditWindowMinutes = 5, initialVisibleReplies = 10 }: CommentThreadProps) {
@@ -366,41 +398,75 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
     ensureHighlightedCommentVisible(highlightedCommentId)
 
     let cancelled = false
-    let rafId = 0
-    let attempts = 0
+    let rafId: number | null = null
+    let retryTimeoutId: number | null = null
+    let stableAttempts = 0
+    let hasUsedSmoothScroll = false
+    const startedAt = window.performance.now()
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    const scheduleScrollAttempt = (delay = 0) => {
+      if (cancelled) {
+        return
+      }
+
+      if (delay > 0) {
+        retryTimeoutId = window.setTimeout(() => {
+          retryTimeoutId = null
+          scheduleScrollAttempt()
+        }, delay)
+        return
+      }
+
+      rafId = window.requestAnimationFrame(scrollToHighlightedComment)
+    }
 
     const scrollToHighlightedComment = () => {
+      rafId = null
+
       if (cancelled) {
         return
       }
 
       const target = document.getElementById(`comment-${highlightedCommentId}`)
       if (target) {
-        target.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        })
+        const elapsed = window.performance.now() - startedAt
+        const behavior: ScrollBehavior = hasUsedSmoothScroll || prefersReducedMotion ? "auto" : "smooth"
+        const isSettled = scrollCommentAnchorIntoView(target, behavior)
+        hasUsedSmoothScroll = true
+        stableAttempts = isSettled ? stableAttempts + 1 : 0
+
+        if (stableAttempts >= COMMENT_ANCHOR_SCROLL_STABLE_ATTEMPTS && elapsed >= COMMENT_ANCHOR_SCROLL_MIN_SETTLE_MS) {
+          return
+        }
+
+        if (elapsed < COMMENT_ANCHOR_SCROLL_MAX_MS) {
+          scheduleScrollAttempt(COMMENT_ANCHOR_SCROLL_RETRY_MS)
+        }
+
         return
       }
 
-      if (attempts >= 10) {
+      if (window.performance.now() - startedAt >= COMMENT_ANCHOR_SCROLL_MAX_MS) {
         return
       }
 
-      attempts += 1
-      rafId = window.requestAnimationFrame(scrollToHighlightedComment)
+      scheduleScrollAttempt(COMMENT_ANCHOR_SCROLL_RETRY_MS)
     }
 
-    rafId = window.requestAnimationFrame(scrollToHighlightedComment)
+    scheduleScrollAttempt()
 
     const timeoutId = window.setTimeout(() => {
       setHighlightedCommentId((current) => current === highlightedCommentId ? null : current)
-    }, 2600)
+    }, COMMENT_HIGHLIGHT_CLEAR_DELAY_MS)
 
     return () => {
       cancelled = true
-      if (rafId) {
+      if (rafId !== null) {
         window.cancelAnimationFrame(rafId)
+      }
+      if (retryTimeoutId !== null) {
+        window.clearTimeout(retryTimeoutId)
       }
       window.clearTimeout(timeoutId)
     }
@@ -990,10 +1056,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
       const nextUrl = `${pathname}${search ? `?${search}` : ""}#comment-${commentId}`
       window.history.replaceState(null, "", nextUrl)
       triggerCommentHighlight(commentId)
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      })
+      scrollCommentAnchorIntoView(target, "smooth")
       return
     }
 

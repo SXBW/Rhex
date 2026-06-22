@@ -24,6 +24,16 @@ export async function updateOAuthSiteSettingsSection(
   const oauthClientApplicationEnabled = "oauthClientApplicationEnabled" in body
     ? Boolean(body.oauthClientApplicationEnabled)
     : existingSiteSecuritySettings.oauthClientApplicationEnabled
+  const paymentApplicationEnabled = "paymentApplicationEnabled" in body
+    ? Boolean(body.paymentApplicationEnabled)
+    : existingSiteSecuritySettings.paymentApplicationEnabled
+  const paymentPlatformFeePercent = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.floor(readOptionalNumberField(body, "paymentPlatformFeePercent") ?? existingSiteSecuritySettings.paymentPlatformFeePercent),
+    ),
+  )
   const oauthAccessTokenTtlMinutes = Math.min(
     1440,
     Math.max(
@@ -43,6 +53,8 @@ export async function updateOAuthSiteSettingsSection(
     ...existingSiteSecuritySettings,
     oauthServerEnabled,
     oauthClientApplicationEnabled,
+    paymentApplicationEnabled,
+    paymentPlatformFeePercent,
     oauthAccessTokenTtlMinutes,
     oauthRefreshTokenTtlDays,
   })

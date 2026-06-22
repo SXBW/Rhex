@@ -36,6 +36,8 @@ export const POINT_EFFECT_SCOPE_OPTIONS = [
   { value: "POST_OFFLINE_PURCHASE", label: "帖子下线消耗", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
   { value: "POST_UNLOCK_OUTGOING", label: "付费内容购买支出", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
   { value: "POST_UNLOCK_INCOMING", label: "付费内容购买收入", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
+  { value: "PAYMENT_APP_OUTGOING", label: "第三方支付支出", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
+  { value: "PAYMENT_APP_INCOMING", label: "第三方支付收入", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
   { value: "POST_AUCTION_BID_FREEZE", label: "拍卖出价冻结", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
   { value: "POST_AUCTION_OUTBID_REFUND", label: "拍卖被超退款", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },
   { value: "POST_AUCTION_LOSE_REFUND", label: "拍卖失败退款", targetTypes: [PointEffectTargetType.POINTS], badgeEffectEnabled: false, badgeEffectRuntimeMatchable: false },

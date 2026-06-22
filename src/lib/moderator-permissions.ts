@@ -116,6 +116,26 @@ export function buildManagedZoneWhereInput(actor: AdminActor): Prisma.ZoneWhereI
   return zoneIds.length > 0 ? { id: { in: zoneIds } } : { id: { in: [] } }
 }
 
+export function buildVisibleStructureZoneWhereInput(actor: AdminActor): Prisma.ZoneWhereInput | undefined {
+  if (isSiteAdmin(actor)) {
+    return undefined
+  }
+
+  const zoneIds = getManagedZoneIds(actor)
+  const boardIds = getManagedBoardIds(actor)
+  const or: Prisma.ZoneWhereInput[] = []
+
+  if (zoneIds.length > 0) {
+    or.push({ id: { in: zoneIds } })
+  }
+
+  if (boardIds.length > 0) {
+    or.push({ boards: { some: { id: { in: boardIds } } } })
+  }
+
+  return or.length > 0 ? { OR: or } : { id: { in: [] } }
+}
+
 export function buildManagedPostWhereInput(actor: AdminActor): Prisma.PostWhereInput | undefined {
   if (isSiteAdmin(actor)) {
     return undefined

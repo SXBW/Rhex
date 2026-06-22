@@ -194,7 +194,6 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
       setVisibleUnreadCount((current) => Math.max(0, current - 1))
       setOpen(false)
       router.push(item.relatedUrl)
-      router.refresh()
     } catch (error: unknown) {
       setErrorMessage(error instanceof Error ? error.message : "标记通知失败")
     } finally {

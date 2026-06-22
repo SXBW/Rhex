@@ -342,6 +342,8 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
     passwordChangeRequireEmailVerification,
     oauthServerEnabled,
     oauthClientApplicationEnabled,
+    paymentApplicationEnabled: existingSiteSecuritySettings.paymentApplicationEnabled,
+    paymentPlatformFeePercent: existingSiteSecuritySettings.paymentPlatformFeePercent,
     oauthAccessTokenTtlMinutes,
     oauthRefreshTokenTtlDays,
   })

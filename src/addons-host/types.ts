@@ -348,6 +348,7 @@ export const ADDON_ACTION_HOOK_NAMES = [
   "auth.identity.bind.after",
   "auth.identity.unbind.before",
   "auth.identity.unbind.after",
+  "oauth.client.application.changed",
   "auth.password.change.before",
   "auth.password.change.after",
   "auth.password.reset.before",
@@ -363,6 +364,9 @@ export const ADDON_ACTION_HOOK_NAMES = [
   "task.complete.after",
   "check-in.submit.before",
   "check-in.submit.after",
+  "payment.application.changed",
+  "payment.transaction.created",
+  "payment.transaction.completed",
   "payment.paid.before",
   "payment.paid.after",
   "invite-code.purchase.before",
@@ -1697,6 +1701,23 @@ export interface AddonApiHandlerContext extends AddonExecutionContextBase {
  */
 export interface AddonActionHookPayloadMap {
   // ─── 认证 ───
+  "oauth.client.application.changed": {
+    action: "create" | "resubmit" | "admin-update" | "review" | "rotate-secret"
+    applicationId: string
+    clientId: string
+    ownerId: number
+    actorUserId?: number
+    name: string
+    homepageUrl: string | null
+    redirectUris: string[]
+    scopes: string[]
+    status: string
+    previousStatus?: string
+    nextStatus: string
+    reviewAction?: "approve" | "reject" | "disable"
+    reviewedById?: number | null
+    occurredAt: string
+  }
   "auth.logout.before": {
     userId: string
     username: string
@@ -1930,6 +1951,49 @@ export interface AddonActionHookPayloadMap {
     alreadyCheckedIn: boolean
     pointName: string
     makeUpCost?: number
+  }
+  // ─── OAuth / Payment 应用 ───
+  "payment.application.changed": {
+    action: "create" | "resubmit" | "admin-update" | "review" | "rotate-secret"
+    applicationId: string
+    paymentId: string
+    ownerId: number
+    actorUserId?: number
+    name: string
+    homepageUrl: string | null
+    callbackUrl: string
+    status: string
+    previousStatus?: string
+    nextStatus: string
+    reviewAction?: "approve" | "reject" | "disable"
+    reviewedById?: number | null
+    occurredAt: string
+  }
+  "payment.transaction.created": {
+    transactionId: string
+    applicationId: string
+    paymentId: string
+    ownerId: number
+    externalReference: string
+    amount: number
+    platformFee: number
+    description: string
+    status: string
+    expiresAt: string
+    occurredAt: string
+  }
+  "payment.transaction.completed": {
+    transactionId: string
+    applicationId: string
+    paymentId: string
+    ownerId: number
+    payerUserId: number
+    externalReference: string
+    amount: number
+    platformFee: number
+    description?: string
+    paidAt: string
+    occurredAt: string
   }
   // ─── 用户关系 ───
   "user.follow.toggle.before": {

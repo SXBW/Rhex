@@ -54,7 +54,7 @@ export function SettingsShell({
     { key: "points", label: `${pointName}明细`, description: `查看当前${pointName}余额与全部变动记录。` },
     { key: "follows", label: "我的关注", description: "查看你关注的节点、用户、标签与帖子。" },
     { key: "tasks", label: "任务中心", description: "查看新手任务、日常任务与挑战任务进度。", href: "/tasks" },
-    ...(oauthApplicationsVisible ? [{ key: "oauth-apps", label: "开发者应用", description: "申请和管理 OAuth appid/key。" }] : []),
+    ...(oauthApplicationsVisible ? [{ key: "oauth-apps", label: "开发者应用", description: "管理 OAuth 与 Payment 应用密钥。" }] : []),
   ] satisfies SettingsNavItem[]
   const currentItem = navItems.find((item) => item.key === currentTab) ?? navItems[0]
 

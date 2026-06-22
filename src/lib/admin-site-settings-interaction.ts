@@ -86,7 +86,9 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
       ? existingAnonymousPostSettings.defaultReplyAnonymous
       : Boolean(body.anonymousPostDefaultReplyAnonymous)
     const postCreateRequireEmailVerified = Boolean(body.postCreateRequireEmailVerified)
+    const postCreateRequirePhoneVerified = Boolean(body.postCreateRequirePhoneVerified)
     const commentCreateRequireEmailVerified = Boolean(body.commentCreateRequireEmailVerified)
+    const commentCreateRequirePhoneVerified = Boolean(body.commentCreateRequirePhoneVerified)
     const postCreateMinRegisteredMinutes = Math.max(0, readOptionalNumberField(body, "postCreateMinRegisteredMinutes") ?? 0)
     const commentCreateMinRegisteredMinutes = Math.max(0, readOptionalNumberField(body, "commentCreateMinRegisteredMinutes") ?? 0)
     const existingPostPageSizeSettings = resolvePostPageSizeSettings({
@@ -241,16 +243,18 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
       version: 1,
       actions: {
         POST_CREATE: {
-          enabled: postCreateRequireEmailVerified || postCreateMinRegisteredMinutes > 0,
+          enabled: postCreateRequireEmailVerified || postCreateRequirePhoneVerified || postCreateMinRegisteredMinutes > 0,
           conditions: [
             ...(postCreateRequireEmailVerified ? [{ type: "EMAIL_VERIFIED", enabled: true } as const] : []),
+            ...(postCreateRequirePhoneVerified ? [{ type: "PHONE_VERIFIED", enabled: true } as const] : []),
             ...(postCreateMinRegisteredMinutes > 0 ? [{ type: "REGISTERED_MINUTES", value: postCreateMinRegisteredMinutes } as const] : []),
           ],
         },
         COMMENT_CREATE: {
-          enabled: commentCreateRequireEmailVerified || commentCreateMinRegisteredMinutes > 0,
+          enabled: commentCreateRequireEmailVerified || commentCreateRequirePhoneVerified || commentCreateMinRegisteredMinutes > 0,
           conditions: [
             ...(commentCreateRequireEmailVerified ? [{ type: "EMAIL_VERIFIED", enabled: true } as const] : []),
+            ...(commentCreateRequirePhoneVerified ? [{ type: "PHONE_VERIFIED", enabled: true } as const] : []),
             ...(commentCreateMinRegisteredMinutes > 0 ? [{ type: "REGISTERED_MINUTES", value: commentCreateMinRegisteredMinutes } as const] : []),
           ],
         },

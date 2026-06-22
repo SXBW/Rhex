@@ -468,6 +468,8 @@ export function resolveSiteSecuritySettings(options: {
   passwordChangeRequireEmailVerificationFallback?: boolean
   oauthServerEnabledFallback?: boolean
   oauthClientApplicationEnabledFallback?: boolean
+  paymentApplicationEnabledFallback?: boolean
+  paymentPlatformFeePercentFallback?: number
   oauthAccessTokenTtlMinutesFallback?: number
   oauthRefreshTokenTtlDaysFallback?: number
 } = {}): SiteSecuritySettings {
@@ -497,6 +499,20 @@ export function resolveSiteSecuritySettings(options: {
       typeof siteSecurity.oauthClientApplicationEnabled === "boolean"
         ? siteSecurity.oauthClientApplicationEnabled
         : options.oauthClientApplicationEnabledFallback ?? false,
+    paymentApplicationEnabled:
+      typeof siteSecurity.paymentApplicationEnabled === "boolean"
+        ? siteSecurity.paymentApplicationEnabled
+        : options.paymentApplicationEnabledFallback ?? false,
+    paymentPlatformFeePercent: Math.min(
+      100,
+      Math.max(
+        0,
+        normalizeNonNegativeInteger(
+          siteSecurity.paymentPlatformFeePercent,
+          options.paymentPlatformFeePercentFallback ?? 0,
+        ),
+      ),
+    ),
     oauthAccessTokenTtlMinutes: Math.min(
       1440,
       Math.max(
@@ -534,6 +550,8 @@ export function mergeSiteSecuritySettings(
       passwordChangeRequireEmailVerification: Boolean(input.passwordChangeRequireEmailVerification),
       oauthServerEnabled: Boolean(input.oauthServerEnabled),
       oauthClientApplicationEnabled: Boolean(input.oauthClientApplicationEnabled),
+      paymentApplicationEnabled: Boolean(input.paymentApplicationEnabled),
+      paymentPlatformFeePercent: Math.min(100, Math.max(0, normalizeNonNegativeInteger(input.paymentPlatformFeePercent, 0))),
       oauthAccessTokenTtlMinutes: Math.min(1440, Math.max(5, normalizeNonNegativeInteger(input.oauthAccessTokenTtlMinutes, 60))),
       oauthRefreshTokenTtlDays: Math.min(365, Math.max(1, normalizeNonNegativeInteger(input.oauthRefreshTokenTtlDays, 30))),
     },

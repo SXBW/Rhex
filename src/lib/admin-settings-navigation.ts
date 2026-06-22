@@ -109,6 +109,7 @@ const adminSettingsSectionDetails: Record<
     subTabs: [
       { key: "settings", label: "服务设置" },
       { key: "clients", label: "应用审核" },
+      { key: "payment", label: "Payment审核" },
     ],
   },
   upload: {

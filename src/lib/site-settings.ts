@@ -117,6 +117,12 @@ function normalizeLegacyServerSiteSettings(data: ServerSiteSettingsData): Server
     oauthClientApplicationEnabled: typeof data.oauthClientApplicationEnabled === "boolean"
       ? data.oauthClientApplicationEnabled
       : defaults.oauthClientApplicationEnabled,
+    paymentApplicationEnabled: typeof data.paymentApplicationEnabled === "boolean"
+      ? data.paymentApplicationEnabled
+      : defaults.paymentApplicationEnabled,
+    paymentPlatformFeePercent: typeof data.paymentPlatformFeePercent === "number" && Number.isFinite(data.paymentPlatformFeePercent)
+      ? Math.min(100, Math.max(0, Math.floor(data.paymentPlatformFeePercent)))
+      : defaults.paymentPlatformFeePercent,
     oauthAccessTokenTtlMinutes: typeof data.oauthAccessTokenTtlMinutes === "number" && Number.isFinite(data.oauthAccessTokenTtlMinutes)
       ? Math.min(1440, Math.max(5, Math.floor(data.oauthAccessTokenTtlMinutes)))
       : defaults.oauthAccessTokenTtlMinutes,
@@ -596,6 +602,8 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     passwordChangeRequireEmailVerification: siteSecuritySettings.passwordChangeRequireEmailVerification,
     oauthServerEnabled: siteSecuritySettings.oauthServerEnabled,
     oauthClientApplicationEnabled: siteSecuritySettings.oauthClientApplicationEnabled,
+    paymentApplicationEnabled: siteSecuritySettings.paymentApplicationEnabled,
+    paymentPlatformFeePercent: siteSecuritySettings.paymentPlatformFeePercent,
     oauthAccessTokenTtlMinutes: siteSecuritySettings.oauthAccessTokenTtlMinutes,
     oauthRefreshTokenTtlDays: siteSecuritySettings.oauthRefreshTokenTtlDays,
     registerPasswordMinLength: registerPasswordPolicySettings.minLength,

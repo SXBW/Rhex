@@ -26,6 +26,8 @@ export interface SiteSettingsRegistrationData extends UsernameSensitiveWordSetti
   passwordChangeRequireEmailVerification: boolean
   oauthServerEnabled: boolean
   oauthClientApplicationEnabled: boolean
+  paymentApplicationEnabled: boolean
+  paymentPlatformFeePercent: number
   oauthAccessTokenTtlMinutes: number
   oauthRefreshTokenTtlDays: number
   registerPasswordMinLength: number

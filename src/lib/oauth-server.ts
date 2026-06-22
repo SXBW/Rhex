@@ -1,5 +1,6 @@
 import { OAuthClientStatus, UserStatus } from "@/db/types"
 
+import { executeAddonActionHook } from "@/addons-host/runtime/hooks"
 import {
   countOAuthClientsForAdmin,
   createOAuthAuthorizationCode,
@@ -46,6 +47,8 @@ import {
   type OAuthScope,
 } from "@/lib/oauth-utils"
 import { createSystemNotification } from "@/lib/notification-writes"
+
+type OAuthClientPublicRecord = NonNullable<Awaited<ReturnType<typeof findOAuthClientByClientId>>>
 
 export class OAuthProtocolError extends Error {
   error: string
@@ -228,7 +231,7 @@ function ensureOAuthClientPayload(input: {
   }
 }
 
-function mapOAuthClient(item: NonNullable<Awaited<ReturnType<typeof findOAuthClientByClientId>>>): OAuthClientListItem {
+function mapOAuthClient(item: OAuthClientPublicRecord): OAuthClientListItem {
   return {
     id: item.id,
     clientId: item.clientId,
@@ -261,6 +264,32 @@ function mapOAuthClient(item: NonNullable<Awaited<ReturnType<typeof findOAuthCli
         }
       : null,
   }
+}
+
+async function executeOAuthClientApplicationChangedHook(input: {
+  action: "create" | "resubmit" | "admin-update" | "review" | "rotate-secret"
+  client: OAuthClientPublicRecord
+  actorUserId?: number
+  previousStatus?: OAuthClientStatus
+  reviewAction?: "approve" | "reject" | "disable"
+}) {
+  await executeAddonActionHook("oauth.client.application.changed", {
+    action: input.action,
+    applicationId: input.client.id,
+    clientId: input.client.clientId,
+    ownerId: input.client.ownerId,
+    actorUserId: input.actorUserId,
+    name: input.client.name,
+    homepageUrl: input.client.homepageUrl,
+    redirectUris: [...input.client.redirectUris],
+    scopes: [...input.client.scopes],
+    status: input.client.status,
+    previousStatus: input.previousStatus,
+    nextStatus: input.client.status,
+    reviewAction: input.reviewAction,
+    reviewedById: input.client.reviewedById,
+    occurredAt: new Date().toISOString(),
+  })
 }
 
 function normalizeAdminStatus(value: unknown): "ALL" | OAuthClientStatus {
@@ -356,6 +385,11 @@ export async function applyForOAuthClient(input: {
     scopes: payload.scopes,
     status: OAuthClientStatus.PENDING,
   })
+  await executeOAuthClientApplicationChangedHook({
+    action: "create",
+    client,
+    actorUserId: input.ownerId,
+  })
 
   return {
     client: mapOAuthClient(client),
@@ -400,6 +434,16 @@ export async function updateOwnOAuthClient(input: {
   if (updated.count !== 1) {
     apiError(409, "应用状态已变化，请刷新后重试")
   }
+
+  const updatedClient = await findOAuthClientById(input.id)
+  if (updatedClient) {
+    await executeOAuthClientApplicationChangedHook({
+      action: "resubmit",
+      client: updatedClient,
+      actorUserId: input.ownerId,
+      previousStatus: existing.status,
+    })
+  }
 }
 
 export async function rotateOwnOAuthClientSecret(input: {
@@ -423,6 +467,13 @@ export async function rotateOwnOAuthClientSecret(input: {
   if (updated.count !== 1) {
     apiError(409, "应用状态已变化，请刷新后重试")
   }
+
+  await executeOAuthClientApplicationChangedHook({
+    action: "rotate-secret",
+    client: existing,
+    actorUserId: input.ownerId,
+    previousStatus: existing.status,
+  })
 
   return { clientSecret }
 }
@@ -546,6 +597,13 @@ export async function reviewOAuthClient(input: {
         : `你的 OAuth 应用“${updated.name}”已被管理员禁用。${reviewNote ? `原因：${reviewNote}` : ""}`,
     url: "/settings?tab=oauth-apps",
   })
+  await executeOAuthClientApplicationChangedHook({
+    action: "review",
+    client: updated,
+    actorUserId: input.reviewerId,
+    previousStatus: client.status,
+    reviewAction: input.action,
+  })
 
   return mapOAuthClient(updated)
 }
@@ -553,6 +611,11 @@ export async function reviewOAuthClient(input: {
 export async function rotateOAuthClientSecretByAdmin(input: {
   id: string
 }) {
+  const existing = await findOAuthClientById(input.id)
+  if (!existing) {
+    apiError(404, "OAuth 应用不存在")
+  }
+
   const clientSecret = createOAuthOpaqueToken("key", 36)
   const updated = await updateOAuthClientSecret({
     id: input.id,
@@ -562,6 +625,12 @@ export async function rotateOAuthClientSecretByAdmin(input: {
   if (updated.count !== 1) {
     apiError(404, "OAuth 应用不存在")
   }
+
+  await executeOAuthClientApplicationChangedHook({
+    action: "rotate-secret",
+    client: existing,
+    previousStatus: existing.status,
+  })
 
   return { clientSecret }
 }
@@ -591,6 +660,11 @@ export async function updateOAuthClientByAdmin(input: {
   const updated = await updateOAuthClientByAdminRecord({
     id,
     data: payload,
+  })
+  await executeOAuthClientApplicationChangedHook({
+    action: "admin-update",
+    client: updated,
+    previousStatus: existing.status,
   })
 
   return mapOAuthClient(updated)

@@ -20,6 +20,7 @@ import { getBoards } from "@/lib/boards"
 import { getInviteCodeList } from "@/lib/invite-codes"
 import { getLevelDefinitions } from "@/lib/level-system"
 import { getAdminOAuthClientPageData } from "@/lib/oauth-server"
+import { getAdminPaymentApplicationPageData } from "@/lib/payment-applications"
 import { getRedeemCodeList } from "@/lib/redeem-codes"
 import { readSearchParam } from "@/lib/search-params"
 import {
@@ -107,6 +108,7 @@ export default async function AdminSettingsPage(
     friendLinks,
     levelDefinitions,
     oauthClients,
+    paymentApplications,
   ] = await Promise.all([
     sectionsRequiringSiteSettings.has(resolved.section)
       ? getServerSiteSettings()
@@ -137,6 +139,18 @@ export default async function AdminSettingsPage(
           pageSize: readSearchParam(searchParams?.pageSize),
         })
       : Promise.resolve<Awaited<ReturnType<typeof getAdminOAuthClientPageData>> | null>(null),
+    resolved.section === "oauth" && resolved.subTab === "payment"
+      ? getAdminPaymentApplicationPageData({
+          keyword: readSearchParam(searchParams?.keyword),
+          status: readSearchParam(searchParams?.status),
+          page: readSearchParam(searchParams?.page),
+          pageSize: readSearchParam(searchParams?.pageSize),
+          orderKeyword: readSearchParam(searchParams?.orderKeyword),
+          orderStatus: readSearchParam(searchParams?.orderStatus),
+          orderPage: readSearchParam(searchParams?.orderPage),
+          orderPageSize: readSearchParam(searchParams?.orderPageSize),
+        })
+      : Promise.resolve<Awaited<ReturnType<typeof getAdminPaymentApplicationPageData>> | null>(null),
   ])
 
   const uploadLevelOptions = buildUserLevelThresholdOptions(levelDefinitions)
@@ -324,10 +338,13 @@ export default async function AdminSettingsPage(
             initialSettings={{
               oauthServerEnabled: Boolean(siteSettings!.oauthServerEnabled),
               oauthClientApplicationEnabled: Boolean(siteSettings!.oauthClientApplicationEnabled),
+              paymentApplicationEnabled: Boolean(siteSettings!.paymentApplicationEnabled),
+              paymentPlatformFeePercent: Number(siteSettings!.paymentPlatformFeePercent ?? 0),
               oauthAccessTokenTtlMinutes: Number(siteSettings!.oauthAccessTokenTtlMinutes ?? 60),
               oauthRefreshTokenTtlDays: Number(siteSettings!.oauthRefreshTokenTtlDays ?? 30),
             }}
             initialClients={oauthClients}
+            initialPaymentApplications={paymentApplications}
           />
         ) : null}
       </AdminSettingsWorkspace>

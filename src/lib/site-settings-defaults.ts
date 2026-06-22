@@ -122,6 +122,8 @@ export const defaultSiteSettingsCreateInput = {
         passwordChangeRequireEmailVerification: false,
         oauthServerEnabled: false,
         oauthClientApplicationEnabled: false,
+        paymentApplicationEnabled: false,
+        paymentPlatformFeePercent: 0,
         oauthAccessTokenTtlMinutes: 60,
         oauthRefreshTokenTtlDays: 30,
       },
