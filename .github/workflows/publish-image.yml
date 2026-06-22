@@ -39,15 +39,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.actor }}/rhex
+          images: ghcr.io/${{ github.repository_owner }}/rhex
           tags: |
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
             type=ref,event=tag
-            type=raw,value={{date 'YYYYMMDD'}}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -59,3 +59,28 @@ jobs:
             NEXT_DEPLOYMENT_ID=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Clean up old untagged images
+        if: github.ref_name == 'main'
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          PACKAGE="rhex"
+          
+          API_URL="https://api.github.com/user/packages/container/$PACKAGE/versions"
+          
+          VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
+          
+          UNTAGGED_VERSIONS=$(echo "$VERSIONS" | jq -r '.[] | select(.metadata.container.tags == []) | .id')
+          
+          if [ -n "$UNTAGGED_VERSIONS" ]; then
+            echo "Found $(echo "$UNTAGGED_VERSIONS" | wc -l) untagged images to delete"
+            echo "$UNTAGGED_VERSIONS" | while read -r version_id; do
+              if [ -n "$version_id" ]; then
+                echo "Deleting version $version_id..."
+                curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  "$API_URL/$version_id"
+              fi
+            done
+          else
+            echo "No untagged images to delete"
+          fi
