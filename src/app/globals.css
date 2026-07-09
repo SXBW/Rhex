@@ -1330,16 +1330,52 @@
     }
   }
 
-  .post-gallery-grid {
-    display: grid;
-    align-items: start;
-    gap: 0.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
-  }
+.post-gallery-grid {
+  display: block !important;
+  column-width: 15.5rem;
+  column-gap: 0.75rem;
+}
 
-  .post-gallery-card {
-    width: 100%;
+.post-gallery-card {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 0.75rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  vertical-align: top;
+}
+
+.post-gallery-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.post-gallery-card > a > .relative {
+  min-height: 0 !important;
+}
+
+@media (max-width: 640px) {
+  .post-gallery-grid {
+    column-width: auto;
+    column-count: 1;
+    column-gap: 0.75rem;
   }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .post-gallery-grid {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .post-gallery-grid {
+    column-width: 15.5rem;
+  }
+}
+
 
   @keyframes toast-in {
     from {
