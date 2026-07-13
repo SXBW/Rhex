@@ -2,6 +2,9 @@ node_modules
 .next
 out
 dist
+.DS_Store
+.trae/
+artifacts/
 .env
 .pnpm-store
 .env.local
@@ -9,6 +12,7 @@ dist
 .env.test.local
 .env.production.local
 tsconfig.tsbuildinfo
+<<<<<<< HEAD
 # 插件目录
 addons/*/
 !addons/.runtime/
@@ -19,5 +23,9 @@ addons/*/
 # 插件 ZIP 文件
 *.zip
 
+=======
+/public/uploads/
+/addons/
+>>>>>>> 8f063a12ffa8dd3599a8bf6e2ccd42e499d809ef
 /uploads/
 /backups/
