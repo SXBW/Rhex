@@ -141,6 +141,10 @@ export function StructureContentTab({
 
       <div className="rounded-xl border border-border p-5">
         <h4 className="text-sm font-semibold">节点侧栏</h4>
+        <div className="mt-4">
+          <Toggle label="显示节点侧边栏" checked={form.sidebarEnabled} onChange={(value) => updateField("sidebarEnabled", value)} />
+          <p className="mt-2 text-xs text-muted-foreground">关闭后该节点页面不显示右侧栏，包括画廊模式。</p>
+        </div>
         <div className="mt-4 space-y-2">
           {form.sidebarLinks.length > 0 ? (
             <div className="hidden items-center gap-3 px-3 text-[11px] font-medium text-muted-foreground lg:grid lg:grid-cols-[120px_minmax(0,1fr)_110px_120px_80px]">

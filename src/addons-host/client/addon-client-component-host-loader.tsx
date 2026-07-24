@@ -14,6 +14,11 @@ export function AddonClientComponentHostLoader({ moduleUrl, props, fallback = nu
   const [AddonClientComponentHost, setAddonClientComponentHost] = useState<AddonClientComponentHostComponent | null>(null)
 
   useEffect(() => {
+    if (!moduleUrl) {
+      setAddonClientComponentHost(null)
+      return
+    }
+
     let cancelled = false
 
     void import("@/addons-host/client/addon-client-component-host").then((module) => {
@@ -25,7 +30,7 @@ export function AddonClientComponentHostLoader({ moduleUrl, props, fallback = nu
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [moduleUrl])
 
   if (!AddonClientComponentHost) {
     return <>{fallback}</>

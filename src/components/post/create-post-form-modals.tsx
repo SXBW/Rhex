@@ -78,6 +78,7 @@ export function CreatePostFormModals({
     <>
       <CoverConfigModal
         open={coverModalOpen}
+        content={draft.content}
         coverPath={draft.coverPath}
         coverUploading={coverUploading}
         onClose={() => setCoverModalOpen(false)}

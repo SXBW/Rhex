@@ -150,14 +150,14 @@ function resolveUserActivityTab(
     return "replies"
   }
 
-  return introductionEnabled ? "introduction" : "posts"
+  return "posts"
 }
 
 function buildUserActivityHref(
   username: string,
   currentState: { tab: UserActivityTabKey; postsPage: number; repliesPage: number },
   overrides: Partial<{ tab: UserActivityTabKey; postsPage: number; repliesPage: number }> = {},
-  defaultTab: UserActivityTabKey = "introduction",
+  defaultTab: UserActivityTabKey = "posts",
 ) {
   const nextState = {
     ...currentState,
@@ -245,7 +245,7 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
     isLoggedIn: Boolean(currentUser),
   }
   const profileIntroductionEnabled = settings.userProfileIntroductionEnabled
-  const defaultActivityTab: UserActivityTabKey = profileIntroductionEnabled ? "introduction" : "posts"
+  const defaultActivityTab: UserActivityTabKey = "posts"
   const activityTab = resolveUserActivityTab(rawActivityTab, { postsPage, repliesPage }, {
     introductionEnabled: profileIntroductionEnabled,
   })

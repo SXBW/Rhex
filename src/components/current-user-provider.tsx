@@ -125,9 +125,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   }, [setCurrentUserPayload])
 
   useEffect(() => {
-    queueMicrotask(() => {
-      void refresh()
-    })
+    void refresh()
   }, [refresh])
 
   useEffect(() => {
@@ -179,7 +177,6 @@ export function CurrentUserInboxProvider({
 
   return (
     <InboxRealtimeProvider
-      key={user?.id ?? "guest"}
       currentUserId={user?.id ?? null}
       initialUnreadMessageCount={messageEnabled ? surface?.unreadMessageCount ?? 0 : 0}
       initialUnreadNotificationCount={surface?.unreadNotificationCount ?? 0}

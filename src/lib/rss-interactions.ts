@@ -6,7 +6,6 @@ import {
   findRssTipSupportersByIds,
   findRssTipUserPoints,
   listRssEntryTipSupportAggregates,
-  lockRssTipSender,
   runRssInteractionTransaction,
 } from "@/db/rss-interaction-queries"
 import { apiError } from "@/lib/api-route"
@@ -196,8 +195,6 @@ export async function tipRssEntry(input: {
   const { start, end } = getBusinessDayRange()
 
   const result = await runRssInteractionTransaction(async (tx) => {
-    await lockRssTipSender(tx, input.senderId)
-
     const [entry, sender] = await Promise.all([
       findRssEntryForInteraction(input.entryId, tx),
       findRssTipSender(input.senderId, tx),

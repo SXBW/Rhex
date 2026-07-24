@@ -2,7 +2,7 @@
 
 import Script from "next/script"
 import { usePathname } from "next/navigation"
-import { Fragment, useEffect, useState, useSyncExternalStore } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 
 import { AddonClientIslandLoader } from "@/addons-host/client/addon-client-island-loader"
@@ -56,14 +56,20 @@ function seedPayloadCache(payload: GlobalLayoutAddonSlotsPayload | null | undefi
   payloadCache.set(normalizePathname(payload.pathname), payload)
 }
 
-const subscribeToHydration = () => () => undefined
+function resolveInitialPayload(
+  pathname: string,
+  initialPayload: GlobalLayoutAddonSlotsPayload | null | undefined,
+) {
+  seedPayloadCache(initialPayload)
+  return payloadCache.get(pathname) ?? null
+}
 
 function HeadPortal({ children }: { children: React.ReactNode }) {
-  const mounted = useSyncExternalStore(
-    subscribeToHydration,
-    () => true,
-    () => false,
-  )
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   if (!mounted) {
     return null
@@ -184,25 +190,24 @@ export function GlobalLayoutAddonSlots({
   initialPayload?: GlobalLayoutAddonSlotsPayload | null
 }) {
   const pathname = normalizePathname(usePathname())
-  const [fetchedPayload, setFetchedPayload] = useState<GlobalLayoutAddonSlotsPayload | null>(null)
-  const initialPayloadForPath = initialPayload
-    && normalizePathname(initialPayload.pathname) === pathname
-    ? initialPayload
-    : null
-  const payload = initialPayloadForPath
-    ?? (fetchedPayload && normalizePathname(fetchedPayload.pathname) === pathname
-      ? fetchedPayload
-      : payloadCache.get(pathname) ?? null)
+  const [payload, setPayload] = useState<GlobalLayoutAddonSlotsPayload | null>(() => resolveInitialPayload(pathname, initialPayload))
 
   useEffect(() => {
     seedPayloadCache(initialPayload)
+
+    const cachedPayload = payloadCache.get(pathname)
+    if (cachedPayload) {
+      setPayload(cachedPayload)
+    } else {
+      setPayload(null)
+    }
 
     const controller = new AbortController()
 
     void fetchPayload(pathname, controller.signal)
       .then((nextPayload) => {
         payloadCache.set(pathname, nextPayload)
-        setFetchedPayload(nextPayload)
+        setPayload(nextPayload)
       })
       .catch((error) => {
         if (!controller.signal.aborted) {

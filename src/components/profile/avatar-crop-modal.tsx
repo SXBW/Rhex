@@ -186,13 +186,13 @@ export function AvatarCropModal({
     >
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_320px]">
         <div className="space-y-3">
-          <div className="relative h-[360px] overflow-hidden rounded-xl border border-border bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.16),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.03),rgba(15,23,42,0.08))]">
+          <div className="avatar-cropper relative h-[360px] overflow-hidden rounded-xl border border-border bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.16),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.03),rgba(15,23,42,0.08))]">
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
               aspect={1}
-              cropShape="round"
+              cropShape="rect"
               showGrid={false}
               zoomWithScroll
               minZoom={minZoom}
@@ -243,7 +243,7 @@ export function AvatarCropModal({
 
           <div className="rounded-xl border border-dashed border-border bg-background/70 p-4 text-xs leading-6 text-muted-foreground">
             <p>1. 头像会按你当前裁剪结果导出为正方形图片。</p>
-            <p>2. 建议把主体放在圆形框中央，避免小尺寸下边缘被裁掉。</p>
+            <p>2. 建议把主体放在圆角框中央，避免小尺寸下边缘被裁掉。</p>
           </div>
         </div>
       </div>

@@ -1,10 +1,7 @@
 import { randomUUID } from "node:crypto"
 
-import { createPostBlockPurchase, findPostUnlockPurchaseContext, findPostUnlockUserPoints, listPurchasedPostBlockPurchaseBuyersByPost, listPurchasedPostBlockPurchases, runPostUnlockTransaction } from "@/db/post-unlock-queries"
-import { apiError } from "@/lib/api-route"
-import { parsePostContentDocument } from "@/lib/post-content"
+import { createPostBlockPurchase, findPostUnlockUserPoints, findPurchasedPostBlockPurchase, listPurchasedPostBlockPurchaseBuyersByPost, listPurchasedPostBlockPurchases, runPostUnlockTransaction } from "@/db/post-unlock-queries"
 import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
-import { isPublicReadablePostStatus } from "@/lib/post-types"
 import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
 import { getSiteSettings } from "@/lib/site-settings"
 
@@ -12,62 +9,51 @@ function buildReason(_postId: string, _blockId: string, pointName: string, price
   return `购买帖子隐藏内容（${price}${pointName}）`
 }
 
-export async function purchasePostBlock(options: { userId: number; postId: string; blockId: string }) {
+export async function purchasePostBlock(options: { userId: number; postId: string; blockId: string; price: number; sellerId: number }) {
   const settings = await getSiteSettings()
 
   return runPostUnlockTransaction(async (tx) => {
-    const post = await findPostUnlockPurchaseContext(options.postId, tx)
-    if (!post || !isPublicReadablePostStatus(post.status)) {
-      apiError(404, "帖子不存在或不可购买")
+    const existingPurchase = await findPurchasedPostBlockPurchase({
+      userId: options.userId,
+      postId: options.postId,
+      blockId: options.blockId,
+    }, tx)
+
+    if (existingPurchase) {
+      return { alreadyOwned: true }
     }
 
-    if (post.authorId === options.userId) {
-      apiError(400, "不能购买自己的隐藏内容")
+    const [user, seller] = await Promise.all([
+      findPostUnlockUserPoints(options.userId, tx),
+      findPostUnlockUserPoints(options.sellerId, tx),
+    ])
+
+    const buyerPreparedDelta = await prepareScopedPointDelta({
+      scopeKey: "POST_UNLOCK_OUTGOING",
+      baseDelta: -options.price,
+      userId: options.userId,
+    })
+    const sellerPreparedDelta = await prepareScopedPointDelta({
+      scopeKey: "POST_UNLOCK_INCOMING",
+      baseDelta: options.price,
+      userId: options.sellerId,
+    })
+
+    if (!user || !seller) {
+      throw new Error("用户不存在")
     }
 
-    const targetBlock = parsePostContentDocument(post.content).blocks.find((block) => (
-      block.id === options.blockId
-      && block.type === "PURCHASE_UNLOCK"
-      && typeof block.price === "number"
-      && block.price > 0
-    ))
-    if (!targetBlock || typeof targetBlock.price !== "number") {
-      apiError(404, "隐藏内容不存在或不可购买")
-    }
-
-    const price = targetBlock.price
-    const sellerId = post.authorId
     const purchaseRecord = await createPostBlockPurchase({
       id: `pbp_${randomUUID()}`,
       postId: options.postId,
       blockId: options.blockId,
       buyerId: options.userId,
-      sellerId,
-      price,
+      sellerId: options.sellerId,
+      price: options.price,
     }, tx)
 
     if (!purchaseRecord) {
-      return { alreadyOwned: true, sellerId }
-    }
-
-    const [user, seller] = await Promise.all([
-      findPostUnlockUserPoints(options.userId, tx),
-      findPostUnlockUserPoints(sellerId, tx),
-    ])
-
-    const buyerPreparedDelta = await prepareScopedPointDelta({
-      scopeKey: "POST_UNLOCK_OUTGOING",
-      baseDelta: -price,
-      userId: options.userId,
-    })
-    const sellerPreparedDelta = await prepareScopedPointDelta({
-      scopeKey: "POST_UNLOCK_INCOMING",
-      baseDelta: price,
-      userId: sellerId,
-    })
-
-    if (!user || !seller) {
-      throw new Error("用户不存在")
+      return { alreadyOwned: true }
     }
 
     await applyPointDelta({
@@ -77,14 +63,14 @@ export async function purchasePostBlock(options: { userId: number; postId: strin
       prepared: buyerPreparedDelta,
       pointName: settings.pointName,
       insufficientMessage: `当前${settings.pointName}不足`,
-      reason: buildReason(options.postId, options.blockId, settings.pointName, price),
+      reason: buildReason(options.postId, options.blockId, settings.pointName, options.price),
       eventType: POINT_LOG_EVENT_TYPES.POST_BLOCK_PURCHASE_PAID,
       eventData: {
         postId: options.postId,
         blockId: options.blockId,
         buyerId: options.userId,
-        sellerId,
-        configuredPrice: price,
+        sellerId: options.sellerId,
+        configuredPrice: options.price,
         appliedFinalDelta: buyerPreparedDelta.finalDelta,
       },
       relatedType: "POST",
@@ -93,7 +79,7 @@ export async function purchasePostBlock(options: { userId: number; postId: strin
 
     await applyPointDelta({
       tx,
-      userId: sellerId,
+      userId: options.sellerId,
       beforeBalance: seller.points,
       prepared: sellerPreparedDelta,
       pointName: settings.pointName,
@@ -103,15 +89,15 @@ export async function purchasePostBlock(options: { userId: number; postId: strin
         postId: options.postId,
         blockId: options.blockId,
         buyerId: options.userId,
-        sellerId,
-        configuredPrice: price,
+        sellerId: options.sellerId,
+        configuredPrice: options.price,
         appliedFinalDelta: sellerPreparedDelta.finalDelta,
       },
       relatedType: "POST",
       relatedId: options.postId,
     })
 
-    return { alreadyOwned: false, sellerId }
+    return { alreadyOwned: false }
   })
 }
 

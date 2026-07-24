@@ -516,6 +516,27 @@ export function useUserActions({
     })
   }
 
+  function revokeBadge(badgeId: string, badgeName: string, message: string) {
+    setOperationsState((current) => ({ ...current, badgeFeedback: "" }))
+    startTransition(async () => {
+      const result = await submitAdminAction({
+        action: "user.badge.revoke",
+        targetId: String(user.id),
+        badgeId,
+        badgeName,
+        message,
+      })
+
+      setOperationsState((current) => ({
+        ...current,
+        badgeFeedback: result.message,
+      }))
+      if (result.ok) {
+        refreshData()
+      }
+    })
+  }
+
   function sendNotification() {
     setOperationsState((current) => ({ ...current, notificationFeedback: "" }))
     if (!operationsState.notificationTitle.trim()) {
@@ -667,6 +688,7 @@ export function useUserActions({
         setOperationsState((current) => ({ ...current, badgeMessage: value }))
       },
       grantBadge,
+      revokeBadge,
       setNotificationTitle: (value: string) => {
         setOperationsState((current) => ({ ...current, notificationTitle: value }))
       },

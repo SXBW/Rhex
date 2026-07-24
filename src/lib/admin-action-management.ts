@@ -29,6 +29,7 @@ const adminActionPermissions: Record<string, AdminPermissionKey> = {
   "user.vip": "admin.users.manage",
   "user.vip.configure": "admin.users.manage",
   "user.badge.grant": "admin.users.grantBadges",
+  "user.badge.revoke": "admin.users.grantBadges",
   "user.notification.send": "admin.users.manage",
   "post.feature": "admin.content.manage",
   "post.pin": "admin.content.manage",
@@ -63,13 +64,6 @@ export async function executeAdminAction(context: AdminActionContext) {
   const requiredPermission = adminActionPermissions[context.action]
   if (requiredPermission && !await canAdminWithPermissionOverrides(context.actor, requiredPermission)) {
     apiError(403, "无权执行该操作")
-  }
-
-  if (context.action.startsWith("user.")) {
-    const targetUserId = Number(context.targetId)
-    if (Number.isInteger(targetUserId) && targetUserId === context.actor.id) {
-      apiError(403, "\u4e0d\u80fd\u901a\u8fc7\u540e\u53f0\u63a7\u5236\u9762\u4fee\u6539\u5f53\u524d\u767b\u5f55\u7ba1\u7406\u5458")
-    }
   }
 
   const result = await definition.execute(context)

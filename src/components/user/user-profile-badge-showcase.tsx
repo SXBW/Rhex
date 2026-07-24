@@ -61,10 +61,13 @@ export function UserProfileBadgeShowcase({ badges, className }: UserProfileBadge
               }
               contentClassName="max-w-[240px]"
             >
-              <Link href={`/badges/${badge.code}`} className="flex min-w-0 flex-col items-center gap-2 text-center">
+              <Link href={`/badges/${badge.code}`} className="flex min-w-0 items-center justify-center text-center" aria-label={badge.name}>
                 <div
-                  className="flex size-12 shrink-0 items-center justify-center text-lg transition-transform hover:scale-[1.03]"
-                  style={{ color: badge.color }}
+                  className="flex size-12 shrink-0 items-center justify-center rounded-[14px] text-lg transition-transform hover:scale-[1.03]"
+                  style={{
+                    color: badge.color,
+                    background: `linear-gradient(180deg, ${badge.color}20, ${badge.color}10)`,
+                  }}
                 >
                   <LevelIcon
                     icon={badge.iconText}
@@ -74,9 +77,6 @@ export function UserProfileBadgeShowcase({ badges, className }: UserProfileBadge
                     svgClassName="[&>svg]:block"
                   />
                 </div>
-                <p className="w-full min-w-0 truncate text-[10px] font-semibold leading-4 text-muted-foreground">
-                  {badge.name}
-                </p>
               </Link>
             </Tooltip>
           ))}

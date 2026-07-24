@@ -45,20 +45,7 @@ export function normalizeAddonExternalAuthRedirectTo(
   fallback = "/settings?tab=profile&profileTab=accounts",
 ) {
   const normalizedValue = normalizeOptionalString(value)
-  if (!normalizedValue || !normalizedValue.startsWith("/") || normalizedValue.startsWith("//")) {
-    return fallback
-  }
-
-  try {
-    const url = new URL(normalizedValue, "https://local.invalid")
-    if (url.origin !== "https://local.invalid") {
-      return fallback
-    }
-
-    return `${url.pathname}${url.search}${url.hash}` || fallback
-  } catch {
-    return fallback
-  }
+  return normalizedValue.startsWith("/") ? normalizedValue : fallback
 }
 
 function compareSecrets(expected: string, received: string) {

@@ -135,6 +135,7 @@ export interface AdminStructureData {
     slug: string
     description: string
     sidebarLinks: BoardSidebarLinkItem[]
+    sidebarEnabled: boolean
     rulesMarkdown: string | null
     moderatorsCanWithdrawTreasury: boolean
     status: BoardStatus
@@ -393,6 +394,7 @@ export function mapAdminStructureData(
         slug: board.slug,
         description: board.description ?? "",
         sidebarLinks: sidebarConfig.links,
+        sidebarEnabled: sidebarConfig.enabled,
         rulesMarkdown: sidebarConfig.rulesMarkdown,
         moderatorsCanWithdrawTreasury: sidebarConfig.moderatorsCanWithdrawTreasury,
         status: board.status,

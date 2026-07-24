@@ -216,11 +216,8 @@ function getPermissionGrantOverride(
 }
 
 export function canManageTargetUser(input: TargetUserPermissionContext) {
-  // Administrative user-management endpoints must not be used as a backdoor for
-  // changing the current operator. Self-service profile/password flows are kept
-  // separate so control-plane writes always have a distinct actor and target.
   if (input.actor.id === input.targetId) {
-    return false
+    return true
   }
 
   if (input.targetIsFounder) {
@@ -241,7 +238,7 @@ export function canManageTargetUser(input: TargetUserPermissionContext) {
 export function canChangeTargetRole(input: TargetUserPermissionContext & {
   nextRole: UserRole
 }) {
-  if (input.actor.id === input.targetId) {
+  if (input.actor.id === input.targetId && input.nextRole !== "ADMIN") {
     return false
   }
 

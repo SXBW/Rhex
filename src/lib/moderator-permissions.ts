@@ -176,17 +176,8 @@ export function buildManagedCommentWhereInput(actor: AdminActor): Prisma.Comment
   return or.length > 0 ? { OR: or } : { id: { in: [] } }
 }
 
-export function isAdminActorEligible(user: Pick<AdminActorSource, "role" | "status"> | null | undefined) {
-  return Boolean(
-    user
-    && (user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR)
-    && user.status !== "BANNED"
-    && user.status !== "INACTIVE",
-  )
-}
-
 export async function resolveAdminActorFromSessionUser(user: AdminActorSource | null): Promise<AdminActor | null> {
-  if (!user || !isAdminActorEligible(user)) {
+  if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.MODERATOR)) {
     return null
   }
 
@@ -196,7 +187,7 @@ export async function resolveAdminActorFromSessionUser(user: AdminActorSource | 
 
   const moderator = await findModeratorActorById(user.id)
 
-  if (!moderator || !isAdminActorEligible(moderator)) {
+  if (!moderator || moderator.role !== UserRole.MODERATOR) {
     return null
   }
 

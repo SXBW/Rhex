@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronDown, ChevronUp, Clock3, Gift, Sparkles, Ticket, Trophy } from "lucide-react"
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { UserAvatar } from "@/components/user/user-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -132,11 +132,7 @@ export function LotteryPanel({ postId, isOwnerOrAdmin, lottery }: LotteryPanelPr
   const participantPageSize = 10
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
-  const mounted = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false,
-  )
+  const [mounted, setMounted] = useState(false)
   const [conditionsOpen, setConditionsOpen] = useState(false)
   const [participantModalOpen, setParticipantModalOpen] = useState(false)
   const [participantLoading, setParticipantLoading] = useState(false)
@@ -189,6 +185,10 @@ export function LotteryPanel({ postId, isOwnerOrAdmin, lottery }: LotteryPanelPr
   })
   const showCountdownStageLabel = (!isDrawn && hasNotStarted && Boolean(lottery.startsAt))
     || (!isDrawn && !isLocked && Boolean(lottery.endsAt))
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (isDrawn) {

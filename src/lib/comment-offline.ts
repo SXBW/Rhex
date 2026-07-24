@@ -50,10 +50,6 @@ export async function offlineCommentByPolicy(input: {
       reviewNote,
     })
 
-    if (!updated) {
-      apiError(409, "评论状态已变更，请刷新后重试")
-    }
-
     return {
       actorIsCommentAuthor,
       comment: updated,

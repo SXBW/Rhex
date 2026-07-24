@@ -3,6 +3,7 @@ import { UserRole, UserStatus } from "@/db/types"
 import { prisma } from "@/db/client"
 
 export function updateUserStatus(userId: number, status: UserStatus, statusExpiresAt?: Date | null, statusReason?: string | null) {
+  const shouldInvalidateSessions = status === UserStatus.BANNED || status === UserStatus.INACTIVE
   const shouldStoreReason = status === UserStatus.MUTED || status === UserStatus.BANNED
 
   return prisma.user.update({
@@ -11,9 +12,7 @@ export function updateUserStatus(userId: number, status: UserStatus, statusExpir
       status,
       statusExpiresAt: shouldStoreReason ? statusExpiresAt ?? null : null,
       statusReason: shouldStoreReason ? (statusReason?.trim() || null) : null,
-      // A status change must take effect for every existing session, including
-      // muted accounts whose stale UI/session could otherwise keep operating.
-      sessionInvalidBefore: new Date(),
+      ...(shouldInvalidateSessions ? { sessionInvalidBefore: new Date() } : {}),
     },
   })
 }
@@ -25,15 +24,7 @@ export function updateUserRole(userId: number, role: UserRole, status?: UserStat
       role,
       status,
       ...(status ? { statusExpiresAt: null, statusReason: null } : {}),
-      sessionInvalidBefore: new Date(),
     },
-  })
-}
-
-export function invalidateUserSessions(userId: number) {
-  return prisma.user.update({
-    where: { id: userId },
-    data: { sessionInvalidBefore: new Date() },
   })
 }
 
@@ -154,7 +145,6 @@ export function promoteUserToAdmin(userId: number) {
         status: UserStatus.ACTIVE,
         statusExpiresAt: null,
         statusReason: null,
-        sessionInvalidBefore: new Date(),
       },
     })
     await tx.moderatorZoneScope.deleteMany({ where: { moderatorId: userId } })
@@ -168,7 +158,6 @@ export function demoteUserToUser(userId: number) {
       where: { id: userId },
       data: {
         role: UserRole.USER,
-        sessionInvalidBefore: new Date(),
       },
     })
     await tx.adminPermissionGrant.deleteMany({ where: { userId } })

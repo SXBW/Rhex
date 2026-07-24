@@ -118,28 +118,10 @@ export function readOptionalStringField(body: JsonObject, field: string) {
   return typeof value === "string" ? value.trim() : ""
 }
 
-function parseFiniteNumberField(value: unknown) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : undefined
-  }
-
-  if (typeof value !== "string") {
-    return undefined
-  }
-
-  const normalized = value.trim()
-  if (!normalized) {
-    return undefined
-  }
-
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : undefined
-}
-
 export function requireNumberField(body: JsonObject, field: string, message: string) {
-  const value = parseFiniteNumberField(body[field])
+  const value = typeof body[field] === "number" ? body[field] : Number(body[field])
 
-  if (value === undefined) {
+  if (!Number.isFinite(value)) {
     apiError(400, message)
   }
 
@@ -149,11 +131,12 @@ export function requireNumberField(body: JsonObject, field: string, message: str
 export function readOptionalNumberField(body: JsonObject, field: string) {
   const rawValue = body[field]
 
-  if (rawValue === undefined || rawValue === null) {
+  if (rawValue === undefined || rawValue === null || rawValue === "") {
     return undefined
   }
 
-  return parseFiniteNumberField(rawValue)
+  const value = typeof rawValue === "number" ? rawValue : Number(rawValue)
+  return Number.isFinite(value) ? value : undefined
 }
 
 export function requirePositiveIntegerField(body: JsonObject, field: string, message: string) {
@@ -291,18 +274,14 @@ export function createAdminRouteHandler<T = unknown>(
     errorMessage: options?.errorMessage,
     logPrefix: options?.logPrefix,
     buildContext: async (request, routeContext) => {
-      const { getCurrentSessionActor } = await import("@/lib/auth")
-      const { isSiteAdmin, resolveAdminActorFromSessionUser } = await import("@/lib/moderator-permissions")
+      const { requireAdminActor, requireSiteAdminActor } = await import("@/lib/moderator-permissions")
       const { isFounderAdmin } = await import("@/lib/admin-founder")
       const { canAdminWithPermissionOverrides } = await import("@/lib/admin-permission-overrides")
-      const currentUser = await getCurrentSessionActor()
+      const adminUser = options?.allowModerator
+        ? await requireAdminActor()
+        : await requireSiteAdminActor()
 
-      if (!currentUser) {
-        apiError(401, "请先登录")
-      }
-
-      const adminUser = await resolveAdminActorFromSessionUser(currentUser)
-      if (!adminUser || (!options?.allowModerator && !isSiteAdmin(adminUser))) {
+      if (!adminUser || (adminUser.role !== UserRole.ADMIN && (!options?.allowModerator || adminUser.role !== UserRole.MODERATOR))) {
         apiError(403, options?.unauthorizedMessage ?? "无权操作")
       }
 

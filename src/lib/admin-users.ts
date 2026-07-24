@@ -2,7 +2,7 @@ import { UserRole, UserStatus } from "@/db/types"
 
 import type { Prisma } from "@/db/types"
 
-import { buildAdminUserSummary, findAdminUsersPage, findModeratorScopeOptions } from "@/db/admin-user-queries"
+import { buildAdminUserSummary, countAdminUsers, findAdminUsersPage, findModeratorScopeOptions } from "@/db/admin-user-queries"
 
 import { normalizePageSize, normalizePositiveInteger } from "@/lib/shared/normalizers"
 
@@ -48,8 +48,8 @@ export async function getAdminUsers(options: GetAdminUsersOptions = {}): Promise
   await ensureAdminActorPermission(actor, "admin.users.manage", "无权限访问用户管理")
 
   const keyword = String(options.keyword ?? "").trim()
-  const role = userRoleValues.has(options.role as UserRole) ? String(options.role) : "ALL"
-  const status = userStatusValues.has(options.status as UserStatus) ? String(options.status) : "ALL"
+  const role = userRoleValues.has(options.role as UserRole) || options.role === "STAFF" ? String(options.role) : "ALL"
+  const status = userStatusValues.has(options.status as UserStatus) || options.status === "RESTRICTED" ? String(options.status) : "ALL"
   const vip = options.vip === "vip" || options.vip === "non-vip" ? options.vip : "ALL"
   const activity = options.activity === "online-7d" || options.activity === "never-login" ? options.activity : "ALL"
   const sort = normalizeSort(options.sort)
@@ -59,8 +59,8 @@ export async function getAdminUsers(options: GetAdminUsersOptions = {}): Promise
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
   const where: Prisma.UserWhereInput = {
-    ...(role !== "ALL" ? { role: role as UserRole } : {}),
-    ...(status !== "ALL" ? { status: status as UserStatus } : {}),
+    ...(role === "STAFF" ? { role: { in: [UserRole.ADMIN, UserRole.MODERATOR] } } : role !== "ALL" ? { role: role as UserRole } : {}),
+    ...(status === "RESTRICTED" ? { status: { in: [UserStatus.MUTED, UserStatus.BANNED] } } : status !== "ALL" ? { status: status as UserStatus } : {}),
     ...(vip === "vip" ? { vipExpiresAt: { gt: now } } : {}),
     ...(vip === "non-vip" ? { OR: [{ vipExpiresAt: null }, { vipExpiresAt: { lte: now } }] } : {}),
     ...(activity === "online-7d" ? { lastLoginAt: { gte: sevenDaysAgo } } : {}),
@@ -91,10 +91,12 @@ export async function getAdminUsers(options: GetAdminUsersOptions = {}): Promise
               ? [{ points: "desc" }, { createdAt: "desc" }]
               : [{ createdAt: "desc" }]
 
-  const userSummary = await buildAdminUserSummary(where, now)
+  const [userSummary, total] = await Promise.all([
+    buildAdminUserSummary({}, now),
+    countAdminUsers(where),
+  ])
 
-
-  const { total, active, muted, banned, inactive, admin, moderator, vip: vipCount } = userSummary
+  const { active, muted, banned, inactive, admin, moderator, vip: vipCount } = userSummary
 
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))

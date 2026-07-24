@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto"
 
-import { countInviteCodesByCreator, createInviteCodesBatch, deleteInviteCodeById, deleteInviteCodesByScope, findInviteCodeByCode, findInviteCodeForUse, findInviteCodeList, findInviteCodesByCodes, findInviteCodesByCreator, findInvitePurchaseUser, findUserInviteResolverById, findUserInviteResolverByUsername, type InviteCodeUsageStatus } from "@/db/invite-code-queries"
+import { countInviteCodes, countInviteCodesByCreator, countManuallyCreatedInviteCodes, createInviteCodesBatch, deleteInviteCodeById, deleteInviteCodesByScope, findInviteCodeByCode, findInviteCodeForUse, findInviteCodePage, findInviteCodesByCodes, findInviteCodesByCreator, findInvitePurchaseUser, findUserInviteResolverById, findUserInviteResolverByUsername, type InviteCodeUsageStatus } from "@/db/invite-code-queries"
 import { purchaseInviteCodeTransaction } from "@/db/invite-code-write-queries"
 import { apiError } from "@/lib/api-route"
 import { ensureAdminActorPermission } from "@/lib/admin-scope-permissions"
@@ -21,9 +21,29 @@ export interface InviteCodeItem {
   code: string
   createdAt: string
   createdByUsername: string | null
+  isUsed: boolean
   usedAt: string | null
   usedByUsername: string | null
   note: string | null
+}
+
+export interface InviteCodeAdminPageData {
+  items: InviteCodeItem[]
+  status: InviteCodeUsageStatus
+  summary: {
+    total: number
+    used: number
+    unused: number
+    manual: number
+  }
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+    hasPrevPage: boolean
+    hasNextPage: boolean
+  }
 }
 
 export interface InviteCodePageData {
@@ -92,25 +112,49 @@ export async function createInviteCodes(input: { count: number; createdById?: nu
 
 }
 
-export async function getInviteCodeList(limit = 100): Promise<InviteCodeItem[]> {
+export async function getInviteCodePage(options?: { page?: unknown; status?: unknown }): Promise<InviteCodeAdminPageData> {
   await ensureAdminActorPermission(
     await requireSiteAdminActor(),
     "admin.operations.manage",
     "无权限访问邀请码",
   )
 
-  const rows = await findInviteCodeList(limit)
+  const requestedPage = Math.max(1, Math.trunc(Number(options?.page) || 1))
+  const status = normalizeInviteCodeUsageStatus(options?.status)
+  const pageSize = 50
+  const [total, used, manual] = await Promise.all([
+    countInviteCodes(),
+    countInviteCodes("used"),
+    countManuallyCreatedInviteCodes(),
+  ])
+  const unused = total - used
+  const filteredTotal = status === "used" ? used : status === "unused" ? unused : total
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize))
+  const page = Math.min(requestedPage, totalPages)
+  const rows = await findInviteCodePage({ page, pageSize, status })
 
-
-  return rows.map((row) => ({
-    id: row.id,
-    code: row.code,
-    createdAt: row.createdAt.toISOString(),
-    createdByUsername: row.createdBy?.username ?? null,
-    usedAt: row.usedAt?.toISOString() ?? null,
-    usedByUsername: row.usedBy?.username ?? null,
-    note: row.note,
-  }))
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      createdAt: row.createdAt.toISOString(),
+      createdByUsername: row.createdBy?.username ?? null,
+      isUsed: row.usedAt !== null,
+      usedAt: row.usedAt?.toISOString() ?? null,
+      usedByUsername: row.usedBy?.username ?? null,
+      note: row.note,
+    })),
+    status,
+    summary: { total, used, unused, manual },
+    pagination: {
+      page,
+      pageSize,
+      total: filteredTotal,
+      totalPages,
+      hasPrevPage: page > 1,
+      hasNextPage: page < totalPages,
+    },
+  }
 }
 
 export async function deleteInviteCodes(input: { scope: "single" | "used" | "unused" | "all"; id?: string }) {
@@ -187,7 +231,7 @@ export async function resolveInviter(input: { inviterUsername?: string; inviteCo
       apiError(404, "邀请码不存在")
     }
 
-    if (foundCode.usedById) {
+    if (foundCode.usedAt) {
       apiError(409, "邀请码已被使用")
     }
 

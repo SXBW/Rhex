@@ -1,6 +1,7 @@
-import { Prisma, type Prisma as PrismaType } from "@prisma/client"
+import { Prisma } from "@prisma/client"
 
 import { prisma } from "@/db/client"
+import { recalculatePostScore, recalculatePostScores } from "@/db/post-score-queries"
 import { buildPostDetailInclude, pinnedPostOrderBy, postListInclude } from "@/db/queries"
 import { PUBLIC_READABLE_POST_STATUSES } from "@/lib/post-types"
 
@@ -173,13 +174,17 @@ export async function findEditablePostBySlug(slug: string) {
 }
 
 export async function increasePostViewCount(postId: string) {
-  return prisma.post.update({
-    where: { id: postId },
-    data: {
-      viewCount: {
-        increment: 1,
+  return prisma.$transaction(async (tx) => {
+    const post = await tx.post.update({
+      where: { id: postId },
+      data: {
+        viewCount: {
+          increment: 1,
+        },
       },
-    },
+    })
+    await recalculatePostScore(postId, tx)
+    return post
   })
 }
 
@@ -198,22 +203,27 @@ export async function increasePostViewCounts(
   }
 
   const chunkSize = 500
-  const statements: PrismaType.PrismaPromise<number>[] = []
 
-  for (let index = 0; index < normalized.length; index += chunkSize) {
-    const chunk = normalized.slice(index, index + chunkSize)
-    const values = Prisma.join(chunk.map((item) => Prisma.sql`(${item.postId}, ${item.count})`))
+  return prisma.$transaction(async (tx) => {
+    const results: number[] = []
 
-    statements.push(prisma.$executeRaw`
-      UPDATE "Post" AS p
-      SET "viewCount" = p."viewCount" + v.delta
-      FROM (VALUES ${values}) AS v(id, delta)
-      WHERE p.id = v.id
-    `)
-  }
+    for (let index = 0; index < normalized.length; index += chunkSize) {
+      const chunk = normalized.slice(index, index + chunkSize)
+      const values = Prisma.join(chunk.map((item) => Prisma.sql`(${item.postId}, ${item.count})`))
 
-  const results = await prisma.$transaction(statements)
-  return results.reduce((total, count) => total + count, 0)
+      const updatedCount = await tx.$executeRaw`
+        UPDATE "Post" AS p
+        SET "viewCount" = p."viewCount" + v.delta
+        FROM (VALUES ${values}) AS v(id, delta)
+        WHERE p.id = v.id
+      `
+      results.push(updatedCount)
+    }
+
+    await recalculatePostScores(normalized.map((item) => item.postId), tx)
+
+    return results.reduce((total, count) => total + count, 0)
+  })
 }
 
 export async function findPostSeoBySlug(slug: string) {

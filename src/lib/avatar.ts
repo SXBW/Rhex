@@ -21,11 +21,16 @@ export function getAvatarFallback(name: string) {
 }
 
 export function getAvatarColor(name: string) {
-  const hue = stringToHue(name)
-  return {
-    background: `hsl(${hue} 72% 92%)`,
-    foreground: `hsl(${hue} 48% 28%)`,
-  }
+  const coolTonePalette = [
+    { background: "hsl(258 24% 91%)", foreground: "hsl(258 24% 30%)" },
+    { background: "hsl(238 24% 91%)", foreground: "hsl(238 25% 30%)" },
+    { background: "hsl(218 28% 91%)", foreground: "hsl(218 28% 29%)" },
+    { background: "hsl(203 24% 90%)", foreground: "hsl(203 26% 28%)" },
+    { background: "hsl(215 16% 90%)", foreground: "hsl(215 18% 29%)" },
+    { background: "hsl(225 10% 89%)", foreground: "hsl(225 12% 28%)" },
+  ] as const
+
+  return coolTonePalette[stringToHue(name) % coolTonePalette.length]
 }
 
 function escapeSvgText(value: string) {
@@ -43,7 +48,7 @@ export function createGeneratedAvatarDataUrl(name: string) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="${fallback}">
       <rect width="96" height="96" rx="24" fill="${colors.background}" />
-      <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" fill="${colors.foreground}" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="700" letter-spacing="1">${fallback}</text>
+      <text x="50%" y="51%" dominant-baseline="central" text-anchor="middle" fill="${colors.foreground}" font-family="ui-rounded, 'SF Pro Rounded', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif" font-size="32" font-weight="650" letter-spacing="0.5">${fallback}</text>
     </svg>
   `.trim()
 

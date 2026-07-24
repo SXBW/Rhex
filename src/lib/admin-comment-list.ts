@@ -16,6 +16,7 @@ export interface AdminCommentQuery {
   sort?: string
   review?: string
   type?: string
+  god?: string
   page?: number
   pageSize?: number
 }
@@ -23,6 +24,7 @@ export interface AdminCommentQuery {
 export type AdminCommentSort = "newest" | "oldest" | "mostLikes"
 export type AdminCommentReviewFilter = "ALL" | "reviewed" | "unreviewed"
 export type AdminCommentTypeFilter = "ALL" | "ROOT" | "REPLY"
+export type AdminCommentGodFilter = "ALL" | "god" | "not-god"
 const ADMIN_COMMENT_STATUSES = new Set<CommentStatus>(["NORMAL", "HIDDEN", "PENDING"])
 
 export interface NormalizedAdminCommentQuery {
@@ -32,6 +34,7 @@ export interface NormalizedAdminCommentQuery {
   sort: AdminCommentSort
   review: AdminCommentReviewFilter
   type: AdminCommentTypeFilter
+  god: AdminCommentGodFilter
   page: number
   pageSize: number
 }
@@ -70,6 +73,7 @@ export function normalizeAdminCommentQuery(query: AdminCommentQuery = {}): Norma
     sort: normalizeAdminCommentSort(query.sort),
     review: query.review === "reviewed" || query.review === "unreviewed" ? query.review : "ALL",
     type: query.type === "ROOT" || query.type === "REPLY" ? query.type : "ALL",
+    god: query.god === "god" || query.god === "not-god" ? query.god : "ALL",
     page: normalizePositiveInteger(query.page, 1),
     pageSize: normalizePageSize(query.pageSize),
   }
@@ -88,6 +92,12 @@ export function buildAdminCommentWhere(actor: AdminActor, query: NormalizedAdmin
     and.push({ parentId: null })
   } else if (query.type === "REPLY") {
     and.push({ NOT: { parentId: null } })
+  }
+
+  if (query.god === "god") {
+    and.push({ isGodComment: true })
+  } else if (query.god === "not-god") {
+    and.push({ isGodComment: false })
   }
 
   return {
@@ -162,5 +172,6 @@ export function buildAdminCommentFilters(query: NormalizedAdminCommentQuery): Ad
     sort: query.sort,
     review: query.review,
     type: query.type,
+    god: query.god,
   }
 }

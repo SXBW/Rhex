@@ -10,6 +10,7 @@ export interface BoardSidebarLinkItem {
 }
 
 export interface BoardSidebarConfig {
+  enabled: boolean
   links: BoardSidebarLinkItem[]
   rulesMarkdown: string | null
   moderatorsCanWithdrawTreasury: boolean
@@ -67,6 +68,7 @@ export function normalizeBoardSidebarConfig(value: unknown): BoardSidebarConfig 
   const links = normalizeBoardSidebarLinks(sidebar?.links)
 
   return {
+    enabled: typeof sidebar?.enabled === "boolean" ? sidebar.enabled : true,
     links: links.length > 0 ? links : legacyLink ? [legacyLink] : [],
     rulesMarkdown: normalizeOptionalText(sidebar?.rulesMarkdown),
     moderatorsCanWithdrawTreasury: typeof boardTreasury?.moderatorsCanWithdrawTreasury === "boolean"

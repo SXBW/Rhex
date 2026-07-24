@@ -51,6 +51,7 @@ export interface AdminPostListResult {
     sort: string
     pin: string
     featured: string
+    announcement: string
     review: string
   }
   summary: {

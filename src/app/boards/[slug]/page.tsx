@@ -21,7 +21,6 @@ import { buildAddonHookSearchParams, buildHookedPostStreamDisplayItems } from "@
 import { DEFAULT_TAXONOMY_POST_SORT, normalizeTaxonomyPostSort, type TaxonomyPostSort } from "@/lib/forum-taxonomy-sort"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
 import { POST_LIST_LOAD_MODE_INFINITE } from "@/lib/post-list-load-mode"
-import { POST_LIST_DISPLAY_MODE_GALLERY } from "@/lib/post-list-display"
 import { DEFAULT_ALLOWED_POST_TYPES, normalizePostTypes } from "@/lib/post-types"
 import { readSearchParam } from "@/lib/search-params"
 import { buildMetadataKeywords } from "@/lib/seo"
@@ -197,7 +196,7 @@ export default async function BoardPage(props: PageProps<"/boards/[slug]">) {
     featuredHref: buildBoardPageHref(params.slug, 1, "featured"),
   }
   const boardPostsApiPath = buildBoardPostsApiPath(params.slug, currentSort)
-  const shouldShowRightSidebar = board.postListDisplayMode !== POST_LIST_DISPLAY_MODE_GALLERY
+  const shouldShowRightSidebar = board.sidebarEnabled
 
 
 

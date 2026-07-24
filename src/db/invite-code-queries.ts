@@ -2,14 +2,18 @@ import { prisma } from "@/db/client"
 
 export type InviteCodeUsageStatus = "all" | "used" | "unused"
 
+function buildInviteCodeUsageWhere(status: InviteCodeUsageStatus = "all") {
+  return status === "used"
+    ? { usedAt: { not: null } }
+    : status === "unused"
+      ? { usedAt: null }
+      : {}
+}
+
 function buildInviteCodeCreatorWhere(userId: number, status: InviteCodeUsageStatus = "all") {
   return {
     createdById: userId,
-    ...(status === "used"
-      ? { usedById: { not: null } }
-      : status === "unused"
-        ? { usedById: null }
-        : {}),
+    ...buildInviteCodeUsageWhere(status),
   }
 }
 
@@ -32,10 +36,15 @@ export function findInviteCodesByCodes(codes: string[]) {
   })
 }
 
-export function findInviteCodeList(limit: number) {
+export function findInviteCodePage(options: { page: number; pageSize: number; status?: InviteCodeUsageStatus }) {
+  const page = Math.max(1, Math.trunc(options.page))
+  const pageSize = Math.max(1, Math.min(Math.trunc(options.pageSize), 200))
+
   return prisma.inviteCode.findMany({
+    where: buildInviteCodeUsageWhere(options.status),
     orderBy: [{ usedAt: "asc" }, { createdAt: "desc" }],
-    take: Math.max(1, Math.min(limit, 200)),
+    skip: (page - 1) * pageSize,
+    take: pageSize,
     include: {
       createdBy: { select: { username: true } },
       usedBy: { select: { username: true } },
@@ -57,6 +66,14 @@ export function deleteInviteCodesByScope(scope: "all" | "used" | "unused") {
           usedAt: scope === "used" ? { not: null } : null,
         },
   })
+}
+
+export function countInviteCodes(status: InviteCodeUsageStatus = "all") {
+  return prisma.inviteCode.count({ where: buildInviteCodeUsageWhere(status) })
+}
+
+export function countManuallyCreatedInviteCodes() {
+  return prisma.inviteCode.count({ where: { createdById: { not: null } } })
 }
 
 export function countInviteCodesByCreator(userId: number, status: InviteCodeUsageStatus = "all") {
@@ -91,7 +108,7 @@ export function findInviteCodesByCreator(userId: number, options: { page: number
 export function findInviteCodeForUse(code: string) {
   return prisma.inviteCode.findUnique({
     where: { code },
-    select: { id: true, code: true, createdById: true, usedById: true },
+    select: { id: true, code: true, createdById: true, usedAt: true },
   })
 }
 

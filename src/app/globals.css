@@ -43,6 +43,7 @@
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
   --radius-lg: var(--radius);
+  --radius-xl: 0.45rem;
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
@@ -67,6 +68,18 @@
   }
 }
 
+@layer components {
+  .avatar-cropper .reactEasyCrop_CropArea {
+    border-radius: var(--radius-xl);
+  }
+
+  .mobile-sidebar-section {
+    border-color: transparent !important;
+    background-color: hsl(var(--muted) / 0.65) !important;
+    box-shadow: none !important;
+  }
+}
+
 @layer utilities {
   :root {
     --background: 0 0% 100%;
@@ -85,8 +98,8 @@
     --accent-foreground: 0 0% 12%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
+    --border: 0 0% 91%;
+    --input: 0 0% 89%;
     --ring: 0 0% 24%;
     --sidebar: 0 0% 100%;
     --sidebar-foreground: 0 0% 8%;
@@ -94,7 +107,7 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 96%;
     --sidebar-accent-foreground: 0 0% 12%;
-    --sidebar-border: 0 0% 88%;
+    --sidebar-border: 0 0% 91%;
     --sidebar-ring: 0 0% 24%;
     --radius: 1rem;
     --theme-font-family:
@@ -120,8 +133,8 @@
     --accent-foreground: 0 0% 96%;
     --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 96%;
-    --border: 0 0% 22%;
-    --input: 0 0% 22%;
+    --border: 0 0% 18%;
+    --input: 0 0% 20%;
     --ring: 0 0% 72%;
     --sidebar: 0 0% 8%;
     --sidebar-foreground: 0 0% 96%;
@@ -129,7 +142,7 @@
     --sidebar-primary-foreground: 0 0% 10%;
     --sidebar-accent: 0 0% 14%;
     --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 0% 22%;
+    --sidebar-border: 0 0% 18%;
     --sidebar-ring: 0 0% 72%;
   }
 
@@ -1347,7 +1360,7 @@
   .post-gallery-grid {
     display: flex;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: calc(0.5rem * 2);
   }
 
   .post-gallery-column {
@@ -1355,7 +1368,7 @@
     min-width: 0;
     flex: 1 1 0;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: calc(0.5rem * 2);
   }
 
   .post-gallery-card {

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Flame, Link2 } from "lucide-react"
-import type { ComponentProps } from "react"
+import { Fragment, type ComponentProps } from "react"
 
 import { HomeAnnouncementPanel } from "@/components/home/home-announcement-panel"
 import { HomeSidebarCurrentUserCard } from "@/components/home/home-sidebar-current-user-card"
@@ -99,13 +99,13 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
 
 
       <AddonSlotRenderer slot="home.right.top" />
-      {sidebarPanels.top.map((panel) => <div key={panel.id}>{panel.content}</div>)}
+      {sidebarPanels.top.map((panel) => <Fragment key={panel.id}>{panel.content}</Fragment>)}
 
       {showAnnouncements ? <HomeAnnouncementPanel announcements={announcements} /> : null}
 
       <div className="mobile-sidebar-section rounded-xl border border-border bg-card p-3 shadow-xs shadow-black/5 dark:shadow-black/30">
         <div className="mb-3 flex items-center gap-1.5">
-          <Flame className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+          <Flame className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">今日热帖</h3>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -117,7 +117,7 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
               <UserAvatar name={topic.authorName} avatarPath={topic.authorAvatarPath} size="xs" />
               <div className="min-w-0 flex-1">
                 <div title={topic.title} className="truncate text-[0.9rem] leading-5">{topic.title}</div>
-                <div className="mt-0.5 text-[0.733rem] leading-4 text-muted-foreground">最后回复：{topic.lastReplyAuthorName ?? topic.authorName} · {topic.lastRepliedAt}</div>
+                <div className="mt-0.5 text-[0.733rem] leading-4 text-muted-foreground">最后回复：{topic.lastReplyAuthorName ?? topic.authorName}</div>
               </div>
             </PostListLink>
           )})}
@@ -126,16 +126,16 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
 
 
       <AddonSlotRenderer slot="home.right.middle" />
-      {sidebarPanels.middle.map((panel) => <div key={panel.id}>{panel.content}</div>)}
+      {sidebarPanels.middle.map((panel) => <Fragment key={panel.id}>{panel.content}</Fragment>)}
 
       {friendLinksEnabled ? (
 
         <section className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-sky-500" />
+              <Link2 className="h-4 w-4 text-primary" />
               <div>
-                <h3 className="font-semibold">友情链接</h3>
+                <h3 className="text-sm font-semibold">友情链接</h3>
               </div>
             </div>
             <Link href="/link" className="text-xs text-muted-foreground transition hover:text-foreground">全部链接</Link>
@@ -157,7 +157,7 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
       ) : null}
 
       <AddonSlotRenderer slot="home.right.bottom" />
-      {sidebarPanels.bottom.map((panel) => <div key={panel.id}>{panel.content}</div>)}
+      {sidebarPanels.bottom.map((panel) => <Fragment key={panel.id}>{panel.content}</Fragment>)}
 
       {stats ? <HomeSiteStatsCard stats={stats} /> : null}
 

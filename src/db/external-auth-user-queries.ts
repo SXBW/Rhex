@@ -115,7 +115,7 @@ export function findInviteCodeRegistrationContext(code: string, client?: DbClien
     select: {
       id: true,
       code: true,
-      usedById: true,
+      usedAt: true,
       createdBy: {
         select: {
           id: true,
@@ -158,8 +158,11 @@ export function createExternalAuthUserRecord(input: {
 }
 
 export function markInviteCodeAsUsed(inviteCodeId: string, usedById: number, client?: DbClient) {
-  return resolveClient(client).inviteCode.update({
-    where: { id: inviteCodeId },
+  return resolveClient(client).inviteCode.updateMany({
+    where: {
+      id: inviteCodeId,
+      usedAt: null,
+    },
     data: {
       usedById,
       usedAt: new Date(),

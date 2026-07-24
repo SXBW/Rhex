@@ -1,45 +1,49 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useState, useTransition } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Trash2 } from "lucide-react"
 
 import { showConfirm } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { TextField } from "@/components/ui/text-field"
 import { formatDateTime } from "@/lib/formatters"
+import type { AdminBasicSettingsInviteCodePageData } from "@/components/admin/admin-basic-settings.types"
 
 interface AdminInviteCodeManagerProps {
-  initialInviteCodes: {
-    id: string
-    code: string
-    createdAt: string
-    createdByUsername: string | null
-    usedAt: string | null
-    usedByUsername: string | null
-    note: string | null
-  }[]
+  initialInviteCodePage?: AdminBasicSettingsInviteCodePageData
 }
 
 type DeleteScope = "single" | "used" | "unused" | "all"
 
-export function AdminInviteCodeManager({ initialInviteCodes }: AdminInviteCodeManagerProps) {
-  const [inviteCodes, setInviteCodes] = useState(initialInviteCodes)
+export function AdminInviteCodeManager({ initialInviteCodePage }: AdminInviteCodeManagerProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [count, setCount] = useState("10")
   const [note, setNote] = useState("")
   const [feedback, setFeedback] = useState("")
   const [isPending, startTransition] = useTransition()
 
-  const summary = useMemo(() => ({
-    total: inviteCodes.length,
-    unused: inviteCodes.filter((item) => !item.usedAt).length,
-    used: inviteCodes.filter((item) => item.usedAt).length,
-    manual: inviteCodes.filter((item) => item.createdByUsername).length,
-  }), [inviteCodes])
+  const summary = initialInviteCodePage?.summary ?? { total: 0, unused: 0, used: 0, manual: 0 }
+  const pagination = initialInviteCodePage?.pagination
+  const inviteCodes = initialInviteCodePage?.items ?? []
+  const currentStatus = initialInviteCodePage?.status ?? "all"
 
-  async function reloadInviteCodes() {
-    const listResponse = await fetch("/api/admin/invite-codes", { cache: "no-store" })
-    const listResult = await listResponse.json()
-    setInviteCodes(Array.isArray(listResult.data) ? listResult.data : [])
+  function navigateToPage(page: number, status = currentStatus) {
+    const nextSearchParams = new URLSearchParams(searchParams.toString())
+    if (status === "all") {
+      nextSearchParams.delete("status")
+    } else {
+      nextSearchParams.set("status", status)
+    }
+    if (page <= 1) {
+      nextSearchParams.delete("page")
+    } else {
+      nextSearchParams.set("page", String(page))
+    }
+    const query = nextSearchParams.toString()
+    startTransition(() => router.push(query ? `${pathname}?${query}` : pathname))
   }
 
   function handleGenerateInviteCodes() {
@@ -55,7 +59,7 @@ export function AdminInviteCodeManager({ initialInviteCodes }: AdminInviteCodeMa
         setFeedback(result.message ?? "生成失败")
         return
       }
-      await reloadInviteCodes()
+      router.refresh()
       setFeedback(result.message ?? "生成成功")
     })
   }
@@ -104,7 +108,7 @@ export function AdminInviteCodeManager({ initialInviteCodes }: AdminInviteCodeMa
         return
       }
 
-      await reloadInviteCodes()
+      router.refresh()
       setFeedback(result.message ?? "删除成功")
     })
   }
@@ -112,9 +116,9 @@ export function AdminInviteCodeManager({ initialInviteCodes }: AdminInviteCodeMa
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat title="邀请码总数" value={summary.total} />
-        <Stat title="未使用" value={summary.unused} />
-        <Stat title="已使用" value={summary.used} />
+        <Stat title="邀请码总数" value={summary.total} active={currentStatus === "all"} onClick={() => navigateToPage(1, "all")} />
+        <Stat title="未使用" value={summary.unused} active={currentStatus === "unused"} onClick={() => navigateToPage(1, "unused")} />
+        <Stat title="已使用" value={summary.used} active={currentStatus === "used"} onClick={() => navigateToPage(1, "used")} />
         <Stat title="人工生成" value={summary.manual} />
       </div>
 
@@ -155,7 +159,7 @@ export function AdminInviteCodeManager({ initialInviteCodes }: AdminInviteCodeMa
               <div className="mt-1 text-muted-foreground">{formatDateTime(item.createdAt)}</div>
             </div>
             <div className="truncate text-muted-foreground">{item.createdByUsername ?? "系统"}</div>
-            <div className="text-muted-foreground">{item.usedAt ? item.usedByUsername ? `已被 ${item.usedByUsername} 使用` : "已使用" : "未使用"}</div>
+            <div className="text-muted-foreground">{item.isUsed ? item.usedByUsername ? `已被 ${item.usedByUsername} 使用` : "已使用" : "未使用"}</div>
             <div className="truncate text-muted-foreground">{item.note ?? "-"}</div>
             <div>
               <Button type="button" variant="destructive" size="icon-sm" title="删除邀请码" aria-label={`删除邀请码 ${item.code}`} onClick={() => void handleDeleteInviteCodes("single", item.id)} disabled={isPending}>
@@ -165,15 +169,32 @@ export function AdminInviteCodeManager({ initialInviteCodes }: AdminInviteCodeMa
           </div>
         ))}
       </div>
+      {pagination ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+          <span>共 {pagination.total} 个邀请码，每页 {pagination.pageSize} 个，第 {pagination.page} / {pagination.totalPages} 页</span>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={isPending || !pagination.hasPrevPage} onClick={() => navigateToPage(pagination.page - 1)}>上一页</Button>
+            <Button type="button" variant="outline" size="sm" disabled={isPending || !pagination.hasNextPage} onClick={() => navigateToPage(pagination.page + 1)}>下一页</Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
 
-function Stat({ title, value }: { title: string; value: number }) {
+function Stat({ title, value, active, onClick }: { title: string; value: number; active?: boolean; onClick?: () => void }) {
+  const content = <>
+    <p className="text-xs text-muted-foreground">{title}</p>
+    <p className="mt-2 text-2xl font-semibold">{value}</p>
+  </>
+
+  if (!onClick) {
+    return <div className="rounded-[18px] border border-border bg-card px-4 py-3">{content}</div>
+  }
+
   return (
-    <div className="rounded-[18px] border border-border bg-card px-4 py-3">
-      <p className="text-xs text-muted-foreground">{title}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
-    </div>
+    <button type="button" onClick={onClick} className={`rounded-[18px] border px-4 py-3 text-left transition-colors ${active ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/60"}`}>
+      {content}
+    </button>
   )
 }

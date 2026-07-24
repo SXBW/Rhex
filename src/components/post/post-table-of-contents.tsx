@@ -150,7 +150,7 @@ export function PostTableOfContents({ items, title = "目录", ariaLabel = "帖�
   return (
     <section className="mobile-sidebar-section flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-black/5 dark:shadow-black/30 lg:max-h-[calc(100dvh-6rem)]">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/70 px-4 py-3">
-        <ListTree className="h-4 w-4 text-muted-foreground" />
+        <ListTree className="h-4 w-4 text-primary" />
         <div className="min-w-0">
           <div className="text-sm font-semibold text-foreground">{title}</div>
         </div>

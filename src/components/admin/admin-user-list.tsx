@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Filter, Loader2, ShieldCheck, Trash2, UserCog, UserRoundCheck, UserRoundX, Users, Zap } from "lucide-react"
-import { useMemo, useState, useTransition } from "react"
+import { useCallback, useMemo, useState, useTransition } from "react"
 
 import {
   AdminFilterActions,
@@ -76,6 +76,7 @@ const roleOptions = [
   { value: "USER", label: "普通用户" },
   { value: "MODERATOR", label: "版主" },
   { value: "ADMIN", label: "管理员" },
+  { value: "STAFF", label: "管理成员" },
 ]
 
 const statusOptions = [
@@ -83,6 +84,7 @@ const statusOptions = [
   { value: "ACTIVE", label: "正常" },
   { value: "MUTED", label: "禁言" },
   { value: "BANNED", label: "拉黑" },
+  { value: "RESTRICTED", label: "受限" },
   { value: "INACTIVE", label: "未激活" },
 ]
 
@@ -144,6 +146,26 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
   const needsStatusFields = bulkAction === "mute" || bulkAction === "ban"
   const needsRoleField = bulkAction === "setRole"
 
+  const buildStatHref = useCallback((updates: Record<string, string>) => {
+    const query = new URLSearchParams({
+      tab: "users",
+      userKeyword: "",
+      userRole: "ALL",
+      userStatus: "ALL",
+      userVip: "ALL",
+      userActivity: "ALL",
+      userSort: data.filters.sort,
+      userPage: "1",
+      userPageSize: String(data.pagination.pageSize),
+    })
+
+    for (const [key, value] of Object.entries(updates)) {
+      query.set(key, value)
+    }
+
+    return `/admin?${query.toString()}`
+  }, [data.filters.sort, data.pagination.pageSize])
+
   const statCards = useMemo(
     () => [
       {
@@ -151,6 +173,8 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
         value: data.summary.total,
         icon: <Users className="h-4 w-4" />,
         hint: `当前结果 ${formatNumber(data.pagination.total)} 人`,
+        href: buildStatHref({}),
+        active: data.filters.keyword === "" && data.filters.role === "ALL" && data.filters.status === "ALL" && data.filters.vip === "ALL" && data.filters.activity === "ALL",
       },
       {
         label: "活跃用户",
@@ -158,6 +182,8 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
         icon: <UserRoundCheck className="h-4 w-4" />,
         hint: "状态正常且可继续运营",
         tone: "emerald" as const,
+        href: buildStatHref({ userStatus: "ACTIVE" }),
+        active: data.filters.keyword === "" && data.filters.role === "ALL" && data.filters.status === "ACTIVE" && data.filters.vip === "ALL" && data.filters.activity === "ALL",
       },
       {
         label: "受限用户",
@@ -165,6 +191,8 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
         icon: <UserRoundX className="h-4 w-4" />,
         hint: `禁言 ${formatNumber(data.summary.muted)} / 拉黑 ${formatNumber(data.summary.banned)}`,
         tone: "rose" as const,
+        href: buildStatHref({ userStatus: "RESTRICTED" }),
+        active: data.filters.keyword === "" && data.filters.role === "ALL" && data.filters.status === "RESTRICTED" && data.filters.vip === "ALL" && data.filters.activity === "ALL",
       },
       {
         label: "VIP 用户",
@@ -172,6 +200,8 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
         icon: <Zap className="h-4 w-4" />,
         hint: "可重点做留存与续费",
         tone: "amber" as const,
+        href: buildStatHref({ userVip: "vip" }),
+        active: data.filters.keyword === "" && data.filters.role === "ALL" && data.filters.status === "ALL" && data.filters.vip === "vip" && data.filters.activity === "ALL",
       },
       {
         label: "管理成员",
@@ -179,9 +209,11 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
         icon: <ShieldCheck className="h-4 w-4" />,
         hint: `管理员 ${formatNumber(data.summary.admin)} / 版主 ${formatNumber(data.summary.moderator)}`,
         tone: "sky" as const,
+        href: buildStatHref({ userRole: "STAFF" }),
+        active: data.filters.keyword === "" && data.filters.role === "STAFF" && data.filters.status === "ALL" && data.filters.vip === "ALL" && data.filters.activity === "ALL",
       },
     ],
-    [data.pagination.total, data.summary],
+    [buildStatHref, data.filters, data.pagination, data.summary],
   )
 
   const activeFilterBadges = useMemo(() => {
@@ -343,6 +375,8 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
 
   return (
     <div className="space-y-4">
+      <AdminSummaryStrip items={statCards} />
+
       <AdminFilterCard
         title="用户筛选"
         description="按角色、状态、VIP 和活跃度快速定位待运营或待处置用户。"
@@ -411,8 +445,6 @@ export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: Admin
           />
         </form>
       </AdminFilterCard>
-
-      <AdminSummaryStrip items={statCards} />
 
       <Card>
         <CardHeader className="border-b">

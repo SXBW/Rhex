@@ -1920,10 +1920,6 @@ async function executeRssProcessQueueJob(
     return
   }
 
-  if (queueItem.scheduledAt.getTime() > Date.now()) {
-    return
-  }
-
   if (
     queueItem.triggerType !== "MANUAL"
     && !(await getRssSourceRuntimeState(queueItem.sourceId)).enabled
@@ -1942,10 +1938,6 @@ async function executeRssProcessQueueJob(
   await withRssProcessingSlot(settings.maxConcurrentJobs, async () => {
     const latestQueueItem = await findRssQueueWithSourceById(queueId)
     if (!latestQueueItem || latestQueueItem.status !== "PENDING") {
-      return
-    }
-
-    if (latestQueueItem.scheduledAt.getTime() > Date.now()) {
       return
     }
 

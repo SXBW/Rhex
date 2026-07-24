@@ -10,7 +10,7 @@ import { Tooltip } from "@/components/ui/tooltip"
 import { VipNameTooltip } from "@/components/vip/vip-name-tooltip"
 import type { PostRewardPoolMode } from "@/lib/post-reward-pool-config"
 
-import { MessageCircle, Paperclip } from "lucide-react"
+import { Paperclip } from "lucide-react"
 
 
 
@@ -121,7 +121,7 @@ export function ForumPostListItem({
     <div className={cn(
       compactFirstItem ? "flex gap-2.5 pb-3 sm:gap-3" : "flex gap-2.5 py-3 sm:gap-3",
       hideDivider ? "border-b-0" : "border-b last:border-b-0",
-      "px-1.5 transition-all duration-150 hover:bg-accent hover:shadow-xs sm:px-3",
+      "px-1.5 transition-all duration-150 hover:bg-accent/45 hover:shadow-xs sm:px-3",
     )}>
       <UserProfilePreviewCardTrigger
         username={item.authorUsername}
@@ -129,48 +129,28 @@ export function ForumPostListItem({
         avatarPath={item.authorAvatarPath}
         isVip={item.authorIsVip}
         vipLevel={item.authorVipLevel}
-        triggerClassName={cn("shrink-0", isRestrictedAuthor && "grayscale")}
+        triggerClassName={cn("shrink-0 self-center", isRestrictedAuthor && "grayscale")}
         align="start"
       >
         <UserAvatar name={item.authorName} avatarPath={item.authorAvatarPath} size="md" isVip={item.authorIsVip} vipLevel={item.authorVipLevel} />
       </UserProfilePreviewCardTrigger>
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 sm:gap-1.5">
-            <PostListLink href={postPath} visitedPath={postPath} dimWhenRead className="min-w-0">
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="min-w-0 flex-1">
+            <PostListLink href={postPath} visitedPath={postPath} dimWhenRead className="block min-w-0">
               <h2 className={getPostTitleClassName({ isFeatured: item.isFeatured, pinScope: item.pinScope, compact: true })}>
+                <span className="mr-1 inline-flex items-center gap-1 align-middle empty:hidden sm:gap-1.5">
+                  <PostTypeBadge type={item.type} label={item.typeLabel} compact display="text" />
+                  <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
+                  {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact display="text" /> : null}
+                  {item.isFeatured ? <span className="inline-flex h-5 items-center rounded-[4px] bg-emerald-100 px-1.5 text-[10px] leading-none text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 sm:px-2 sm:text-[11px]">精华</span> : null}
+                </span>
                 {item.title}
               </h2>
             </PostListLink>
-            {item.hasRedPacket ? (
-              <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-                <span aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-                  <PostRewardPoolIcon mode={item.rewardMode} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </span>
-              </Tooltip>
-            ) : null}
-            {item.hasAttachments ? (
-              <Tooltip content="含附件">
-                <span aria-label="含附件">
-                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground sm:h-4 sm:w-4" />
-                </span>
-              </Tooltip>
-            ) : null}
-            <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
           </div>
 
-          <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly />
-          <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
-          {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact /> : null}
-          {item.isFeatured ? <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 sm:px-2 sm:text-[11px]">精华</span> : null}
-          <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-normal tabular-nums transition-colors hover:opacity-90 sm:px-2 sm:text-[11px]" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
-
-
-
-            <MessageCircle className="h-3 w-3" />
-            {formatCompactNumber(item.commentCount)}
-          </PostListLink>
         </div>
 
         <div className={cn("mt-1.5 flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground sm:gap-1.5 sm:text-[11px]", isRestrictedAuthor && "grayscale")}>
@@ -204,6 +184,27 @@ export function ForumPostListItem({
             </>
           ) : null}
         </div>
+      </div>
+
+      <div className="flex shrink-0 self-center items-center gap-1 sm:gap-1.5">
+        <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
+        {item.hasRedPacket ? (
+          <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+            <span className="inline-flex h-5 w-5 items-center justify-center" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+              <PostRewardPoolIcon mode={item.rewardMode} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </span>
+          </Tooltip>
+        ) : null}
+        {item.hasAttachments ? (
+          <Tooltip content="含附件">
+            <span className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground" aria-label="含附件">
+              <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </span>
+          </Tooltip>
+        ) : null}
+        <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex h-6 min-w-6 items-center justify-center rounded-[4px] px-1.5 text-[10px] font-medium leading-none tabular-nums transition-colors hover:opacity-90 sm:min-w-7 sm:text-[11px]" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
+          {formatCompactNumber(item.commentCount)}
+        </PostListLink>
       </div>
     </div>
   )

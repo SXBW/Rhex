@@ -42,18 +42,22 @@ export async function canAdminActorManageBoardWithPermission(
     return false
   }
 
-  if (!await canAdminActorUsePermission(actor, permission)) {
-    return false
+  if (isSiteAdmin(actor)) {
+    return canAdminWithPermissionOverrides(actor, permission)
   }
 
-  return isSiteAdmin(actor) || canManageBoard(actor, boardId, zoneId)
+  return canManageBoard(actor, boardId, zoneId)
 }
 
 export async function resolveContentVisibleAdminActor(user: SessionActor | null | undefined) {
   const actor = await resolveAdminActorFromSessionUser(user ?? null)
-  if (!actor || !await canAdminActorUsePermission(actor, "admin.content.manage")) {
+  if (!actor) {
     return null
   }
 
-  return actor
+  if (!isSiteAdmin(actor)) {
+    return actor
+  }
+
+  return await canAdminWithPermissionOverrides(actor, "admin.content.manage") ? actor : null
 }

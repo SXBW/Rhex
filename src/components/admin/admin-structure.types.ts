@@ -115,6 +115,7 @@ export interface StructureFormState {
   description: string
   icon: string
   sidebarLinks: BoardSidebarLinkDraft[]
+  sidebarEnabled: boolean
   rulesMarkdown: string
   moderatorsCanWithdrawTreasury: boolean
   sortOrder: string

@@ -81,13 +81,11 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
   const [visibleUnreadCount, setVisibleUnreadCount] = useState(unreadCount)
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setVisibleUnreadCount(unreadCount)
+    setVisibleUnreadCount(unreadCount)
 
-      if (unreadCount > 0) {
-        setLoaded(false)
-      }
-    })
+    if (unreadCount > 0) {
+      setLoaded(false)
+    }
   }, [unreadCount])
 
   useEffect(() => {
@@ -97,19 +95,14 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
 
     const abortController = new AbortController()
 
-    queueMicrotask(() => {
-      if (abortController.signal.aborted) {
-        return
-      }
+    setLoading(true)
+    setErrorMessage("")
 
-      setLoading(true)
-      setErrorMessage("")
-
-      void fetch(`/api/notifications/unread?limit=${UNREAD_PREVIEW_LIMIT}`, {
+    void fetch(`/api/notifications/unread?limit=${UNREAD_PREVIEW_LIMIT}`, {
       cache: "no-store",
       signal: abortController.signal,
-      })
-        .then(async (response) => {
+    })
+      .then(async (response) => {
         const payload = await response.json().catch(() => null) as HeaderNotificationsResponse | null
 
         if (!response.ok) {
@@ -128,12 +121,11 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
 
         setErrorMessage(error instanceof Error ? error.message : "未读通知加载失败")
       })
-        .finally(() => {
-          if (!abortController.signal.aborted) {
-            setLoading(false)
-          }
-        })
-    })
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setLoading(false)
+        }
+      })
 
     return () => {
       abortController.abort()
@@ -277,6 +269,7 @@ export function HeaderNotificationsPopover({ unreadCount, badgeClassName }: Head
                 <a
                   key={item.id}
                   href={item.relatedUrl}
+                  data-disable-touch-native-navigation="true"
                   className="group rounded-xl px-3 py-2.5 outline-hidden transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={(event) => handleNotificationClick(event, item)}
                 >

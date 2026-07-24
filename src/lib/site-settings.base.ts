@@ -39,6 +39,7 @@ export interface SiteSettingsBaseData {
   postSidebarRelatedTopicsCount: number
   homeHotRecentWindowHours: number
   homeSidebarStatsCardEnabled: boolean
+  homeSidebarEnabled: boolean
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
   userProfileIntroductionEnabled: boolean

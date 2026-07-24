@@ -42,6 +42,7 @@ export interface AdminBasicSettingsInitialSettings {
   homeSidebarHotTopicsCount: number
   postSidebarRelatedTopicsCount: number
   homeSidebarStatsCardEnabled: boolean
+  homeSidebarEnabled: boolean
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
   userProfileIntroductionEnabled: boolean
@@ -201,6 +202,7 @@ export interface AdminBasicSettingsDraft {
   homeSidebarHotTopicsCount: string
   postSidebarRelatedTopicsCount: string
   homeSidebarStatsCardEnabled: boolean
+  homeSidebarEnabled: boolean
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
   userProfileIntroductionEnabled: boolean
@@ -462,6 +464,7 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     homeSidebarHotTopicsCount: coerceNumberString(initialSettings.homeSidebarHotTopicsCount, 5),
     postSidebarRelatedTopicsCount: coerceNumberString(initialSettings.postSidebarRelatedTopicsCount, 5),
     homeSidebarStatsCardEnabled: coerceBoolean(initialSettings.homeSidebarStatsCardEnabled, true),
+    homeSidebarEnabled: coerceBoolean(initialSettings.homeSidebarEnabled, true),
     homeSidebarAnnouncementsEnabled: coerceBoolean(initialSettings.homeSidebarAnnouncementsEnabled, true),
     userProfileIpLocationEnabled: coerceBoolean(initialSettings.userProfileIpLocationEnabled, false),
     userProfileIntroductionEnabled: coerceBoolean(initialSettings.userProfileIntroductionEnabled, true),
@@ -651,6 +654,7 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       homeSidebarHotTopicsCount: Number(draft.homeSidebarHotTopicsCount),
       postSidebarRelatedTopicsCount: Number(draft.postSidebarRelatedTopicsCount),
       homeSidebarStatsCardEnabled: draft.homeSidebarStatsCardEnabled,
+      homeSidebarEnabled: draft.homeSidebarEnabled,
       homeSidebarAnnouncementsEnabled: draft.homeSidebarAnnouncementsEnabled,
       userProfileIpLocationEnabled: draft.userProfileIpLocationEnabled,
       userProfileIntroductionEnabled: draft.userProfileIntroductionEnabled,

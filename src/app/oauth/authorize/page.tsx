@@ -231,9 +231,9 @@ function AppLogo({
   fallback: string
 }) {
   return (
-    <Avatar className="size-10 rounded-xl">
-      {logoUrl ? <AvatarImage src={logoUrl} alt={name} className="rounded-xl" /> : null}
-      <AvatarFallback className="rounded-xl font-semibold">{fallback}</AvatarFallback>
+    <Avatar className="size-10">
+      {logoUrl ? <AvatarImage src={logoUrl} alt={name} /> : null}
+      <AvatarFallback className="font-semibold">{fallback}</AvatarFallback>
     </Avatar>
   )
 }
@@ -248,9 +248,9 @@ function SiteLogo({
   fallback: string
 }) {
   return (
-    <Avatar className="size-10 rounded-xl">
-      <AvatarImage src={logoUrl} alt={`${name} Logo`} className="rounded-xl object-contain p-1.5" />
-      <AvatarFallback className="rounded-xl font-semibold">{fallback}</AvatarFallback>
+    <Avatar className="size-10">
+      <AvatarImage src={logoUrl} alt={`${name} Logo`} className="object-contain p-1.5" />
+      <AvatarFallback className="font-semibold">{fallback}</AvatarFallback>
     </Avatar>
   )
 }

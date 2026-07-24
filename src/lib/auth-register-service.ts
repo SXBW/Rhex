@@ -351,7 +351,7 @@ export async function createRegisterFlow(options: RegisterFlowOptions): Promise<
         apiError(404, "邀请码不存在")
       }
 
-      if (foundCode.usedById) {
+      if (foundCode.usedAt) {
         apiError(409, "邀请码已被使用")
       }
 
@@ -398,7 +398,10 @@ export async function createRegisterFlow(options: RegisterFlowOptions): Promise<
     }
 
     if (inviteCodeRecord) {
-      await markInviteCodeAsUsed(inviteCodeRecord.id, createdUser.id, tx)
+      const markedInviteCode = await markInviteCodeAsUsed(inviteCodeRecord.id, createdUser.id, tx)
+      if (markedInviteCode.count !== 1) {
+        apiError(409, "邀请码已被使用")
+      }
     }
 
     if (inviter) {

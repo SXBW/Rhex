@@ -31,21 +31,27 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
       apiError(400, "投票选项不存在")
     }
 
-    // The unique (postId, userId) constraint is the concurrency authority.
-    // A prior read can race with another request, so increment only when this
-    // request actually inserts the vote.
-    const createdVote = await tx.pollVote.createMany({
+    const existingVote = await tx.pollVote.findUnique({
+      where: {
+        postId_userId: {
+          postId,
+          userId: currentUser.id,
+        },
+      },
+      select: { id: true },
+    })
+
+    if (existingVote) {
+      apiError(400, "你已经投过票了")
+    }
+
+    await tx.pollVote.create({
       data: {
         postId,
         optionId,
         userId: currentUser.id,
       },
-      skipDuplicates: true,
     })
-
-    if (createdVote.count === 0) {
-      apiError(400, "你已经投过票了")
-    }
 
     await tx.pollOption.update({
       where: { id: optionId },

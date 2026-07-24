@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { UserX } from "lucide-react"
 
 import { showConfirm } from "@/components/ui/alert-dialog"
@@ -30,16 +30,13 @@ export function UserBlockToggleButton({
   reloadOnChange = false,
   onBlockStateChange,
 }: UserBlockToggleButtonProps) {
-  const [blockedState, setBlockedState] = useState(() => ({
-    targetUserId,
-    initialBlocked,
-    value: initialBlocked,
-  }))
-  const blocked = blockedState.targetUserId === targetUserId && blockedState.initialBlocked === initialBlocked
-    ? blockedState.value
-    : initialBlocked
+  const [blocked, setBlocked] = useState(initialBlocked)
   const [isPending, setIsPending] = useState(false)
   const label = blocked ? activeLabel : inactiveLabel
+
+  useEffect(() => {
+    setBlocked(initialBlocked)
+  }, [initialBlocked])
 
   async function handleToggle() {
     const desiredBlocked = !blocked
@@ -81,11 +78,7 @@ export function UserBlockToggleButton({
 
       const resolvedBlocked = Boolean(result.data?.blocked)
       const changed = Boolean(result.data?.changed)
-      setBlockedState({
-        targetUserId,
-        initialBlocked,
-        value: resolvedBlocked,
-      })
+      setBlocked(resolvedBlocked)
       onBlockStateChange?.({ blocked: resolvedBlocked, changed })
       toast.success(result.message ?? (resolvedBlocked ? "已拉黑该用户" : "已取消拉黑"))
 

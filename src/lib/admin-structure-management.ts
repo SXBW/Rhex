@@ -67,6 +67,7 @@ export interface BoardItem {
     icon: string | null
     titleColor: string | null
   }>
+  sidebarEnabled: boolean
   rulesMarkdown: string | null
   moderatorsCanWithdrawTreasury: boolean
   sortOrder: number

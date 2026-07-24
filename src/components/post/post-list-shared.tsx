@@ -55,21 +55,21 @@ export function getPostPinTone(pinScope?: string | null, compact = false) {
   if (pinScope === "GLOBAL") {
     return {
       titleColorClassName: "text-red-700 hover:text-red-600 dark:text-red-300 dark:hover:text-red-200",
-      badgeClassName: `rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200 ${badgeSizeClassName}`,
+      badgeClassName: `rounded-[4px] bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200 ${badgeSizeClassName}`,
     }
   }
 
   if (pinScope === "ZONE") {
     return {
       titleColorClassName: "text-orange-700 hover:text-orange-600 dark:text-orange-300 dark:hover:text-orange-200",
-      badgeClassName: `rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-200 ${badgeSizeClassName}`,
+      badgeClassName: `rounded-[4px] bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-200 ${badgeSizeClassName}`,
     }
   }
 
   if (pinScope === "BOARD") {
     return {
       titleColorClassName: "text-amber-700 hover:text-amber-600 dark:text-amber-300 dark:hover:text-amber-200",
-      badgeClassName: `rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200 ${badgeSizeClassName}`,
+      badgeClassName: `rounded-[4px] bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200 ${badgeSizeClassName}`,
     }
   }
 
@@ -97,12 +97,14 @@ export function PostTypeBadge({
   label,
   compact = false,
   mobileIconOnly = false,
+  display = "all",
   className,
 }: {
   type?: string | null
   label?: string | null
   compact?: boolean
   mobileIconOnly?: boolean
+  display?: "all" | "icon" | "text"
   className?: string
 }) {
   if (!type || type === "NORMAL" || !label) {
@@ -113,12 +115,16 @@ export function PostTypeBadge({
     ? postTypeBadgeMap[type as keyof typeof postTypeBadgeMap]
     : null
 
+  if (display === "icon" && !config) {
+    return null
+  }
+
   if (!config) {
     return (
       <Badge
         variant="secondary"
         className={cn(
-          "rounded-full text-muted-foreground",
+          "rounded-[4px] text-muted-foreground",
           compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5",
           className,
         )}
@@ -129,21 +135,24 @@ export function PostTypeBadge({
   }
 
   const Icon = config.icon
+  const iconOnly = display === "icon"
 
   return (
     <Badge
       variant={config.variant}
       aria-label={label}
       className={cn(
-        "rounded-full",
-        mobileIconOnly
+        "rounded-[4px]",
+        iconOnly
+          ? compact ? "size-5 p-0" : "size-6 p-0"
+          : mobileIconOnly
           ? "size-5 p-0 sm:w-fit sm:px-2 sm:py-0.5 sm:text-[11px]"
           : compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5",
         className,
       )}
     >
-      <Icon {...(mobileIconOnly ? {} : { "data-icon": "inline-start" })} />
-      <span className={mobileIconOnly ? "hidden sm:inline" : undefined}>{label}</span>
+      <Icon {...(iconOnly || mobileIconOnly ? {} : { "data-icon": "inline-start" })} />
+      {iconOnly ? null : <span className={mobileIconOnly ? "hidden sm:inline" : undefined}>{label}</span>}
     </Badge>
   )
 }
@@ -178,7 +187,7 @@ export function PostStatusBadge({
       <Badge
         variant="outline"
         className={cn(
-          "rounded-full font-medium",
+          "rounded-[4px] font-medium leading-none",
           compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5",
           toneClassName,
           className,
@@ -194,11 +203,13 @@ export function PostPinBadge({
   scope,
   label,
   compact = false,
+  display = "icon",
   className,
 }: {
   scope?: string | null
   label?: string | null
   compact?: boolean
+  display?: "icon" | "text"
   className?: string
 }) {
   if (!scope) {
@@ -221,9 +232,16 @@ export function PostPinBadge({
       <Badge
         variant={config.variant}
         aria-label={tooltipLabel}
-        className={cn("rounded-full", compact ? "size-5 p-0" : "size-6 p-0", className)}
+        className={cn(
+          "rounded-[4px]",
+          display === "text"
+            ? compact ? "px-1.5 text-[10px] sm:px-2 sm:text-[11px]" : "px-2 sm:px-2.5"
+            : compact ? "size-5 p-0" : "size-6 p-0",
+          className,
+        )}
       >
-        <Icon />
+        <Icon {...(display === "text" ? { "data-icon": "inline-start" } : {})} />
+        {display === "text" ? <span>{tooltipLabel}</span> : null}
       </Badge>
     </Tooltip>
   )
@@ -274,7 +292,7 @@ export function PostAccessBadges({
           <span
             aria-label={`访问需要至少 Lv.${minViewLevel}`}
             className={cn(
-              "inline-flex shrink-0 rounded-full from-red-500 via-rose-500 to-orange-500 font-semibold tracking-[0.08em] text-white",
+              "inline-flex shrink-0 rounded-[4px] from-red-500 via-rose-500 to-orange-500 font-semibold tracking-[0.08em] text-white",
               compact ? "px-1 py-0.5 text-[9px] sm:px-1.5 sm:text-[10px]" : "px-1.5 py-0.5 text-[10px] sm:px-2 sm:text-[11px]",
             )}
           >
@@ -287,7 +305,7 @@ export function PostAccessBadges({
           <span
             aria-label={`访问需要至少 VIP ${minViewVipLevel}`}
             className={cn(
-              "inline-flex shrink-0 rounded-full from-amber-500 via-orange-500 to-yellow-500 font-semibold tracking-[0.08em] text-white",
+              "inline-flex shrink-0 rounded-[4px] from-amber-500 via-orange-500 to-yellow-500 font-semibold tracking-[0.08em] text-white",
               compact ? "px-1 py-0.5 text-[9px] sm:px-1.5 sm:text-[10px]" : "px-1.5 py-0.5 text-[10px] sm:px-2 sm:text-[11px]",
             )}
           >

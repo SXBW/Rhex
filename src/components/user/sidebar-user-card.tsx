@@ -223,13 +223,6 @@ function buildCalendarDays(monthKey: string) {
   return cells
 }
 
-type CheckInState = {
-  points: number
-  checkedInToday: boolean
-  currentCheckInStreak: number
-  maxCheckInStreak: number
-}
-
 function CalendarPendingStatusIcon({
   type,
   pointName,
@@ -269,32 +262,12 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "ç
   const currentSearch = searchParams.toString()
   const currentPath = `${pathname}${currentSearch ? `?${currentSearch}` : ""}`
   const loginHref = buildLoginHrefWithRedirect(currentPath)
-  const userPoints = user?.points ?? 0
-  const userCheckedInToday = Boolean(user?.checkedInToday)
-  const userCurrentCheckInStreak = user?.currentCheckInStreak ?? 0
-  const userMaxCheckInStreak = user?.maxCheckInStreak ?? 0
-  const checkInStateSource = JSON.stringify([
-    userPoints,
-    userCheckedInToday,
-    userCurrentCheckInStreak,
-    userMaxCheckInStreak,
-  ])
-  const initialCheckInState = useMemo(
-    () => ({
-      points: userPoints,
-      checkedInToday: userCheckedInToday,
-      currentCheckInStreak: userCurrentCheckInStreak,
-      maxCheckInStreak: userMaxCheckInStreak,
-    }),
-    [userCheckedInToday, userCurrentCheckInStreak, userMaxCheckInStreak, userPoints],
-  )
-  const [storedCheckInState, setStoredCheckInState] = useState(() => ({
-    source: checkInStateSource,
-    value: initialCheckInState,
+  const [checkInState, setCheckInState] = useState(() => ({
+    points: user?.points ?? 0,
+    checkedInToday: Boolean(user?.checkedInToday),
+    currentCheckInStreak: user?.currentCheckInStreak ?? 0,
+    maxCheckInStreak: user?.maxCheckInStreak ?? 0,
   }))
-  const checkInState = storedCheckInState.source === checkInStateSource
-    ? storedCheckInState.value
-    : initialCheckInState
   const [loading, setLoading] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [calendarMonth, setCalendarMonth] = useState(getMonthKey())
@@ -305,15 +278,12 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "ç
   const calendarEntries = useMemo(() => new Map((calendarData?.entries ?? []).map((item) => [item.date, item])), [calendarData?.entries])
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth])
   const { points, checkedInToday, currentCheckInStreak, maxCheckInStreak } = checkInState
-  const syncCheckInState = useCallback((next: Partial<CheckInState>) => {
-    setStoredCheckInState((current) => ({
-      source: checkInStateSource,
-      value: {
-        ...(current.source === checkInStateSource ? current.value : initialCheckInState),
-        ...next,
-      },
+  const syncCheckInState = useCallback((next: Partial<typeof checkInState>) => {
+    setCheckInState((current) => ({
+      ...current,
+      ...next,
     }))
-  }, [checkInStateSource, initialCheckInState])
+  }, [])
 
   const loadCalendar = useCallback(async (targetMonth: string) => {
     const requestId = calendarRequestIdRef.current + 1
@@ -382,20 +352,20 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "ç
   }, [currentCheckInStreak, maxCheckInStreak, syncCheckInState])
 
   useEffect(() => {
+    setCheckInState({
+      points: user?.points ?? 0,
+      checkedInToday: Boolean(user?.checkedInToday),
+      currentCheckInStreak: user?.currentCheckInStreak ?? 0,
+      maxCheckInStreak: user?.maxCheckInStreak ?? 0,
+    })
+  }, [user?.currentCheckInStreak, user?.checkedInToday, user?.maxCheckInStreak, user?.points])
+
+  useEffect(() => {
     if (!calendarOpen || !currentUser?.checkInEnabled) {
       return
     }
 
-    let cancelled = false
-    queueMicrotask(() => {
-      if (!cancelled) {
-        void loadCalendar(calendarMonth)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
+    void loadCalendar(calendarMonth)
   }, [calendarMonth, calendarOpen, currentUser?.checkInEnabled, loadCalendar])
 
   if (!currentUser) {
@@ -906,7 +876,7 @@ function InlineStatBlock({ label, value, icon, href }: { label: string; value: n
   const content = (
     <>
       <div className="flex items-center justify-center gap-1 text-sm font-semibold leading-none text-foreground">
-        <span className="flex size-4 items-center justify-center rounded-full bg-background text-muted-foreground">
+        <span className="flex size-4 items-center justify-center text-muted-foreground">
           {icon}
         </span>
         <span className="tabular-nums" title={`${formatNumber(value)} ${label}`}>{formatCompactNumber(value)}</span>

@@ -80,8 +80,8 @@ export const ADMIN_PERMISSION_CATALOG = [
   },
   {
     key: "admin.users.grantBadges",
-    label: "发放勋章",
-    description: "配置勋章、手动为用户发放勋章。",
+    label: "管理勋章",
+    description: "配置勋章，手动为用户发放或撤销勋章。",
     group: "users",
   },
   {

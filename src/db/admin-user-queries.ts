@@ -63,6 +63,10 @@ export async function buildAdminUserSummary(where: Prisma.UserWhereInput, now: D
   return summary
 }
 
+export function countAdminUsers(where: Prisma.UserWhereInput) {
+  return prisma.user.count({ where })
+}
+
 export function findAdminUsersPage(where: Prisma.UserWhereInput, orderBy: Prisma.UserOrderByWithRelationInput[], skip: number, take: number) {
   return prisma.user.findMany({
     where,

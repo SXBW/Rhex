@@ -41,6 +41,8 @@ export function useCreatePostSubmit({
 
   useEffect(() => {
     if (!loading) {
+      setShowSlowSubmitHint(false)
+      setSlowSubmitWaitSeconds(8)
       return
     }
 
@@ -126,8 +128,6 @@ export function useCreatePostSubmit({
     } finally {
       setLoading(false)
       setSubmitStartedAt(null)
-      setShowSlowSubmitHint(false)
-      setSlowSubmitWaitSeconds(8)
     }
   }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { isImageSource, isSvgMarkup, sanitizeInlineSvgMarkup } from "@/lib/icon-source"
+import { isImageSource, isSvgMarkup, stripSvgDocumentPrefix } from "@/lib/icon-source"
 
 interface LevelIconProps {
   icon?: string | null
@@ -31,7 +31,7 @@ export function isLevelImageIcon(icon?: string | null) {
 }
 
 function buildSvgMarkup(svg: string, color?: string) {
-  let markup = sanitizeInlineSvgMarkup(svg)
+  let markup = stripSvgDocumentPrefix(svg)
 
   if (!markup) {
     return ""
@@ -52,9 +52,8 @@ function buildSvgMarkup(svg: string, color?: string) {
 
 export function LevelIcon({ icon, color, className, svgClassName, emojiClassName, title }: LevelIconProps) {
   const normalizedIcon = normalizeLevelIcon(icon)
-  const svgMarkup = isLevelSvgIcon(normalizedIcon) ? buildSvgMarkup(normalizedIcon, color) : ""
 
-  if (svgMarkup) {
+  if (isLevelSvgIcon(normalizedIcon)) {
     return (
       <span
         title={title}
@@ -65,7 +64,7 @@ export function LevelIcon({ icon, color, className, svgClassName, emojiClassName
         <span
           aria-hidden={title ? undefined : true}
           className={cn("inline-flex h-full w-auto max-w-full flex-none items-center justify-center [&>svg]:block [&>svg]:h-full [&>svg]:w-auto [&>svg]:max-w-full", svgClassName)}
-          dangerouslySetInnerHTML={{ __html: svgMarkup }}
+          dangerouslySetInnerHTML={{ __html: buildSvgMarkup(normalizedIcon, color) }}
         />
       </span>
     )
@@ -90,7 +89,7 @@ export function LevelIcon({ icon, color, className, svgClassName, emojiClassName
     )
   }
 
-  if (isLevelSvgIcon(normalizedIcon) || normalizedIcon.startsWith("<") || normalizedIcon.includes("<svg")) {
+  if (normalizedIcon.startsWith("<") || normalizedIcon.includes("<svg")) {
     return (
       <span
         title={title}

@@ -1,5 +1,5 @@
 import { apiError, apiSuccess, createAdminRouteHandler, readJsonBody, readOptionalStringField } from "@/lib/api-route"
-import { createInviteCodes, deleteInviteCodes, getInviteCodeList } from "@/lib/invite-codes"
+import { createInviteCodes, deleteInviteCodes, getInviteCodePage } from "@/lib/invite-codes"
 
 type DeleteScope = "single" | "used" | "unused" | "all"
 
@@ -11,9 +11,13 @@ function readDeleteScope(value: unknown): DeleteScope {
   apiError(400, "删除范围不正确")
 }
 
-export const GET = createAdminRouteHandler(async () => {
-  const inviteCodes = await getInviteCodeList()
-  return apiSuccess(inviteCodes)
+export const GET = createAdminRouteHandler(async ({ request }) => {
+  const searchParams = new URL(request.url).searchParams
+  const inviteCodePage = await getInviteCodePage({
+    page: searchParams.get("page"),
+    status: searchParams.get("status"),
+  })
+  return apiSuccess(inviteCodePage)
 }, {
   errorMessage: "读取邀请码失败",
   logPrefix: "[api/admin/invite-codes:GET] unexpected error",

@@ -769,8 +769,8 @@ function RecentPostsCard({
                   <TableRow key={post.id}>
                     <TableCell className="align-top">
                       <div className="flex items-start gap-3">
-                        <Avatar size="sm" className="mt-0.5 rounded-lg">
-                          <AvatarFallback className="rounded-lg">
+                        <Avatar size="sm" className="mt-0.5">
+                          <AvatarFallback>
                             {getInitials(post.authorName)}
                           </AvatarFallback>
                         </Avatar>
@@ -893,8 +893,8 @@ function RecentCommentsCard({
                   <TableRow key={comment.id}>
                     <TableCell className="align-top">
                       <div className="flex items-start gap-3">
-                        <Avatar size="sm" className="mt-0.5 rounded-lg">
-                          <AvatarFallback className="rounded-lg">
+                        <Avatar size="sm" className="mt-0.5">
+                          <AvatarFallback>
                             {getInitials(comment.authorName)}
                           </AvatarFallback>
                         </Avatar>

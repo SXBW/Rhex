@@ -98,7 +98,7 @@ function BoardRulesPanel({
     <section className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <BookText className="h-4 w-4 text-amber-600" />
+          <BookText className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">节点规则</h3>
         </div>
         <BoardModeratorsActions
@@ -124,7 +124,7 @@ function BoardLinksPanel({ links }: { links: BoardSidebarLinkItem[] }) {
   return (
     <section className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
       <div className="mb-3 flex items-center gap-2">
-        <Link2 className="h-4 w-4 text-sky-600" />
+        <Link2 className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold">节点链接</h3>
       </div>
       <div className="space-y-1">

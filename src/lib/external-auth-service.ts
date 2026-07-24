@@ -167,7 +167,7 @@ async function createUserFromIdentity(input: {
         apiError(404, "邀请码不存在")
       }
 
-      if (foundCode.usedById) {
+      if (foundCode.usedAt) {
         apiError(409, "邀请码已被使用")
       }
 
@@ -231,7 +231,10 @@ async function createUserFromIdentity(input: {
     }
 
     if (inviteCodeRecord) {
-      await markInviteCodeAsUsed(inviteCodeRecord.id, createdUser.id, tx)
+      const markedInviteCode = await markInviteCodeAsUsed(inviteCodeRecord.id, createdUser.id, tx)
+      if (markedInviteCode.count !== 1) {
+        apiError(409, "邀请码已被使用")
+      }
     }
 
     if (inviter) {

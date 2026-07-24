@@ -17,6 +17,8 @@ export function BackToTopButton() {
 
   useEffect(() => {
     if (isAdminPath) {
+      setVisible(false)
+      setScrolledToBottom(false)
       return
     }
 

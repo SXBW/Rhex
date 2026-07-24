@@ -39,6 +39,9 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
       appStateJson: existing.appStateJson,
       enabledFallback: true,
     })
+    const homeSidebarEnabled = body.homeSidebarEnabled === undefined
+      ? existingHomeSidebarAnnouncementSettings.homeSidebarEnabled
+      : Boolean(body.homeSidebarEnabled)
     const homeSidebarAnnouncementsEnabled = body.homeSidebarAnnouncementsEnabled === undefined
       ? existingHomeSidebarAnnouncementSettings.enabled
       : Boolean(body.homeSidebarAnnouncementsEnabled)
@@ -116,6 +119,7 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
 
     const appStateWithHomeSidebarAnnouncement = mergeHomeSidebarAnnouncementSettings(existing.appStateJson, {
       enabled: homeSidebarAnnouncementsEnabled,
+      homeSidebarEnabled,
     })
 
     const appStateWithPostPageSizes = mergePostPageSizeSettings(appStateWithHomeSidebarAnnouncement, {

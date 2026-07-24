@@ -44,7 +44,7 @@ export function LoginForm({
   addonExternalAuthEntries = [],
   redirectTarget = "/",
 }: LoginFormProps) {
-  const [requestedLoginMode, setRequestedLoginMode] = useState<"password" | "phone-code">("password")
+  const [loginMode, setLoginMode] = useState<"password" | "phone-code">("password")
   const [login, setLogin] = useState("")
   const [password, setPassword] = useState("")
   const [phoneCode, setPhoneCode] = useState("")
@@ -65,7 +65,6 @@ export function LoginForm({
   const hasAlternativeAuth = settings.authGithubEnabled || settings.authGoogleEnabled || settings.authPasskeyEnabled || addonExternalAuthEntries.length > 0
   const hasCaptchaSection = useTurnstile || useBuiltinCaptcha || usePowCaptcha || Boolean(addonCaptcha)
   const showLoginModeSwitch = smsAvailable
-  const loginMode = smsAvailable ? requestedLoginMode : "password"
 
   useEffect(() => {
     if (phoneCodeCountdown <= 0) {
@@ -79,6 +78,11 @@ export function LoginForm({
     return () => window.clearInterval(timer)
   }, [phoneCodeCountdown])
 
+  useEffect(() => {
+    if (!smsAvailable && loginMode === "phone-code") {
+      setLoginMode("password")
+    }
+  }, [loginMode, smsAvailable])
 
   async function sendPhoneCode(captchaPayload: SmsCaptchaPayload = {}) {
     if (!login.trim()) {
@@ -213,8 +217,8 @@ export function LoginForm({
       <AuthFormSection>
         {showLoginModeSwitch ? (
           <div className="flex gap-2">
-            <Button type="button" variant={loginMode === "password" ? "default" : "outline"} onClick={() => setRequestedLoginMode("password")}>密码登录</Button>
-            <Button type="button" variant={loginMode === "phone-code" ? "default" : "outline"} onClick={() => setRequestedLoginMode("phone-code")}>短信登录</Button>
+            <Button type="button" variant={loginMode === "password" ? "default" : "outline"} onClick={() => setLoginMode("password")}>密码登录</Button>
+            <Button type="button" variant={loginMode === "phone-code" ? "default" : "outline"} onClick={() => setLoginMode("phone-code")}>短信登录</Button>
           </div>
         ) : null}
 

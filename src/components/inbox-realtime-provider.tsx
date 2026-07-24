@@ -193,6 +193,7 @@ export function InboxRealtimeProvider({
   const reconnectTimerRef = useRef<number | null>(null)
   const reconnectAttemptRef = useRef(0)
   const streamCursorRef = useRef<string | null>(null)
+  const connectionCleanupRef = useRef<(() => void) | null>(null)
   const listenersRef = useRef(new Set<(event: InboxStreamEvent) => void>())
   const currentUserIdRef = useRef<number | null>(currentUserId)
   const unreadCountsRef = useRef<InboxUnreadCounts>({
@@ -206,6 +207,7 @@ export function InboxRealtimeProvider({
   const attentionTitleRef = useRef("")
   const baseTitleRef = useRef("")
   const [connectionStatus, setConnectionStatus] = useState<InboxConnectionStatus>(currentUserId && messageRealtimeEnabled ? "connecting" : "closed")
+  const [connectionGeneration, setConnectionGeneration] = useState(0)
   const [unreadMessageCount, setUnreadMessageCount] = useState(initialUnreadMessageCount)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(initialUnreadNotificationCount)
   const resolvedMessagePromptAudioPath = useMemo(
@@ -219,24 +221,42 @@ export function InboxRealtimeProvider({
   }, [currentUserId])
 
   useEffect(() => {
+    function handlePageHide() {
+      connectionCleanupRef.current?.()
+    }
+
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        setConnectionGeneration((current) => current + 1)
+      }
+    }
+
+    window.addEventListener("pagehide", handlePageHide)
+    window.addEventListener("pageshow", handlePageShow)
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide)
+      window.removeEventListener("pageshow", handlePageShow)
+    }
+  }, [])
+
+  useEffect(() => {
     const nextCounts = {
       unreadMessageCount: messageEnabled ? initialUnreadMessageCount : 0,
       unreadNotificationCount: initialUnreadNotificationCount,
     }
 
     unreadCountsRef.current = nextCounts
-    queueMicrotask(() => {
-      setUnreadMessageCount((current) =>
-        current === nextCounts.unreadMessageCount
-          ? current
-          : nextCounts.unreadMessageCount,
-      )
-      setUnreadNotificationCount((current) =>
-        current === nextCounts.unreadNotificationCount
-          ? current
-          : nextCounts.unreadNotificationCount,
-      )
-    })
+    setUnreadMessageCount((current) =>
+      current === nextCounts.unreadMessageCount
+        ? current
+        : nextCounts.unreadMessageCount,
+    )
+    setUnreadNotificationCount((current) =>
+      current === nextCounts.unreadNotificationCount
+        ? current
+        : nextCounts.unreadNotificationCount,
+    )
   }, [
     initialUnreadMessageCount,
     initialUnreadNotificationCount,
@@ -472,9 +492,7 @@ export function InboxRealtimeProvider({
     if (!currentUserId || !messageRealtimeEnabled) {
       reconnectAttemptRef.current = 0
       streamCursorRef.current = null
-      queueMicrotask(() => {
-        setConnectionStatus("closed")
-      })
+      setConnectionStatus("closed")
       restoreDocumentTitle()
       return
     }
@@ -510,10 +528,20 @@ export function InboxRealtimeProvider({
     }
 
     const postChannelMessage = (message: InboxRealtimeChannelMessageInput) => {
-      channel?.postMessage({
-        ...message,
-        senderId: tabId,
-      } as InboxRealtimeChannelMessage)
+      if (closed || !channel) {
+        return
+      }
+
+      try {
+        channel.postMessage({
+          ...message,
+          senderId: tabId,
+        } as InboxRealtimeChannelMessage)
+      } catch (error) {
+        if (!(error instanceof DOMException) || error.name !== "InvalidStateError") {
+          throw error
+        }
+      }
     }
 
     const setSharedConnectionStatus = (status: InboxConnectionStatus) => {
@@ -623,13 +651,23 @@ export function InboxRealtimeProvider({
       eventSource = new EventSource(streamUrl)
 
       eventSource.onopen = () => {
+        if (closed) {
+          return
+        }
         reconnectAttemptRef.current = 0
         setSharedConnectionStatus("connected")
       }
 
-      eventSource.onmessage = handleStreamMessage
+      eventSource.onmessage = (event) => {
+        if (!closed) {
+          handleStreamMessage(event)
+        }
+      }
       eventSource.addEventListener("cursor", handleCursor as EventListener)
       eventSource.onerror = () => {
+        if (closed) {
+          return
+        }
         closeEventSource()
         scheduleReconnect()
       }
@@ -775,7 +813,11 @@ export function InboxRealtimeProvider({
       connect()
     }
 
-    return () => {
+    const cleanupConnection = () => {
+      if (closed) {
+        return
+      }
+
       closed = true
       if (leaderTimer) {
         window.clearInterval(leaderTimer)
@@ -789,7 +831,16 @@ export function InboxRealtimeProvider({
       releaseLeaderLease(leaderKey, tabId)
       channel?.close()
     }
-  }, [currentUserId, messageEnabled, messageRealtimeEnabled, notifyListeners, playPromptAudio, resolvedRealtimeHeartbeatSeconds, restoreDocumentTitle])
+
+    connectionCleanupRef.current = cleanupConnection
+
+    return () => {
+      if (connectionCleanupRef.current === cleanupConnection) {
+        connectionCleanupRef.current = null
+      }
+      cleanupConnection()
+    }
+  }, [connectionGeneration, currentUserId, messageEnabled, messageRealtimeEnabled, notifyListeners, playPromptAudio, resolvedRealtimeHeartbeatSeconds, restoreDocumentTitle])
 
   const value = useMemo<InboxRealtimeContextValue>(() => ({
     currentUserId,

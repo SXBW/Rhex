@@ -12,9 +12,9 @@ export function HomeAnnouncementPanel({ announcements }: HomeAnnouncementPanelPr
     <section className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Megaphone className="h-5 w-5 text-sky-500" />
+          <Megaphone className="h-4 w-4 text-primary" />
           <div>
-            <h3 className="font-semibold">站内公告</h3>
+            <h3 className="text-sm font-semibold">站内公告</h3>
           </div>
         </div>
         <Link href="/announcements" className="text-xs text-muted-foreground transition hover:text-foreground">更多公告</Link>

@@ -17,8 +17,8 @@ export function HomeSiteStatsCard({ stats }: HomeSiteStatsCardProps) {
   return (
     <section className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
       <div className="mb-4 flex items-center gap-2">
-        <BarChart3 className="h-5 w-5 text-slate-500 dark:text-slate-300" />
-        <h3 className="font-semibold">社区统计</h3>
+        <BarChart3 className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">社区统计</h3>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {items.map((item) => (

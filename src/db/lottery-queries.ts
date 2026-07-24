@@ -13,13 +13,6 @@ import { applyPointDelta, type PreparedPointDelta } from "@/lib/point-center"
 import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
 import { addSafeIntegers } from "@/lib/shared/safe-integer"
 
-export class LotteryDrawClaimConflictError extends Error {
-  constructor() {
-    super("抽奖已被其他请求处理")
-    this.name = "LotteryDrawClaimConflictError"
-  }
-}
-
 function isPrismaUniqueConstraintError(error: unknown) {
   return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "P2002")
 }
@@ -108,7 +101,7 @@ export function findLotteryInteractionState(input: { postId: string; userId: num
   ])
 }
 
-export async function upsertLotteryParticipantEligibility(input: {
+export function upsertLotteryParticipantEligibility(input: {
   postId: string
   userId: number
   replyCommentId?: string | null
@@ -116,46 +109,29 @@ export async function upsertLotteryParticipantEligibility(input: {
   ineligibleReason: string | null
   joinedAt?: Date
 }) {
-  return prisma.$transaction(async (tx) => {
-    const activePost = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT "id"
-      FROM "Post"
-      WHERE "id" = ${input.postId}
-        AND "type" = 'LOTTERY'::"PostType"
-        AND "lotteryStatus" = 'ACTIVE'::"LotteryStatus"
-        AND "lotteryLockedAt" IS NULL
-        AND "lotteryDrawnAt" IS NULL
-      FOR UPDATE
-    `
-
-    if (activePost.length !== 1) {
-      return null
-    }
-
-    const identity = {
-      postId_userId: {
-        postId: input.postId,
-        userId: input.userId,
-      },
-    }
-    const data = {
+  const identity = {
+    postId_userId: {
       postId: input.postId,
       userId: input.userId,
-      sourceCommentId: input.replyCommentId ?? undefined,
-      isEligible: input.isEligible,
-      ineligibleReason: input.ineligibleReason,
-      ...(input.joinedAt ? { joinedAt: input.joinedAt } : {}),
-    }
+    },
+  }
+  const data = {
+    postId: input.postId,
+    userId: input.userId,
+    sourceCommentId: input.replyCommentId ?? undefined,
+    isEligible: input.isEligible,
+    ineligibleReason: input.ineligibleReason,
+    ...(input.joinedAt ? { joinedAt: input.joinedAt } : {}),
+  }
 
-    if (!input.isEligible) {
-      try {
-        return await tx.lotteryParticipant.create({ data })
-      } catch (error) {
+  if (!input.isEligible) {
+    return prisma.lotteryParticipant.create({ data })
+      .catch(async (error) => {
         if (!isPrismaUniqueConstraintError(error)) {
           throw error
         }
 
-        await tx.lotteryParticipant.updateMany({
+        await prisma.lotteryParticipant.updateMany({
           where: {
             postId: input.postId,
             userId: input.userId,
@@ -168,33 +144,26 @@ export async function upsertLotteryParticipantEligibility(input: {
           },
         })
 
-        return tx.lotteryParticipant.findUnique({
+        return prisma.lotteryParticipant.findUnique({
           where: identity,
         })
-      }
-    }
+      })
+  }
 
-    return tx.lotteryParticipant.upsert({
-      where: identity,
-      update: {
-        isEligible: input.isEligible,
-        ineligibleReason: input.ineligibleReason,
-        sourceCommentId: input.replyCommentId ?? undefined,
-        ...(input.joinedAt ? { joinedAt: input.joinedAt } : {}),
-      },
-      create: data,
-    })
+  return prisma.lotteryParticipant.upsert({
+    where: identity,
+    update: {
+      isEligible: input.isEligible,
+      ineligibleReason: input.ineligibleReason,
+      sourceCommentId: input.replyCommentId ?? undefined,
+      ...(input.joinedAt ? { joinedAt: input.joinedAt } : {}),
+    },
+    create: data,
   })
 }
 
-type LotteryQueryClient = Prisma.TransactionClient | typeof prisma
-
-function resolveLotteryClient(client?: LotteryQueryClient) {
-  return client ?? prisma
-}
-
-export function findLotteryDrawContext(postId: string, client?: LotteryQueryClient) {
-  return resolveLotteryClient(client).post.findUnique({
+export function findLotteryDrawContext(postId: string) {
+  return prisma.post.findUnique({
     where: { id: postId },
     include: {
       author: true,
@@ -408,46 +377,31 @@ async function deliverLotteryAutomaticPrizes(input: {
 }
 
 export async function executeLotteryDrawTransaction(input: {
-  postId: string
+  post: Awaited<ReturnType<typeof findLotteryDrawContext>>
   lockedAt: Date
+  winnersToCreate: Prisma.LotteryWinnerCreateManyInput[]
   actorId?: number | null
+  announcement: string
   prizeCostSettings: LotteryPrizeCostSettings
-  buildDraw: (post: NonNullable<Awaited<ReturnType<typeof findLotteryDrawContext>>>) => {
-    winnersToCreate: Prisma.LotteryWinnerCreateManyInput[]
-    announcement: string
-  }
 }) {
+  const post = input.post
+  if (!post) {
+    throw new Error("抽奖帖不存在")
+  }
+
   return prisma.$transaction(async (tx) => {
-    const claimed = await tx.post.updateMany({
-      where: {
-        id: input.postId,
-        type: "LOTTERY",
-        lotteryStatus: LotteryStatus.ACTIVE,
-        lotteryLockedAt: null,
-        lotteryDrawnAt: null,
-      },
+    await tx.post.update({
+      where: { id: post.id },
       data: {
         lotteryStatus: LotteryStatus.LOCKED,
         lotteryLockedAt: input.lockedAt,
       },
     })
 
-    if (claimed.count !== 1) {
-      throw new LotteryDrawClaimConflictError()
-    }
-
-    const post = await findLotteryDrawContext(input.postId, tx)
-    if (!post) {
-      throw new Error("抽奖帖不存在")
-    }
-
-    const { winnersToCreate, announcement } = input.buildDraw(post)
-
     await tx.lotteryParticipant.updateMany({
       where: {
         postId: post.id,
         isEligible: true,
-        lockedAt: null,
       },
       data: {
         lockedAt: input.lockedAt,
@@ -457,8 +411,12 @@ export async function executeLotteryDrawTransaction(input: {
       },
     })
 
-    if (winnersToCreate.length > 0) {
-      await tx.lotteryWinner.createMany({ data: winnersToCreate })
+    if (post.lotteryWinners.length > 0) {
+      await tx.lotteryWinner.deleteMany({ where: { postId: post.id } })
+    }
+
+    if (input.winnersToCreate.length > 0) {
+      await tx.lotteryWinner.createMany({ data: input.winnersToCreate })
     }
 
     const finalWinners = await tx.lotteryWinner.findMany({
@@ -478,23 +436,14 @@ export async function executeLotteryDrawTransaction(input: {
       prizeCostSettings: input.prizeCostSettings,
     })
 
-    const finalized = await tx.post.updateMany({
-      where: {
-        id: post.id,
-        lotteryStatus: LotteryStatus.LOCKED,
-        lotteryLockedAt: input.lockedAt,
-        lotteryDrawnAt: null,
-      },
+    await tx.post.update({
+      where: { id: post.id },
       data: {
         lotteryStatus: LotteryStatus.DRAWN,
-        lotteryAnnouncement: announcement,
+        lotteryAnnouncement: input.announcement,
         lotteryDrawnAt: input.lockedAt,
       },
     })
-
-    if (finalized.count !== 1) {
-      throw new LotteryDrawClaimConflictError()
-    }
 
     const notifications = finalWinners.map((winner) => ({
       userId: winner.userId,
@@ -511,9 +460,8 @@ export async function executeLotteryDrawTransaction(input: {
     }
 
     return {
-      post,
       winners: finalWinners,
-      announcement,
+      announcement: input.announcement,
       affectedUserIds: deliveryResult.affectedUserIds,
     }
   })

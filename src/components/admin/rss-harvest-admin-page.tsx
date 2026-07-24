@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
 import { AdminClientPaginationBar } from "@/components/admin/admin-pagination-bar"
@@ -151,38 +151,15 @@ function buildPageTokens(page: number, totalPages: number) {
 
 export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
   const router = useRouter()
-  const [dataState, setDataState] = useState(() => ({
-    source: initialData,
-    value: initialData,
-  }))
-  const data = dataState.source === initialData ? dataState.value : initialData
-  const setData = (value: RssAdminData) => {
-    setDataState({ source: initialData, value })
-  }
-  const sourcePage = data.sourcePagination.page
+  const [data, setData] = useState(initialData)
+  const [sourcePage, setSourcePage] = useState(initialData.sourcePagination.page)
   const [loadingData, setLoadingData] = useState(false)
   const [sourceModalOpen, setSourceModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<SourceDraft>(createEmptySourceDraft)
   const [settingsFeedback, setSettingsFeedback] = useState("")
   const [sourceFeedback, setSourceFeedback] = useState("")
-  const [queueSettingsState, setQueueSettingsState] = useState(() => ({
-    source: initialData,
-    value: createQueueSettingsDraft(initialData.settings),
-  }))
-  const queueSettings = queueSettingsState.source === initialData
-    ? queueSettingsState.value
-    : createQueueSettingsDraft(initialData.settings)
-  const setQueueSettings = (update: (current: QueueSettingsDraft) => QueueSettingsDraft) => {
-    setQueueSettingsState((current) => ({
-      source: initialData,
-      value: update(
-        current.source === initialData
-          ? current.value
-          : createQueueSettingsDraft(initialData.settings),
-      ),
-    }))
-  }
+  const [queueSettings, setQueueSettings] = useState<QueueSettingsDraft>(() => createQueueSettingsDraft(initialData.settings))
   const [queueModalOpen, setQueueModalOpen] = useState(false)
   const [queueModalData, setQueueModalData] = useState<RssSourceQueuePageData | null>(null)
   const [queueModalLoading, setQueueModalLoading] = useState(false)
@@ -196,6 +173,18 @@ export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
   const [globalLogsModalData, setGlobalLogsModalData] = useState<RssGlobalLogPageData>(() => createGlobalLogPageData(initialData))
   const [globalLogsModalLoading, setGlobalLogsModalLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    setData(initialData)
+    setSourcePage(initialData.sourcePagination.page)
+    setQueueSettings(createQueueSettingsDraft(initialData.settings))
+    if (!globalRunsModalOpen) {
+      setGlobalRunsModalData(createGlobalRunPageData(initialData))
+    }
+    if (!globalLogsModalOpen) {
+      setGlobalLogsModalData(createGlobalLogPageData(initialData))
+    }
+  }, [globalLogsModalOpen, globalRunsModalOpen, initialData])
 
   const enabledSourceCount = useMemo(() => data.sources.filter((item) => item.status === "ACTIVE").length, [data.sources])
   const sourceModalTitle = editingId ? "编辑 RSS 任务" : "新增 RSS 任务"
@@ -213,10 +202,8 @@ export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
         cache: "no-store",
       })
       setData(nextData)
-      setQueueSettingsState({
-        source: initialData,
-        value: createQueueSettingsDraft(nextData.settings),
-      })
+      setSourcePage(nextData.sourcePagination.page)
+      setQueueSettings(createQueueSettingsDraft(nextData.settings))
       if (!globalRunsModalOpen) {
         setGlobalRunsModalData(createGlobalRunPageData(nextData))
       }
@@ -724,6 +711,7 @@ export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
             itemLabel="个源"
             loading={loadingData}
             onPageChange={(page) => {
+              setSourcePage(page)
               void loadAdminData(page)
             }}
           />
@@ -781,6 +769,7 @@ export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
             loading={loadingData}
             className="border-t border-border pt-4"
             onPageChange={(page) => {
+              setSourcePage(page)
               void loadAdminData(page)
             }}
           />

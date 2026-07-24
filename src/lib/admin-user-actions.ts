@@ -18,7 +18,7 @@ import {
   updateUserStatus,
   updateUserVip,
 } from "@/db/admin-user-action-queries"
-import { createGrantedUserBadge, findBadgeSummaryById, findGrantedUserBadge, runBadgeTransaction } from "@/db/badge-queries"
+import { createGrantedUserBadge, deleteGrantedUserBadgeById, findBadgeSummaryById, findGrantedUserBadge, runBadgeTransaction } from "@/db/badge-queries"
 import { findUserByNicknameInsensitive } from "@/db/user-queries"
 import { createSystemNotification } from "@/lib/notification-writes"
 import { notificationEventBus } from "@/lib/notification-event-bus"
@@ -637,6 +637,52 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.badge.grant"].metadata)
     return { message: `已向 @${user.username} 颁发勋章：${badge.name}` }
+  }),
+  "user.badge.revoke": defineAdminAction({ targetType: "USER", buildDetail: (context) => {
+    const badgeName = readAdminActionString(context.body, "badgeName")
+    return badgeName ? `管理员撤销用户勋章：${badgeName}` : "管理员撤销用户勋章"
+  } }, async (context) => {
+    if (!await canAdminWithPermissionOverrides(context.actor, "admin.users.grantBadges", { isFounder: await findFounderAdminId() === context.actor.id })) apiError(403, "仅管理员可撤销用户勋章")
+    const userId = normalizePositiveUserId(context.targetId)
+    if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权撤销该用户的勋章")
+    const badgeId = requireAdminActionString(context.body, "badgeId", "请选择要撤销的勋章")
+    const revokeNote = requireAdminActionString(context.body, "message", "请填写撤销操作备注")
+    const badge = await findBadgeSummaryById(badgeId)
+    if (!badge) apiError(404, "勋章不存在")
+
+    const user = await findUserUsername(userId)
+    if (!user) apiError(404, "用户不存在")
+
+    const existing = await findGrantedUserBadge(userId, badgeId)
+    if (!existing) apiError(409, "该用户当前未持有这枚勋章")
+
+    await runBadgeTransaction(async (tx) => {
+      await deleteGrantedUserBadgeById(existing.id, tx)
+      await createSystemNotification({
+        client: tx,
+        userId,
+        senderId: context.adminUserId,
+        relatedType: "USER",
+        relatedId: String(userId),
+        url: "/settings?tab=badges",
+        title: `勋章已被撤销：${badge.name}`,
+        content: `管理员已撤销你的勋章“${badge.name}”，对应的佩戴状态、特效和相关权限已同时失效。`,
+      })
+    })
+    await invalidateNotificationUserCache(userId)
+    await notificationEventBus.publish({
+      type: "notification.count",
+      userId,
+      unreadNotificationCount: await countUnreadNotifications(userId),
+      reason: "created",
+      occurredAt: new Date().toISOString(),
+    })
+    revalidateUserBadgeMutation(userId)
+
+    context.detailOverride = `管理员撤销用户勋章：${badge.name}；操作备注：${revokeNote}`
+    await writeAdminActionLog(context, adminUserActionHandlers["user.badge.revoke"].metadata)
+    return { message: `已撤销 @${user.username} 的勋章：${badge.name}` }
   }),
   "user.notification.send": defineAdminAction({ targetType: "USER", buildDetail: (context) => {
     const title = readAdminActionString(context.body, "title")

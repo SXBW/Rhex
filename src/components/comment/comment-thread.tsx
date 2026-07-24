@@ -50,10 +50,8 @@ interface CommentThreadProps {
 const REPLY_BOX_FOLLOW_ENTER_OFFSET = 72
 const REPLY_BOX_FOLLOW_EXIT_OFFSET = 20
 const COMMENT_ANCHOR_SCROLL_RETRY_MS = 120
-const COMMENT_ANCHOR_SCROLL_MIN_SETTLE_MS = 1200
 const COMMENT_ANCHOR_SCROLL_MAX_MS = 3200
 const COMMENT_ANCHOR_SCROLL_TOLERANCE = 2
-const COMMENT_ANCHOR_SCROLL_STABLE_ATTEMPTS = 3
 const COMMENT_HIGHLIGHT_CLEAR_DELAY_MS = 4200
 
 type PaginationToken = number | "ellipsis"
@@ -163,23 +161,7 @@ function scrollCommentAnchorIntoView(target: HTMLElement, behavior: ScrollBehavi
   return false
 }
 
-function getCommentThreadStateKey({
-  threadId,
-  comments,
-  flatComments = [],
-  currentPage,
-  pageSize,
-  total,
-  canAcceptAnswer = false,
-}: CommentThreadProps) {
-  return JSON.stringify([threadId, comments, flatComments, currentPage, pageSize, total, canAcceptAnswer])
-}
-
-export function CommentThread(props: CommentThreadProps) {
-  return <CommentThreadContent key={getCommentThreadStateKey(props)} {...props} />
-}
-
-function CommentThreadContent({ threadId, comments, flatComments = [], postId, postPath, pointName, tipping, canReply, currentPage, pageSize, total, currentSort, currentDisplayMode, commentLoadMode = COMMENT_LOAD_MODE_PAGINATION, currentUserId, canAcceptAnswer = false, commentsVisibleToAuthorOnly = false, canOfflineOwnComment = false, canOfflineUserComment = false, anonymousReplyEnabled = false, anonymousReplyDefaultChecked = false, anonymousReplySwitchVisible = false, isAdmin = false, adminRole = null, canPinComment = false, markdownEmojiMap, commentEditWindowMinutes = 5, initialVisibleReplies = 10 }: CommentThreadProps) {
+export function CommentThread({ threadId, comments, flatComments = [], postId, postPath, pointName, tipping, canReply, currentPage, pageSize, total, currentSort, currentDisplayMode, commentLoadMode = COMMENT_LOAD_MODE_PAGINATION, currentUserId, canAcceptAnswer = false, commentsVisibleToAuthorOnly = false, canOfflineOwnComment = false, canOfflineUserComment = false, anonymousReplyEnabled = false, anonymousReplyDefaultChecked = false, anonymousReplySwitchVisible = false, isAdmin = false, adminRole = null, canPinComment = false, markdownEmojiMap, commentEditWindowMinutes = 5, initialVisibleReplies = 10 }: CommentThreadProps) {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -207,6 +189,26 @@ function CommentThreadContent({ threadId, comments, flatComments = [], postId, p
   const replyBoxContainerRef = useRef<HTMLDivElement | null>(null)
   const replyBoxFollowRafRef = useRef<number | null>(null)
   const infiniteSentinelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    setLocalComments(comments)
+  }, [comments])
+
+  useEffect(() => {
+    setLocalFlatComments(flatComments)
+  }, [flatComments])
+
+  useEffect(() => {
+    setLocalTotal(total)
+    setLoadedPage(currentPage)
+    setHasNextInfinitePage(currentPage * pageSize < total)
+    setIsLoadingMoreComments(false)
+    setLoadMoreError("")
+  }, [currentPage, pageSize, total])
+
+  useEffect(() => {
+    setCanAcceptAnswerState(canAcceptAnswer)
+  }, [canAcceptAnswer])
 
   const filteredComments = useMemo(() => {
     if (!showOnlyAuthorComments) {
@@ -350,14 +352,11 @@ function CommentThreadContent({ threadId, comments, flatComments = [], postId, p
   }, [currentDisplayMode, findRootCommentByCommentId, initialVisibleReplies])
 
   const triggerCommentHighlight = useCallback((commentId: string) => {
+    setHighlightedCommentId(null)
     window.requestAnimationFrame(() => {
-      ensureHighlightedCommentVisible(commentId)
-      setHighlightedCommentId(null)
-      window.requestAnimationFrame(() => {
-        setHighlightedCommentId(commentId)
-      })
+      setHighlightedCommentId(commentId)
     })
-  }, [ensureHighlightedCommentVisible])
+  }, [])
 
   const clearCommentHighlightSearchParam = useCallback((commentId: string) => {
     const currentUrl = new URL(window.location.href)
@@ -400,11 +399,11 @@ function CommentThreadContent({ threadId, comments, flatComments = [], postId, p
       return
     }
 
+    ensureHighlightedCommentVisible(highlightedCommentId)
+
     let cancelled = false
     let rafId: number | null = null
     let retryTimeoutId: number | null = null
-    let stableAttempts = 0
-    let hasUsedSmoothScroll = false
     const startedAt = window.performance.now()
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
@@ -433,21 +432,8 @@ function CommentThreadContent({ threadId, comments, flatComments = [], postId, p
 
       const target = document.getElementById(`comment-${highlightedCommentId}`)
       if (target) {
-        const elapsed = window.performance.now() - startedAt
-        const behavior: ScrollBehavior = hasUsedSmoothScroll || prefersReducedMotion ? "auto" : "smooth"
-        const isSettled = scrollCommentAnchorIntoView(target, behavior)
-        hasUsedSmoothScroll = true
-        stableAttempts = isSettled ? stableAttempts + 1 : 0
-
-        if (stableAttempts >= COMMENT_ANCHOR_SCROLL_STABLE_ATTEMPTS && elapsed >= COMMENT_ANCHOR_SCROLL_MIN_SETTLE_MS) {
-          clearCommentHighlightSearchParam(highlightedCommentId)
-          return
-        }
-
-        if (elapsed < COMMENT_ANCHOR_SCROLL_MAX_MS) {
-          scheduleScrollAttempt(COMMENT_ANCHOR_SCROLL_RETRY_MS)
-        }
-
+        scrollCommentAnchorIntoView(target, prefersReducedMotion ? "auto" : "smooth")
+        clearCommentHighlightSearchParam(highlightedCommentId)
         return
       }
 

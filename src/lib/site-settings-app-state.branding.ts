@@ -228,6 +228,10 @@ export function resolveHomeSidebarAnnouncementSettings(options: {
       typeof homeSidebarAnnouncement.enabled === "boolean"
         ? homeSidebarAnnouncement.enabled
         : options.enabledFallback ?? true,
+    homeSidebarEnabled:
+      typeof homeSidebarAnnouncement.homeSidebarEnabled === "boolean"
+        ? homeSidebarAnnouncement.homeSidebarEnabled
+        : true,
   }
 }
 
@@ -241,6 +245,7 @@ export function mergeHomeSidebarAnnouncementSettings(
     ...siteSettingsState,
     homeSidebarAnnouncement: {
       enabled: input.enabled,
+      homeSidebarEnabled: input.homeSidebarEnabled,
     },
   })
 }

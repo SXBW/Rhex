@@ -62,7 +62,7 @@ export function AiReplyRateLimitPage() {
   }, [])
 
   useEffect(() => {
-    void Promise.resolve().then(load)
+    void load()
   }, [load])
 
   const save = useCallback(() => {

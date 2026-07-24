@@ -49,7 +49,6 @@ import {
 import { getHomeSidebarHotTopics } from "@/lib/home-sidebar"
 import { groupHomeSidebarPanels } from "@/lib/home-sidebar-layout"
 import { getHomeSidebarStats } from "@/lib/home-sidebar-stats"
-import { POST_LIST_DISPLAY_MODE_GALLERY } from "@/lib/post-list-display"
 import { POST_LIST_LOAD_MODE_INFINITE } from "@/lib/post-list-load-mode"
 import {
   attachPostListTipSummaries,
@@ -312,7 +311,7 @@ export async function HomeFeedPage({
         ]
       : [],
   )
-  const shouldShowRightSidebar = settings.homeFeedPostListDisplayMode !== POST_LIST_DISPLAY_MODE_GALLERY
+  const shouldShowRightSidebar = settings.homeSidebarEnabled
 
   const sortBeforeSlot =
     currentSort === "new"

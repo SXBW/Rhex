@@ -17,9 +17,29 @@ export interface AdminBasicSettingsInviteCodeItem {
   code: string
   createdAt: string
   createdByUsername: string | null
+  isUsed: boolean
   usedAt: string | null
   usedByUsername: string | null
   note: string | null
+}
+
+export interface AdminBasicSettingsInviteCodePageData {
+  items: AdminBasicSettingsInviteCodeItem[]
+  status: "all" | "used" | "unused"
+  summary: {
+    total: number
+    used: number
+    unused: number
+    manual: number
+  }
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+    hasPrevPage: boolean
+    hasNextPage: boolean
+  }
 }
 
 export interface AdminBasicSettingsFormProps {
@@ -27,7 +47,7 @@ export interface AdminBasicSettingsFormProps {
   mode?: AdminBasicSettingsMode
   initialSubTab?: string
   subTabRouteSection?: AdminSettingsSectionKey
-  initialInviteCodes?: AdminBasicSettingsInviteCodeItem[]
+  initialInviteCodePage?: AdminBasicSettingsInviteCodePageData
 }
 
 export type UpdateAdminBasicSettingsDraftField = <Key extends keyof AdminBasicSettingsDraft>(
@@ -43,7 +63,7 @@ interface AdminBasicSettingsModeProps {
 
 export interface AdminRegistrationSettingsFormProps
   extends AdminBasicSettingsModeProps {
-  initialInviteCodes: AdminBasicSettingsInviteCodeItem[]
+  initialInviteCodePage?: AdminBasicSettingsInviteCodePageData
 }
 
 export type AdminProfileSettingsFormProps = AdminBasicSettingsModeProps

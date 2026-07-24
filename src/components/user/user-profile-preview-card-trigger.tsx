@@ -91,6 +91,10 @@ export function UserProfilePreviewCardTrigger({
       : { username, status: "idle" as const }
 
   useEffect(() => {
+    setState(getInitialPreviewState(username))
+  }, [username])
+
+  useEffect(() => {
     if (!open || cachedPreview || inflightUsernameRef.current === username) {
       return
     }

@@ -1,6 +1,4 @@
-import { type PrismaClient } from "@prisma/client"
-
-import { Prisma } from "@/db/types"
+import { type Prisma, type PrismaClient } from "@prisma/client"
 
 import { prisma } from "@/db/client"
 
@@ -8,19 +6,6 @@ type PostOfflineQueryClient = Prisma.TransactionClient | PrismaClient
 
 function resolveClient(client?: PostOfflineQueryClient) {
   return client ?? prisma
-}
-
-// Serialize state validation, the point debit, and the transition for one post.
-// Without this row lock, concurrent retries can both observe NORMAL and charge twice.
-export async function lockPostOfflineTarget(tx: Prisma.TransactionClient, postId: string) {
-  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-    SELECT "id"
-    FROM "Post"
-    WHERE "id" = ${postId}
-    FOR UPDATE
-  `)
-
-  return rows.length > 0
 }
 
 export function findPostOfflineTarget(postId: string, client?: PostOfflineQueryClient) {

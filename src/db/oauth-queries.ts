@@ -1,4 +1,5 @@
-import { OAuthClientStatus, Prisma, UserStatus } from "@/db/types"
+import { OAuthClientStatus } from "@/db/types"
+import type { Prisma } from "@/db/types"
 
 import { prisma } from "@/db/client"
 
@@ -430,21 +431,6 @@ export function createOAuthTokenPair(params: {
   })
 }
 
-async function lockActiveOAuthUser(tx: Prisma.TransactionClient, userId: number) {
-  // Token creation and user deactivation must serialize on the user row. A
-  // non-locking status read here would leave a TOCTOU window between checking
-  // the subject and persisting a newly issued token pair.
-  const users = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
-    SELECT "id"
-    FROM "User"
-    WHERE "id" = ${userId}
-      AND "status" = ${UserStatus.ACTIVE}::"UserStatus"
-    FOR UPDATE
-  `)
-
-  return users.length === 1
-}
-
 export function consumeOAuthAuthorizationCodeAndCreateTokenPair(params: {
   authorizationCodeId: string
   accessTokenHash: string
@@ -456,10 +442,6 @@ export function consumeOAuthAuthorizationCodeAndCreateTokenPair(params: {
   refreshTokenExpiresAt: Date
 }) {
   return prisma.$transaction(async (tx) => {
-    if (!await lockActiveOAuthUser(tx, params.userId)) {
-      return null
-    }
-
     const consumed = await tx.oAuthAuthorizationCode.updateMany({
       where: {
         id: params.authorizationCodeId,
@@ -575,10 +557,6 @@ export function rotateOAuthRefreshToken(params: {
   refreshTokenExpiresAt: Date
 }) {
   return prisma.$transaction(async (tx) => {
-    if (!await lockActiveOAuthUser(tx, params.userId)) {
-      return null
-    }
-
     const updated = await tx.oAuthRefreshToken.updateMany({
       where: {
         id: params.oldRefreshTokenId,

@@ -1,4 +1,4 @@
-import type { Prisma } from "@/db/types"
+import { ChangeType, type Prisma } from "@/db/types"
 
 import {
   countAdminLogs,
@@ -98,10 +98,39 @@ const LOG_TABS: Array<{ key: AdminLogCenterTab; label: string }> = [
   { key: "orders", label: "VIP 订单日志" },
 ]
 
+const ADMIN_LOG_ACTIONS = new Set([
+  "report.resolve",
+  "report.reject",
+  "user.ban",
+  "user.mute",
+  "post.approve",
+  "post.reject",
+  "post.delete",
+  "comment.delete",
+])
+const CHECK_IN_ACTIONS = new Set(["check-in", "make-up"])
+const UPLOAD_BUCKET_TYPES = new Set(["avatars", "posts", "icon"])
+
 
 
 function normalizeTab(value?: string): AdminLogCenterTab {
   return LOG_TABS.some((item) => item.key === value) ? (value as AdminLogCenterTab) : "admin"
+}
+
+function normalizeLogAction(value: string | undefined, activeTab: AdminLogCenterTab) {
+  const normalized = String(value ?? "ALL").trim()
+  const allowedActions = activeTab === "admin"
+    ? ADMIN_LOG_ACTIONS
+    : activeTab === "checkins"
+      ? CHECK_IN_ACTIONS
+      : null
+
+  return allowedActions?.has(normalized) ? normalized : "ALL"
+}
+
+function normalizeUploadBucketType(value?: string) {
+  const normalized = String(value ?? "ALL").trim().toLowerCase()
+  return UPLOAD_BUCKET_TYPES.has(normalized) ? normalized : "ALL"
 }
 
 function buildPagination(total: number, requestedPage: number, pageSize: number): AdminLogCenterPagination {
@@ -130,8 +159,20 @@ function resolveAdminTone(action: string) {
   return "info" as const
 }
 
+function normalizePointChangeType(value?: string) {
+  const normalized = String(value ?? "ALL").trim().toUpperCase()
+
+  if (normalized === ChangeType.INCREASE || normalized === "INCOME") {
+    return ChangeType.INCREASE
+  }
+  if (normalized === ChangeType.DECREASE || normalized === "EXPENSE") {
+    return ChangeType.DECREASE
+  }
+  return "ALL"
+}
+
 function resolvePointTone(changeType: string, changeValue: number) {
-  if (changeType === "EXPENSE" || changeValue < 0) {
+  if (changeType === ChangeType.DECREASE || changeValue < 0) {
     return "danger" as const
   }
   return "success" as const
@@ -179,10 +220,10 @@ export async function getAdminLogCenter(options: GetAdminLogCenterOptions = {}):
   )
 
   const activeTab = normalizeTab(options.activeTab)
-  const keyword = String(options.keyword ?? "").trim()
-  const action = String(options.action ?? "ALL").trim() || "ALL"
-  const changeType = String(options.changeType ?? "ALL").trim() || "ALL"
-  const bucketType = String(options.bucketType ?? "ALL").trim() || "ALL"
+  const keyword = String(options.keyword ?? "").trim().slice(0, 100)
+  const action = normalizeLogAction(options.action, activeTab)
+  const changeType = normalizePointChangeType(options.changeType)
+  const bucketType = normalizeUploadBucketType(options.bucketType)
   const requestedPage = normalizePositiveInteger(options.page, 1)
   const pageSize = normalizePageSize(options.pageSize)
 
@@ -329,7 +370,7 @@ export async function getAdminLogCenter(options: GetAdminLogCenterOptions = {}):
 
   if (activeTab === "points") {
     const where: Prisma.PointLogWhereInput = {
-      ...(changeType !== "ALL" ? { changeType: changeType as Prisma.EnumChangeTypeFilter["equals"] } : {}),
+      ...(changeType !== "ALL" ? { changeType } : {}),
       ...(keyword
         ? {
             OR: [

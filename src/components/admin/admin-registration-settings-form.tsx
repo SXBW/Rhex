@@ -1,7 +1,7 @@
 "use client"
 
 import { CircleHelp } from "lucide-react"
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 import { AdminInviteCodeManager } from "@/components/admin/admin-invite-code-manager"
 import {
@@ -165,16 +165,18 @@ export function AdminRegistrationSettingsForm({
   activeSubTab,
   draft,
   updateDraftField,
-  initialInviteCodes,
+  initialInviteCodePage,
 }: AdminRegistrationSettingsFormProps) {
   const [authDocOpen, setAuthDocOpen] = useState(false)
-  const siteOrigin = useSyncExternalStore(
-    () => () => {},
-    () => window.location.origin,
-    () => "https://your-domain.com",
-  )
+  const [siteOrigin, setSiteOrigin] = useState("https://your-domain.com")
   const [smtpTestRecipient, setSmtpTestRecipient] = useState(() => extractEmailAddress(draft.smtpFrom) || draft.smtpUser || "")
   const [isSendingSmtpTest, setIsSendingSmtpTest] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSiteOrigin(window.location.origin)
+    }
+  }, [])
 
   const siteHost = useMemo(() => siteOrigin.replace(/^https?:\/\//, "").replace(/\/.*$/, ""), [siteOrigin])
   const resolvedPasskeyRpId = draft.passkeyRpId || siteHost
@@ -299,7 +301,7 @@ export function AdminRegistrationSettingsForm({
         </div>
       ) : null}
 
-      {activeSubTab === "invite-codes" ? <AdminInviteCodeManager initialInviteCodes={initialInviteCodes} /> : null}
+      {activeSubTab === "invite-codes" ? <AdminInviteCodeManager initialInviteCodePage={initialInviteCodePage} /> : null}
 
       {activeSubTab === "fields" ? (
         <div className="rounded-xl border border-border p-5 space-y-4">

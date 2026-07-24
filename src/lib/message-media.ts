@@ -27,7 +27,7 @@ function normalizeMessageFileName(value: string) {
   return value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").replace(/:/g, "-").trim()
 }
 
-export function normalizeMessageFileRouteSegment(value: string) {
+function normalizeMessageFileRouteSegment(value: string) {
   return normalizeMessageFileName(value).replace(/[\\/]+/g, "-") || "file"
 }
 

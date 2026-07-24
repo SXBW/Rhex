@@ -1,28 +1,14 @@
 import { countUnreadNotifications } from "@/db/notification-read-queries"
 import { deleteAllNotificationsByUserId, deleteNotificationByUserId } from "@/db/notification-queries"
-import { apiError, apiSuccess, createUserRouteHandler, readJsonBody, readOptionalStringField, type JsonObject } from "@/lib/api-route"
+import { apiSuccess, createUserRouteHandler, readJsonBody, readOptionalStringField } from "@/lib/api-route"
 import { notificationEventBus } from "@/lib/notification-event-bus"
 import { invalidateNotificationUserCache } from "@/lib/notification-redis-cache"
 import { revalidateUserSurfaceCache } from "@/lib/user-surface"
 
-export function readNotificationDeleteRequest(body: JsonObject) {
-  const notificationId = readOptionalStringField(body, "notificationId")
-  const deleteAll = body.deleteAll === true
-
-  if (deleteAll && notificationId) {
-    apiError(400, "不能同时指定通知和全部删除")
-  }
-
-  if (!deleteAll && !notificationId) {
-    apiError(400, "缺少通知 ID")
-  }
-
-  return { notificationId, deleteAll }
-}
-
 export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   const body = await readJsonBody(request)
-  const { notificationId, deleteAll } = readNotificationDeleteRequest(body)
+  const notificationId = readOptionalStringField(body, "notificationId")
+  const deleteAll = body.deleteAll === true
 
   const result = deleteAll
     ? await deleteAllNotificationsByUserId(currentUser.id)

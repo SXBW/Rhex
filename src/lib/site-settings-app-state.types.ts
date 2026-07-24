@@ -191,6 +191,7 @@ export interface MessageMediaSettings {
 
 export interface HomeSidebarAnnouncementSettings {
   enabled: boolean
+  homeSidebarEnabled: boolean
 }
 
 export interface LeftSidebarDisplaySettings {

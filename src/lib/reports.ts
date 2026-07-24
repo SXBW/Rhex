@@ -7,7 +7,6 @@ import {
   createReportResultNotification,
   findAdminReportsPage,
   findDuplicatedPendingReport,
-  lockReportSubmission,
   findReportById,
   findReportTargetComment,
   findReportTargetComments,
@@ -18,7 +17,6 @@ import {
 } from "@/db/report-queries"
 import type { AddonReportRecord, AddonReportTargetType } from "@/addons-host/types"
 import { executeAddonActionHook, executeAddonWaterfallHook } from "@/addons-host/runtime/hooks"
-import { prisma } from "@/db/client"
 import { resolvePagination } from "@/db/helpers"
 import { resolveHookedOptionalStringValue } from "@/lib/addon-hook-values"
 import { apiError } from "@/lib/api-route"
@@ -84,7 +82,7 @@ function mapPostReportTarget(
     title: post.title,
     description: `帖子作者：${getUserDisplayName(post.author)}`,
     href: getPostPath({ id: post.id, slug: post.slug }, { mode: postLinkDisplayMode }),
-    ownerUserId: post.author.id,
+    ownerUserId: null as number | null,
     relatedType: RelatedType.POST,
     relatedId: post.id,
   }
@@ -185,7 +183,6 @@ async function resolveReportTargets(
 }
 
 export async function createReport(input: CreateReportInput) {
-  const targetId = input.targetId.trim()
   const normalizedReasonType = input.reasonType.trim()
   const normalizedReasonDetail = input.reasonDetail?.trim() || ""
   const requestUrl = input.request ? new URL(input.request.url) : null
@@ -197,25 +194,11 @@ export async function createReport(input: CreateReportInput) {
       }
     : undefined
 
-  if (!targetId || targetId.length > 128) {
-    apiError(400, "Invalid report target")
-  }
-
   if (!normalizedReasonType) {
     apiError(400, "请选择举报原因")
   }
-  if (normalizedReasonType.length > 80) {
-    apiError(400, "Report reason is too long")
-  }
-  if (normalizedReasonDetail.length > 4_000) {
-    apiError(400, "Report detail is too long")
-  }
 
-  if (input.targetType === TargetType.USER && (!/^[1-9]\d*$/.test(targetId) || !Number.isSafeInteger(Number(targetId)))) {
-    apiError(400, "Invalid user report target")
-  }
-
-  const target = await resolveReportTarget(input.targetType, targetId)
+  const target = await resolveReportTarget(input.targetType, input.targetId)
 
   if (!target) {
     apiError(404, "举报目标不存在或已被删除")
@@ -225,12 +208,18 @@ export async function createReport(input: CreateReportInput) {
     apiError(400, "不能举报自己")
   }
 
+  const duplicatedReport = await findDuplicatedPendingReport(input.reporterId, input.targetType, input.targetId)
+
+  if (duplicatedReport) {
+    apiError(409, "你已经举报过该内容，处理中请耐心等待")
+  }
+
   const reasonDetailHookResult = await executeAddonWaterfallHook("report.reasonDetail.value", normalizedReasonDetail, {
     ...hookContext,
     payload: {
       reporterId: input.reporterId,
       targetType: input.targetType as AddonReportTargetType,
-      targetId,
+      targetId: input.targetId,
       reasonType: normalizedReasonType,
     },
   })
@@ -238,10 +227,6 @@ export async function createReport(input: CreateReportInput) {
     normalizedReasonDetail,
     reasonDetailHookResult.value,
   )
-
-  if (hookedReasonDetail.length > 4_000) {
-    apiError(400, "Report detail is too long")
-  }
 
   const reasonDetailSafety = hookedReasonDetail
     ? await enforceSensitiveText({ scene: "report.reasonDetail", text: hookedReasonDetail })
@@ -251,7 +236,7 @@ export async function createReport(input: CreateReportInput) {
   await executeAddonActionHook("report.create.before", {
     reporterId: input.reporterId,
     targetType: input.targetType as AddonReportTargetType,
-    targetId,
+    targetId: input.targetId,
     reasonType: normalizedReasonType,
     reasonDetail: nextReasonDetail,
   }, {
@@ -259,36 +244,19 @@ export async function createReport(input: CreateReportInput) {
     throwOnError: true,
   })
 
-  const report = await prisma.$transaction(async (tx) => {
-    // The route guard only deduplicates a short request window. Lock the durable
-    // report business key so parallel requests cannot each create a pending report.
-    await lockReportSubmission(tx, input.reporterId, input.targetType, targetId)
-
-    const duplicatedReport = await findDuplicatedPendingReport(
-      input.reporterId,
-      input.targetType,
-      targetId,
-      tx,
-    )
-    if (duplicatedReport) {
-      apiError(409, "你已经举报过该内容，处理中请耐心等待")
-    }
-
-    return createReportRecord({
-      reporterId: input.reporterId,
-      targetType: input.targetType,
-      targetId,
-      reasonType: normalizedReasonType,
-      reasonDetail: nextReasonDetail,
-      client: tx,
-    })
+  const report = await createReportRecord({
+    reporterId: input.reporterId,
+    targetType: input.targetType,
+    targetId: input.targetId,
+    reasonType: normalizedReasonType,
+    reasonDetail: nextReasonDetail,
   })
   const contentAdjusted = reasonDetailHookAdjusted || Boolean(reasonDetailSafety?.wasReplaced)
 
   await executeAddonActionHook("report.create.after", {
     reporterId: input.reporterId,
     targetType: input.targetType as AddonReportTargetType,
-    targetId,
+    targetId: input.targetId,
     reasonType: normalizedReasonType,
     reasonDetail: nextReasonDetail,
     contentAdjusted,

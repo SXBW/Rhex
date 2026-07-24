@@ -220,7 +220,7 @@ export async function AdminShell({
                   {roleLabel}
                 </Badge>
                 <div className="hidden items-center gap-2 rounded-lg border border-border/70 bg-card/80 px-2.5 py-1.5 sm:flex">
-                  <Avatar className="size-7 rounded-lg">
+                  <Avatar className="size-7">
                     <AvatarFallback>{getInitials(adminName)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">

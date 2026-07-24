@@ -18,16 +18,7 @@ export function useUserData({
   initialTab: AdminUserModalTab
 }): UserModalDataState {
   const router = useRouter()
-  const [activeTabSelection, setActiveTabSelection] = useState(() => ({
-    initialTab,
-    value: initialTab,
-  }))
-  const activeTab = activeTabSelection.initialTab === initialTab
-    ? activeTabSelection.value
-    : initialTab
-  const setActiveTab = (value: AdminUserModalTab) => {
-    setActiveTabSelection({ initialTab, value })
-  }
+  const [activeTab, setActiveTab] = useState<AdminUserModalTab>(initialTab)
   const [detail, setDetail] = useState<AdminUserDetailResult | null>(null)
   const [detailError, setDetailError] = useState("")
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
@@ -96,7 +87,11 @@ export function useUserData({
   }, [loadDetail, router])
 
   useEffect(() => {
-    void Promise.resolve().then(loadDetail)
+    setActiveTab(initialTab)
+  }, [initialTab])
+
+  useEffect(() => {
+    void loadDetail()
   }, [loadDetail])
 
   return {

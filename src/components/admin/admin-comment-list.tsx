@@ -21,7 +21,7 @@ import {
   Sparkles,
   ThumbsUp,
 } from "lucide-react"
-import { useMemo, useState, useTransition } from "react"
+import { useCallback, useMemo, useState, useTransition } from "react"
 
 import { AdminPostActionButton } from "@/components/admin/admin-post-action-button"
 import { Badge } from "@/components/ui/badge"
@@ -98,6 +98,7 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
     sort: data.filters.sort,
     review: data.filters.review,
     type: data.filters.type,
+    god: data.filters.god,
     pageSize: String(data.pagination.pageSize),
   })
 
@@ -126,6 +127,27 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
   const selectedCount = selectedCommentIds.length
   const allCurrentPageSelected = data.comments.length > 0 && selectedCount === data.comments.length
   const someCurrentPageSelected = selectedCount > 0 && !allCurrentPageSelected
+
+  const buildStatHref = useCallback((updates: Record<string, string>) => {
+    const query = new URLSearchParams({
+      tab: "comments",
+      keyword: "",
+      status: "ALL",
+      board: "",
+      sort: data.filters.sort,
+      review: "ALL",
+      type: "ALL",
+      god: "ALL",
+      commentPage: "1",
+      commentPageSize: String(data.pagination.pageSize),
+    })
+
+    for (const [key, value] of Object.entries(updates)) {
+      query.set(key, value)
+    }
+
+    return `/admin?${query.toString()}`
+  }, [data.filters.sort, data.pagination.pageSize])
 
   function toggleSelectComment(commentId: string, checked: boolean) {
     setSelectedCommentIds((current) => {
@@ -212,6 +234,8 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         value: data.summary.total,
         icon: <MessageSquare className="h-4 w-4" />,
         hint: `当前结果 ${formatNumber(data.pagination.total)} 条`,
+        href: buildStatHref({}),
+        active: data.filters.keyword === "" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.review === "ALL" && data.filters.type === "ALL" && data.filters.god === "ALL",
       },
       {
         label: "待审核",
@@ -219,6 +243,8 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         icon: <ShieldCheck className="h-4 w-4" />,
         hint: "优先处理命中规则或待人工复核的内容",
         tone: "amber" as const,
+        href: buildStatHref({ status: "PENDING" }),
+        active: data.filters.keyword === "" && data.filters.status === "PENDING" && data.filters.board === "" && data.filters.review === "ALL" && data.filters.type === "ALL" && data.filters.god === "ALL",
       },
       {
         label: "已下线",
@@ -226,6 +252,8 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         icon: <ShieldX className="h-4 w-4" />,
         hint: "包含手动下线和风控隐藏",
         tone: "slate" as const,
+        href: buildStatHref({ status: "HIDDEN" }),
+        active: data.filters.keyword === "" && data.filters.status === "HIDDEN" && data.filters.board === "" && data.filters.review === "ALL" && data.filters.type === "ALL" && data.filters.god === "ALL",
       },
       {
         label: "主评论",
@@ -233,6 +261,8 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         icon: <Sparkles className="h-4 w-4" />,
         hint: "直接挂在帖子下的楼层评论",
         tone: "sky" as const,
+        href: buildStatHref({ type: "ROOT" }),
+        active: data.filters.keyword === "" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.review === "ALL" && data.filters.type === "ROOT" && data.filters.god === "ALL",
       },
       {
         label: "神评",
@@ -240,6 +270,8 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         icon: <Sparkles className="h-4 w-4" />,
         hint: "评论区优先展示的高亮评论",
         tone: "orange" as const,
+        href: buildStatHref({ god: "god" }),
+        active: data.filters.keyword === "" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.review === "ALL" && data.filters.type === "ALL" && data.filters.god === "god",
       },
       {
         label: "回复数",
@@ -247,9 +279,11 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         icon: <ThumbsUp className="h-4 w-4" />,
         hint: "评论树中的回复节点",
         tone: "emerald" as const,
+        href: buildStatHref({ type: "REPLY" }),
+        active: data.filters.keyword === "" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.review === "ALL" && data.filters.type === "REPLY" && data.filters.god === "ALL",
       },
     ],
-    [data.pagination.total, data.summary],
+    [buildStatHref, data.filters, data.pagination, data.summary],
   )
 
   const activeFilterBadges = useMemo(() => {
@@ -273,6 +307,9 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
     if (filters.type !== "ALL") {
       badges.push(`层级: ${typeFilters.find((item) => item.value === filters.type)?.label ?? filters.type}`)
     }
+    if (filters.god !== "ALL") {
+      badges.push(`神评: ${filters.god === "god" ? "仅神评" : "非神评"}`)
+    }
     if (filters.pageSize !== "20") {
       badges.push(`每页: ${filters.pageSize} 条`)
     }
@@ -288,6 +325,7 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
     sort: data.filters.sort,
     review: data.filters.review,
     type: data.filters.type,
+    god: data.filters.god,
     commentPageSize: String(data.pagination.pageSize),
   })
 
@@ -299,6 +337,8 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
 
   return (
     <div className="space-y-4">
+      <AdminSummaryStrip items={statCards} />
+
       <AdminFilterCard
         title="评论筛选"
         description="按状态、节点、层级和审核备注快速定位待处理评论。"
@@ -313,6 +353,7 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
           <input type="hidden" name="sort" value={filters.sort} />
           <input type="hidden" name="review" value={filters.review} />
           <input type="hidden" name="type" value={filters.type} />
+          <input type="hidden" name="god" value={filters.god} />
           <input type="hidden" name="commentPageSize" value={filters.pageSize} />
 
           <AdminFilterSearchField
@@ -368,8 +409,6 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
           />
         </form>
       </AdminFilterCard>
-
-      <AdminSummaryStrip items={statCards} />
 
       <Card>
         <CardHeader className="border-b">

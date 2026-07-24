@@ -1,5 +1,8 @@
-import { apiSuccess, createUserRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
+import { prisma } from "@/db/client"
+import { apiError, apiSuccess, createUserRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
+import { parsePostContentDocument } from "@/lib/post-content"
 import { revalidatePostDataCache, revalidatePostViewerCache } from "@/lib/post-detail-cache"
+import { isPublicReadablePostStatus } from "@/lib/post-types"
 import { revalidateUserSurfaceCache } from "@/lib/user-surface"
 import { purchasePostBlock } from "@/lib/post-unlock"
 import { createRequestWriteGuardOptions } from "@/lib/write-guard-policies"
@@ -18,10 +21,35 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
       blockId,
     },
   }), async () => {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        authorId: true,
+        content: true,
+        status: true,
+      },
+    })
+
+    if (!post || !isPublicReadablePostStatus(post.status)) {
+      apiError(404, "帖子不存在或当前不可购买")
+    }
+
+    if (post.authorId === currentUser.id) {
+      apiError(400, "作者无需购买自己的隐藏内容")
+    }
+
+    const targetBlock = parsePostContentDocument(post.content).blocks.find((block) => block.id === blockId && block.type === "PURCHASE_UNLOCK")
+    if (!targetBlock || !targetBlock.price) {
+      apiError(404, "未找到可购买的隐藏内容")
+    }
+
     const result = await purchasePostBlock({
       userId: currentUser.id,
       postId,
       blockId,
+      price: targetBlock.price,
+      sellerId: post.authorId,
     })
 
     revalidatePostDataCache({ postId })
@@ -29,7 +57,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
 
     if (!result.alreadyOwned) {
       revalidateUserSurfaceCache(currentUser.id)
-      revalidateUserSurfaceCache(result.sellerId)
+      revalidateUserSurfaceCache(post.authorId)
     }
 
     return apiSuccess({

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { ImageIcon, ImageOff, MessageCircle, type LucideIcon } from "lucide-react"
+import { ImageIcon, ImageOff, MessageCircle, Paperclip, type LucideIcon } from "lucide-react"
 
 import { LevelIcon } from "@/components/level-icon"
 import { PostListLink } from "@/components/post/post-list-link"
@@ -33,6 +33,7 @@ interface PostGalleryGridProps {
     pinScope?: string | null
     pinLabel?: string | null
     hasRedPacket?: boolean
+    hasAttachments?: boolean
     rewardMode?: PostRewardPoolMode
     minViewLevel?: number
     minViewVipLevel?: number
@@ -60,9 +61,9 @@ interface PostGalleryGridProps {
 
 function GalleryCoverPlaceholder({ label, icon: Icon = ImageIcon, overlay }: { label: string; icon?: LucideIcon; overlay?: ReactNode }) {
   return (
-    <div className="relative flex min-h-[154px] items-center justify-center bg-[linear-gradient(135deg,rgba(249,115,22,0.12),rgba(15,23,42,0.04))] px-3 py-[2.1rem] text-muted-foreground">
+    <div className="relative flex min-h-[154px] items-center justify-center bg-[linear-gradient(145deg,hsl(var(--muted)/0.78),hsl(var(--background)))] px-3 py-[2.1rem] text-muted-foreground">
       {overlay}
-      <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/85 px-2.5 py-1 text-[13px] shadow-xs">
+      <div className="flex items-center gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-xs backdrop-blur-sm">
         <Icon className="h-3 w-3" />
         <span>{label}</span>
       </div>
@@ -151,8 +152,8 @@ function resolveGalleryColumnCount(width: number, viewportWidth: number) {
     return 2
   }
 
-  const targetColumnWidth = 232
-  const columnGap = 8
+  const targetColumnWidth = 224
+  const columnGap = 16
   return Math.max(1, Math.floor((width + columnGap) / (targetColumnWidth + columnGap)))
 }
 
@@ -168,11 +169,10 @@ function distributeGalleryItems<T>(items: T[], columnCount: number) {
 
 function GalleryCoverBadges({ item, showPinBadge }: { item: PostGalleryGridProps["items"][number]; showPinBadge: boolean }) {
   const hasBadges = Boolean(
-    (showPinBadge && item.pinScope) ||
     item.isFeatured ||
+    (showPinBadge && item.pinScope) ||
     (item.status && item.status !== "NORMAL") ||
-    (item.type && item.type !== "NORMAL" && item.typeLabel) ||
-    item.hasRedPacket,
+    (item.type && item.type !== "NORMAL" && item.typeLabel),
   )
 
   if (!hasBadges) {
@@ -181,17 +181,10 @@ function GalleryCoverBadges({ item, showPinBadge }: { item: PostGalleryGridProps
 
   return (
     <div className="pointer-events-none absolute right-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-1">
-      {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact className="pointer-events-auto shrink-0 bg-background/90 shadow-sm backdrop-blur" /> : null}
-      {item.isFeatured ? <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-emerald-100/95 px-2 text-[10px] leading-none text-emerald-700 shadow-sm backdrop-blur dark:bg-emerald-500/80 dark:text-emerald-50">精华</span> : null}
+      {item.isFeatured ? <span className="inline-flex h-5 shrink-0 items-center rounded-[4px] bg-emerald-100/95 px-1.5 text-[10px] leading-none text-emerald-700 shadow-sm backdrop-blur dark:bg-emerald-500/80 dark:text-emerald-50">精华</span> : null}
+      {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact display="text" className="pointer-events-auto shrink-0 shadow-sm backdrop-blur" /> : null}
       <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact className="pointer-events-auto shrink-0 bg-background/90 shadow-sm backdrop-blur" />
-      <PostTypeBadge type={item.type} label={item.typeLabel} compact mobileIconOnly className="shrink-0 shadow-sm backdrop-blur" />
-      {item.hasRedPacket ? (
-        <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-          <span className="pointer-events-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-background/90 shadow-sm backdrop-blur" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-            <PostRewardPoolIcon mode={item.rewardMode} className="h-3.5 w-3.5" />
-          </span>
-        </Tooltip>
-      ) : null}
+      <PostTypeBadge type={item.type} label={item.typeLabel} compact display="text" className="shrink-0 shadow-sm backdrop-blur" />
     </div>
   )
 }
@@ -235,25 +228,24 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
         const isRestrictedAuthor = item.authorStatus === "BANNED" || item.authorStatus === "MUTED"
 
         return (
-          <article key={item.id} className="post-gallery-card overflow-hidden rounded-[17px] border border-border bg-card transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xs">
+          <article key={item.id} className="post-gallery-card overflow-hidden rounded-xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(15,23,42,0.025)] transition-[border-color,background-color] duration-200 hover:border-foreground/15 dark:shadow-none">
             <PostListLink href={postPath} className="block">
               <PostGalleryCover coverImage={item.coverImage} title={item.title} overlay={<GalleryCoverBadges item={item} showPinBadge={showPinBadge} />} />
             </PostListLink>
 
-            <div className="space-y-2 p-[0.7rem]">
+            <div className="space-y-2 p-3">
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 overflow-hidden">
-                    <PostListLink href={postPath} visitedPath={postPath} dimWhenRead className="min-w-0 flex-1" title={item.title}>
+                  <div className="overflow-hidden">
+                    <PostListLink href={postPath} visitedPath={postPath} dimWhenRead className="block min-w-0" title={item.title}>
                       <h2 className={getPostTitleClassName({ isFeatured: item.isFeatured, pinScope: item.pinScope, singleLine: true, compact: true })}>
                         {item.title}
                       </h2>
                     </PostListLink>
-                    <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
                   </div>
 
-                  <div className={cn("mt-2 flex min-w-0 items-center justify-between gap-1.5 overflow-hidden text-xs text-muted-foreground", isRestrictedAuthor && "grayscale")}>
-                    <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+                  <div className={cn("mt-2 flex h-6 min-w-0 items-center justify-between gap-1.5 overflow-hidden text-xs text-muted-foreground", isRestrictedAuthor && "grayscale")}>
+                    <div className="flex h-6 min-w-0 items-center gap-1 overflow-hidden">
                       {showBoard && item.boardSlug ? (
                         <>
                           <Link href={`/boards/${item.boardSlug}`} className="flex min-w-0 max-w-[40%] items-center gap-1 font-medium hover:underline" title={item.boardName}>
@@ -263,8 +255,8 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                           <span className="shrink-0">•</span>
                         </>
                       ) : null}
-                      <Link href={`/users/${item.authorUsername}`} className="shrink-0" title={item.authorName}>
-                        <UserAvatar name={item.authorName} avatarPath={item.authorAvatarPath} size="xs" isVip={item.authorIsVip} vipLevel={item.authorVipLevel} />
+                      <Link href={`/users/${item.authorUsername}`} className="flex size-6 shrink-0 items-center justify-center" title={item.authorName}>
+                        <UserAvatar name={item.authorName} avatarPath={item.authorAvatarPath} size="xs" className="size-6" isVip={item.authorIsVip} vipLevel={item.authorVipLevel} />
                       </Link>
                       <VipNameTooltip isVip={item.authorIsVip} level={item.authorVipLevel}>
                         <Link href={`/users/${item.authorUsername}`} className={cn("min-w-0 shrink truncate font-medium", item.authorNameClassName ?? "hover:underline")} title={item.authorName}>
@@ -273,10 +265,27 @@ export function PostGalleryGrid({ items, showBoard = true, postLinkDisplayMode =
                       </VipNameTooltip>
                       {isRestrictedAuthor ? <UserStatusBadge status={item.authorStatus} compact /> : null}
                     </div>
-                    <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-normal tabular-nums transition-colors hover:opacity-90 sm:px-2 sm:text-[11px]" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
-                      <MessageCircle className="h-3 w-3" />
-                      {formatCompactNumber(item.commentCount)}
-                    </PostListLink>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
+                      {item.hasRedPacket ? (
+                        <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+                          <span className="inline-flex h-5 w-5 items-center justify-center" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+                            <PostRewardPoolIcon mode={item.rewardMode} className="h-3.5 w-3.5" />
+                          </span>
+                        </Tooltip>
+                      ) : null}
+                      {item.hasAttachments ? (
+                        <Tooltip content="含附件">
+                          <span className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground" aria-label="含附件">
+                            <Paperclip className="h-3.5 w-3.5" />
+                          </span>
+                        </Tooltip>
+                      ) : null}
+                      <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex h-5 items-center gap-1 rounded-full px-1.5 text-[10px] font-normal leading-none tabular-nums transition-colors hover:opacity-90 sm:px-2 sm:text-[11px]" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
+                        <MessageCircle className="h-3 w-3" />
+                        {formatCompactNumber(item.commentCount)}
+                      </PostListLink>
+                    </div>
                   </div>
                 </div>
               </div>

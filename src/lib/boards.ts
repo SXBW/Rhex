@@ -34,6 +34,7 @@ export interface SiteBoardItem {
   icon: string
   description: string
   sidebarLinks: BoardSidebarLinkItem[]
+  sidebarEnabled: boolean
   rulesMarkdown: string | null
   count: number
   allowedPostTypes?: string[]
@@ -73,6 +74,7 @@ function mapSiteBoard(board: SiteBoardRecord): SiteBoardItem {
     icon: board.iconPath ?? "💬",
     description: board.description ?? `${board.name} 节点讨论区`,
     sidebarLinks: sidebarConfig.links,
+    sidebarEnabled: sidebarConfig.enabled,
     rulesMarkdown: sidebarConfig.rulesMarkdown,
     count: board._count.posts,
     allowedPostTypes: settings.allowedPostTypes,
@@ -330,5 +332,3 @@ export async function isUserFollowingBoard(userId: number, boardId: string) {
 
   return Boolean(follow)
 }
-
-

@@ -8,8 +8,8 @@ export { getRequestIp } from "@/lib/request-ip"
 
 import { getAdminDashboardRawData, getAdminStructureRawData } from "@/db/admin-dashboard-queries"
 import { createAdminLogEntry } from "@/db/admin-log-queries"
-import { countAdminCommentSummary, findAdminCommentBoardOptions, findAdminCommentsPage } from "@/db/admin-comment-management-queries"
-import { countAdminPostSummary, findAdminPostBoardOptions, findAdminPostsPage } from "@/db/admin-post-management-queries"
+import { countAdminCommentSummary, countAdminComments, findAdminCommentBoardOptions, findAdminCommentsPage } from "@/db/admin-comment-management-queries"
+import { countAdminPostSummary, countAdminPosts, findAdminPostBoardOptions, findAdminPostsPage } from "@/db/admin-post-management-queries"
 import {
   buildAdminCommentFilters,
   buildAdminCommentOrderBy,
@@ -31,6 +31,8 @@ import {
 import { mapAdminDashboardData, mapAdminStructureData, type AdminDashboardData, type AdminStructureData } from "@/lib/admin-dashboard"
 import {
   buildManagedBoardWhereInput,
+  buildManagedCommentWhereInput,
+  buildManagedPostWhereInput,
   buildVisibleStructureZoneWhereInput,
   requireAdminActor,
   requireSiteAdminActor,
@@ -147,11 +149,12 @@ export async function getAdminPosts(query: AdminPostQuery = {}): Promise<AdminPo
   const where = buildAdminPostWhere(currentUser, normalizedQuery)
   const orderBy = buildAdminPostOrderBy(normalizedQuery.sort)
 
-  const [summary, boardOptions] = await Promise.all([
-    countAdminPostSummary(where),
+  const [summary, total, boardOptions] = await Promise.all([
+    countAdminPostSummary(buildManagedPostWhereInput(currentUser) ?? {}),
+    countAdminPosts(where),
     findAdminPostBoardOptions(buildManagedBoardWhereInput(currentUser)),
   ])
-  const { total, pending, normal, offline, pinned, featured: featuredCount, announcement: announcementCount } = summary
+  const { total: summaryTotal, pending, normal, offline, pinned, featured: featuredCount, announcement: announcementCount } = summary
 
   const totalPages = Math.max(1, Math.ceil(total / normalizedQuery.pageSize))
   const page = Math.min(normalizedQuery.page, totalPages)
@@ -165,7 +168,7 @@ export async function getAdminPosts(query: AdminPostQuery = {}): Promise<AdminPo
     filters: buildAdminPostFilters(normalizedQuery),
     actorRole: currentUser.role,
     summary: {
-      total,
+      total: summaryTotal,
       pending,
       normal,
       offline,
@@ -207,12 +210,13 @@ export async function getAdminComments(query: AdminCommentQuery = {}) {
   const where = buildAdminCommentWhere(currentUser, normalizedQuery)
   const orderBy = buildAdminCommentOrderBy(normalizedQuery.sort)
 
-  const [summary, boardOptions] = await Promise.all([
-    countAdminCommentSummary(where),
+  const [summary, total, boardOptions] = await Promise.all([
+    countAdminCommentSummary(buildManagedCommentWhereInput(currentUser) ?? {}),
+    countAdminComments(where),
     findAdminCommentBoardOptions(buildManagedBoardWhereInput(currentUser)),
   ])
 
-  const totalPages = Math.max(1, Math.ceil(summary.total / normalizedQuery.pageSize))
+  const totalPages = Math.max(1, Math.ceil(total / normalizedQuery.pageSize))
   const page = Math.min(normalizedQuery.page, totalPages)
   const skip = (page - 1) * normalizedQuery.pageSize
   const comments = await findAdminCommentsPage(where, orderBy, skip, normalizedQuery.pageSize)
@@ -226,7 +230,7 @@ export async function getAdminComments(query: AdminCommentQuery = {}) {
     pagination: {
       page,
       pageSize: normalizedQuery.pageSize,
-      total: summary.total,
+      total,
       totalPages,
       hasPrevPage: page > 1,
       hasNextPage: page < totalPages,
@@ -243,4 +247,3 @@ export const adminEnums = {
   ReportStatus,
   AnnouncementStatus,
 }
-

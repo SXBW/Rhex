@@ -482,6 +482,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     postSidebarRelatedTopicsCount: postPageSizeSettings.postRelatedTopics,
     homeHotRecentWindowHours: homeHotFeedSettings.recentWindowHours,
     homeSidebarStatsCardEnabled: record.homeSidebarStatsCardEnabled,
+    homeSidebarEnabled: homeSidebarAnnouncementSettings.homeSidebarEnabled,
     homeSidebarAnnouncementsEnabled: homeSidebarAnnouncementSettings.enabled,
     userProfileIpLocationEnabled: userProfileDisplaySettings.ipLocationEnabled,
     userProfileIntroductionEnabled: userProfileDisplaySettings.introductionEnabled,

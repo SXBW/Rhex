@@ -12,6 +12,7 @@ interface UserAvatarProps {
   name: string
   avatarPath?: string | null
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl"
+  className?: string
   isVip?: boolean
   vipLevel?: number | null
 }
@@ -62,7 +63,7 @@ function AvatarImage({
         fill
         sizes={size === "2xl" ? "112px" : size === "xl" ? "80px" : size === "lg" ? "64px" : size === "md" ? "44px" : size === "sm" ? "36px" : "32px"}
         className={cn(
-          "object-cover transition-[transform,opacity] duration-300 ease-out group-hover/avatar:scale-[1.06]",
+          "object-cover transition-opacity duration-200 ease-out",
           imageLoaded ? "opacity-100" : "opacity-0",
         )}
         unoptimized
@@ -81,7 +82,7 @@ function AvatarImage({
   )
 }
 
-export function UserAvatar({ name, avatarPath, size = "md", isVip = false, vipLevel }: UserAvatarProps) {
+export function UserAvatar({ name, avatarPath, size = "md", className, isVip = false, vipLevel }: UserAvatarProps) {
   const hasCustomAvatar = Boolean(avatarPath?.trim())
   const avatarUrl = getAvatarUrl(avatarPath, name)
   const fallback = getAvatarFallback(name)
@@ -92,11 +93,19 @@ export function UserAvatar({ name, avatarPath, size = "md", isVip = false, vipLe
   const showTextFallback = !hasCustomAvatar || imageFailed
 
   return (
-    <div className={cn("group/avatar relative aspect-square shrink-0", sizeClasses[size])}>
-      <div className="relative h-full w-full overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow,border-color] duration-200 ease-out group-hover/avatar:-translate-y-0.5 group-hover/avatar:border-foreground/15 group-hover/avatar:shadow-[0_10px_24px_rgba(15,23,42,0.12)] dark:group-hover/avatar:shadow-[0_10px_28px_rgba(0,0,0,0.32)]" style={{ backgroundColor: colors.background, color: colors.foreground }}>
+    <div className={cn("group/avatar relative aspect-square shrink-0", sizeClasses[size], className)}>
+      <div
+        className="relative h-full w-full overflow-hidden rounded-xl bg-card"
+        style={{
+          backgroundColor: colors.background,
+          color: colors.foreground,
+        }}
+      >
         {showTextFallback ? (
-          <div className={cn("flex h-full w-full items-center justify-center font-semibold tracking-wide transition-transform duration-300 ease-out group-hover/avatar:scale-[1.03]", fallbackSizeClasses[size])}>
-            {fallback}
+          <div className="flex h-full w-full items-center justify-center">
+            <span className={cn("font-semibold tracking-[0.02em]", fallbackSizeClasses[size])}>
+              {fallback}
+            </span>
           </div>
         ) : null}
         {hasCustomAvatar ? (
@@ -108,7 +117,7 @@ export function UserAvatar({ name, avatarPath, size = "md", isVip = false, vipLe
             onError={() => setFailedAvatarUrl(avatarUrl)}
           />
         ) : null}
-        <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),transparent_42%,rgba(15,23,42,0.08))] opacity-0 transition-opacity duration-200 group-hover/avatar:opacity-100 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.12),transparent_42%,rgba(15,23,42,0.18))]" />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.10)]" />
       </div>
       {showVipBadge ? <AvatarVipBadge level={vipLevel} size={size} /> : null}
     </div>

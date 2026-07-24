@@ -109,6 +109,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const currentPostSort = readSearchParam(searchParams?.sort) ?? "newest"
   const currentPostPin = readSearchParam(searchParams?.pin) ?? "ALL"
   const currentPostFeatured = readSearchParam(searchParams?.featured) ?? "ALL"
+  const currentPostAnnouncement = readSearchParam(searchParams?.announcement) ?? "ALL"
   const currentPostReview = readSearchParam(searchParams?.review) ?? "ALL"
   const currentPostPage = readSearchParam(searchParams?.postPage) ?? "1"
   const currentPostPageSize = readSearchParam(searchParams?.postPageSize) ?? "20"
@@ -119,6 +120,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const currentCommentSort = readSearchParam(searchParams?.sort) ?? "newest"
   const currentCommentReview = readSearchParam(searchParams?.review) ?? "ALL"
   const currentCommentType = readSearchParam(searchParams?.type) ?? "ALL"
+  const currentCommentGod = readSearchParam(searchParams?.god) ?? "ALL"
   const currentCommentPage = readSearchParam(searchParams?.commentPage) ?? "1"
   const currentCommentPageSize = readSearchParam(searchParams?.commentPageSize) ?? "20"
   const currentMessageKeyword = readSearchParam(searchParams?.messageKeyword) ?? ""
@@ -194,6 +196,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         sort: currentPostSort,
         pin: currentPostPin,
         featured: currentPostFeatured,
+        announcement: currentPostAnnouncement,
         review: currentPostReview,
         page: Number(currentPostPage),
         pageSize: Number(currentPostPageSize),
@@ -207,6 +210,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         sort: currentCommentSort,
         review: currentCommentReview,
         type: currentCommentType,
+        god: currentCommentGod,
         page: Number(currentCommentPage),
         pageSize: Number(currentCommentPageSize),
       })

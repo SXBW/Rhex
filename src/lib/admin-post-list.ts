@@ -17,6 +17,7 @@ export interface AdminPostQuery {
   sort?: string
   pin?: string
   featured?: string
+  announcement?: string
   review?: string
   page?: number
   pageSize?: number
@@ -33,6 +34,7 @@ export type AdminPostSort =
 
 export type AdminPostPinFilter = "ALL" | "pinned" | "not-pinned"
 export type AdminPostFeaturedFilter = "ALL" | "featured" | "not-featured"
+export type AdminPostAnnouncementFilter = "ALL" | "announcement" | "not-announcement"
 export type AdminPostReviewFilter = "ALL" | "reviewed" | "unreviewed"
 const ADMIN_POST_STATUSES = new Set<PostStatus>(["NORMAL", "PENDING", "OFFLINE", "LOCKED"])
 
@@ -44,6 +46,7 @@ export interface NormalizedAdminPostQuery {
   sort: AdminPostSort
   pin: AdminPostPinFilter
   featured: AdminPostFeaturedFilter
+  announcement: AdminPostAnnouncementFilter
   review: AdminPostReviewFilter
   page: number
   pageSize: number
@@ -77,6 +80,7 @@ export function normalizeAdminPostQuery(query: AdminPostQuery = {}): NormalizedA
     sort: normalizeAdminPostSort(query.sort),
     pin: query.pin === "pinned" || query.pin === "not-pinned" ? query.pin : "ALL",
     featured: query.featured === "featured" || query.featured === "not-featured" ? query.featured : "ALL",
+    announcement: query.announcement === "announcement" || query.announcement === "not-announcement" ? query.announcement : "ALL",
     review: query.review === "reviewed" || query.review === "unreviewed" ? query.review : "ALL",
     page: normalizePositiveInteger(query.page, 1),
     pageSize: normalizePageSize(query.pageSize),
@@ -93,6 +97,8 @@ export function buildAdminPostWhere(actor: AdminActor, query: NormalizedAdminPos
     ...(query.pin === "not-pinned" ? { isPinned: false } : {}),
     ...(query.featured === "featured" ? { isFeatured: true } : {}),
     ...(query.featured === "not-featured" ? { isFeatured: false } : {}),
+    ...(query.announcement === "announcement" ? { isAnnouncement: true } : {}),
+    ...(query.announcement === "not-announcement" ? { isAnnouncement: false } : {}),
     ...(query.review === "reviewed" ? { NOT: { reviewNote: null } } : {}),
     ...(query.review === "unreviewed" ? { reviewNote: null } : {}),
     ...(query.keyword
@@ -180,6 +186,7 @@ export function buildAdminPostFilters(query: NormalizedAdminPostQuery): AdminPos
     sort: query.sort,
     pin: query.pin,
     featured: query.featured,
+    announcement: query.announcement,
     review: query.review,
   }
 }

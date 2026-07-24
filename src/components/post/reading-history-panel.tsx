@@ -142,7 +142,7 @@ export function ReadingHistoryPanel({
                   "inline-flex shrink-0 items-center justify-center rounded-full",
                   variant === "sidebar" ? "h-7 w-7 bg-sky-500/10 text-sky-600 dark:text-sky-300" : "h-9 w-9 bg-sky-500/10 text-sky-600 dark:text-sky-300",
                 )}>
-                  <Icon className="h-4 w-4" />
+                  <Icon className={cn("h-4 w-4", variant === "sidebar" && "text-primary")} />
                 </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

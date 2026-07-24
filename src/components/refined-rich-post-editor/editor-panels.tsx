@@ -44,15 +44,7 @@ type Base64DialogProps = {
   onConfirmPrivate: () => void
 }
 
-export function Base64Dialog(props: Base64DialogProps) {
-  if (!props.open) {
-    return null
-  }
-
-  return <Base64DialogContent key={props.mode} {...props} />
-}
-
-function Base64DialogContent({
+export function Base64Dialog({
   open,
   inFullscreenEditor,
   value,
@@ -93,15 +85,15 @@ function Base64DialogContent({
   }, [])
 
   React.useEffect(() => {
-    if (mode !== "private" || !allowPrivateReply) {
+    if (!open || mode !== "private" || !allowPrivateReply) {
       return
     }
 
     let cancelled = false
     const controller = new AbortController()
+    setLoadingUsers(true)
 
     const timeoutId = window.setTimeout(() => {
-      setLoadingUsers(true)
       const url = new URL("/api/users/search", window.location.origin)
       if (query.trim()) {
         url.searchParams.set("q", query.trim())
@@ -166,6 +158,14 @@ function Base64DialogContent({
       window.removeEventListener("scroll", updateSelectorPosition, true)
     }
   }, [selectorOpen, updateSelectorPosition])
+
+  React.useEffect(() => {
+    if (!open) {
+      setQuery("")
+      setUsers([])
+      setSelectorOpen(false)
+    }
+  }, [open])
 
   const primaryDisabled = mode === "base64"
     ? !preview

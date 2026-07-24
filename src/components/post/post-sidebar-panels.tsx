@@ -64,7 +64,7 @@ export function PostSidebarPanels({
 
       <div className="mobile-sidebar-section rounded-xl border border-border bg-card p-4 shadow-xs shadow-black/5 dark:shadow-black/30">
         <div className="mb-4 border-b border-border/80 pb-4">
-          <h3 className="mb-3 font-semibold">相关主题</h3>
+          <h3 className="mb-3 text-sm font-semibold">相关主题</h3>
           <div className="flex flex-col gap-3">
             {relatedTopics.length === 0 ? <p className="text-sm text-muted-foreground">暂无相关主题。</p> : null}
             {relatedTopics.map((topic) => (
@@ -83,8 +83,8 @@ export function PostSidebarPanels({
         <div>
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              <h3 className="font-semibold">主题标签</h3>
+              <Tag className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">主题标签</h3>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {canManageTags ? <PostTagManager postId={postId} tags={tags} /> : null}
@@ -105,8 +105,8 @@ export function PostSidebarPanels({
           {collections.length > 0 ? (
             <div className="mt-4 border-t border-border/70 pt-4">
               <div className="mb-3 flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                <h4 className="font-semibold">收录合集</h4>
+                <FolderOpen className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-semibold">收录合集</h4>
               </div>
               <div className="flex flex-wrap gap-2">
                 {collections.map((collection) => (

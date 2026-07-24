@@ -544,6 +544,12 @@ export function AdminProfileSettingsForm({
                   />
                 </div>
                 <SettingsToggleField
+                  label="显示首页侧边栏"
+                  checked={draft.homeSidebarEnabled}
+                  onChange={(value) => updateDraftField("homeSidebarEnabled", value)}
+                  description="控制首页右侧栏是否显示，包括首页画廊模式。"
+                />
+                <SettingsToggleField
                   label="首页右侧统计卡片"
                   checked={draft.homeSidebarStatsCardEnabled}
                   onChange={(value) =>

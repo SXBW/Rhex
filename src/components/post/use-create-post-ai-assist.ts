@@ -1,6 +1,6 @@
-﻿"use client"
+"use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { LocalPostDraft } from "@/lib/post-draft"
 import { normalizeManualTags } from "@/lib/post-tags"
@@ -153,19 +153,16 @@ export function useCreatePostAiAssist({
   const canUseAutoBoardSelection =
     mode === "create" && boardAutoSelectEnabled && !preferredBoardLocked
   const canUseAiTagExtraction = mode === "create" && tagAutoExtractEnabled
-  const [requestedBoardSelectionMode, setRequestedBoardSelectionMode] = useState<BoardSelectionMode>(
+  const [boardSelectionMode, setBoardSelectionMode] = useState<BoardSelectionMode>(
     canUseAutoBoardSelection ? "auto" : "manual",
   )
-  const boardSelectionMode = canUseAutoBoardSelection ? requestedBoardSelectionMode : "manual"
-  const setBoardSelectionMode = (mode: BoardSelectionMode) => {
-    setRequestedBoardSelectionMode(mode)
-  }
   const [aiSuggestedBoard, setAiSuggestedBoard] = useState<AiCategorizeBoardLite | null>(null)
   const [aiSuggestedTags, setAiSuggestedTags] = useState<string[]>([])
   const [aiSuggestionPending, setAiSuggestionPending] = useState(false)
   const [aiSuggestionError, setAiSuggestionError] = useState("")
   const [aiSuggestionStatus, setAiSuggestionStatus] = useState<AiCategorizeStatus>("idle")
-  const [suggestionRequestKey, setSuggestionRequestKey] = useState("")
+  const lastResolvedRequestKeyRef = useRef("")
+  const activeAbortControllerRef = useRef<AbortController | null>(null)
 
   async function pollTaskResult({
     taskId,
@@ -285,51 +282,72 @@ export function useCreatePostAiAssist({
     throw new Error("AI 建议生成超时，请稍后重试")
   }
 
-  const currentSuggestionRequestKey = useMemo(() => {
+  useEffect(() => {
+    if (!canUseAutoBoardSelection && boardSelectionMode !== "manual") {
+      setBoardSelectionMode("manual")
+    }
+  }, [boardSelectionMode, canUseAutoBoardSelection])
+
+  useEffect(() => {
+    if (!canUseAutoBoardSelection || boardSelectionMode !== "auto" || !aiSuggestedBoard?.slug) {
+      return
+    }
+
+    if (draft.boardSlug === aiSuggestedBoard.slug) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      updateDraftField("boardSlug", aiSuggestedBoard.slug)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [
+    aiSuggestedBoard?.slug,
+    boardSelectionMode,
+    canUseAutoBoardSelection,
+    draft.boardSlug,
+    updateDraftField,
+  ])
+
+  useEffect(() => {
     const { needBoard, needTags } = resolveAiSuggestionNeeds({
       canUseAutoBoardSelection,
       canUseAiTagExtraction,
       boardSelectionMode,
     })
 
+    activeAbortControllerRef.current?.abort()
+    activeAbortControllerRef.current = null
+    setAiSuggestionPending(false)
     if (!needBoard && !needTags) {
-      return ""
+      setAiSuggestionStatus("idle")
+      setAiSuggestionError("")
+      setAiSuggestedBoard(null)
+      setAiSuggestedTags([])
+      lastResolvedRequestKeyRef.current = ""
+      return
     }
 
-    return buildSuggestionRequestKey({
+    const requestKey = buildSuggestionRequestKey({
       title: normalizePreviewText(draft.title, 200),
       content: normalizePreviewText(draft.content, 20_000),
       needBoard,
       needTags,
     })
-  }, [boardSelectionMode, canUseAiTagExtraction, canUseAutoBoardSelection, draft.content, draft.title])
-  const hasCurrentAiSuggestion = currentSuggestionRequestKey !== ""
-    && suggestionRequestKey === currentSuggestionRequestKey
-  const displayedAiSuggestedBoard = hasCurrentAiSuggestion ? aiSuggestedBoard : null
-  const displayedAiSuggestionPending = hasCurrentAiSuggestion ? aiSuggestionPending : false
-  const displayedAiSuggestionError = hasCurrentAiSuggestion ? aiSuggestionError : ""
-  const displayedAiSuggestionStatus = hasCurrentAiSuggestion ? aiSuggestionStatus : "idle"
 
-  useEffect(() => {
-    if (!canUseAutoBoardSelection || boardSelectionMode !== "auto" || !displayedAiSuggestedBoard?.slug) {
-      return
+    if (lastResolvedRequestKeyRef.current !== requestKey) {
+      setAiSuggestionStatus("idle")
+      setAiSuggestionError("")
+      setAiSuggestedBoard(null)
+      setAiSuggestedTags([])
     }
-
-    if (draft.boardSlug === displayedAiSuggestedBoard.slug) {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      updateDraftField("boardSlug", displayedAiSuggestedBoard.slug)
-    }, 0)
-
-    return () => window.clearTimeout(timer)
   }, [
     boardSelectionMode,
+    canUseAiTagExtraction,
     canUseAutoBoardSelection,
-    displayedAiSuggestedBoard?.slug,
-    draft.boardSlug,
-    updateDraftField,
+    draft.content,
+    draft.title,
   ])
 
   async function resolveDraftBeforeSubmit(currentDraft: LocalPostDraft) {
@@ -358,12 +376,10 @@ export function useCreatePostAiAssist({
       needTags,
     })
 
-    setSuggestionRequestKey(requestKey)
+    activeAbortControllerRef.current?.abort()
+    activeAbortControllerRef.current = null
     setAiSuggestionPending(true)
-    setAiSuggestionStatus("idle")
     setAiSuggestionError("")
-    setAiSuggestedBoard(null)
-    setAiSuggestedTags([])
 
     try {
       const data = await requestSuggestionPreview({
@@ -373,6 +389,7 @@ export function useCreatePostAiAssist({
         needTags,
       })
 
+      lastResolvedRequestKeyRef.current = requestKey
       setAiSuggestionStatus(data.status)
       setAiSuggestedBoard(data.board)
       setAiSuggestedTags(data.tags.map((tag) => tag.name))
@@ -404,23 +421,23 @@ export function useCreatePostAiAssist({
     }
   }
 
-  const resolvedAutoExtractedTagPool = useMemo(() => {
-    if (!canUseAiTagExtraction || !hasCurrentAiSuggestion || aiSuggestedTags.length === 0) {
-      return localAutoExtractedTagPool
-    }
-
-    return aiSuggestedTags
-  }, [aiSuggestedTags, canUseAiTagExtraction, hasCurrentAiSuggestion, localAutoExtractedTagPool])
+  const resolvedAutoExtractedTagPool = useMemo(
+    () =>
+      canUseAiTagExtraction && aiSuggestedTags.length > 0
+        ? aiSuggestedTags
+        : localAutoExtractedTagPool,
+    [aiSuggestedTags, canUseAiTagExtraction, localAutoExtractedTagPool],
+  )
 
   return {
     canUseAutoBoardSelection,
     canUseAiTagExtraction,
     boardSelectionMode,
     setBoardSelectionMode,
-    aiSuggestedBoard: displayedAiSuggestedBoard,
-    aiSuggestionPending: displayedAiSuggestionPending,
-    aiSuggestionError: displayedAiSuggestionError,
-    aiSuggestionStatus: displayedAiSuggestionStatus,
+    aiSuggestedBoard,
+    aiSuggestionPending,
+    aiSuggestionError,
+    aiSuggestionStatus,
     resolvedAutoExtractedTagPool,
     resolveDraftBeforeSubmit,
   }

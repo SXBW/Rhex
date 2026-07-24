@@ -1,9 +1,8 @@
 import { PostStatus } from "@/db/types"
 
 import { executeAddonActionHook } from "@/addons-host/runtime/hooks"
-import { findPostOfflineTarget, findPostOfflineUser, lockPostOfflineTarget, runPostOfflineTransaction, updatePostOfflineTarget } from "@/db/post-offline-queries"
+import { findPostOfflineTarget, findPostOfflineUser, runPostOfflineTransaction, updatePostOfflineTarget } from "@/db/post-offline-queries"
 import { getCurrentUser } from "@/lib/auth"
-import { apiError } from "@/lib/api-route"
 import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
 import { getSiteSettings } from "@/lib/site-settings"
 import { isVipActive } from "@/lib/vip-status"
@@ -54,33 +53,36 @@ export async function getPostOfflineActionMeta(postId: string) {
   }
 }
 
-export async function offlineOwnPost(input: { postId: string; actorId: number; reason?: string | null }) {
+export async function offlineOwnPost(input: { postId: string; reason?: string | null }) {
+  const currentUser = await getCurrentUser()
+
+  if (!currentUser) {
+    throw new Error("请先登录")
+  }
+
   const settings = await getSiteSettings()
   const reason = String(input.reason ?? "").trim()
 
   const result = await runPostOfflineTransaction(async (tx) => {
-    if (!await lockPostOfflineTarget(tx, input.postId)) {
-      apiError(404, "帖子不存在")
-    }
+    const latestUser = await findPostOfflineUser(currentUser.id, tx)
 
-    const latestUser = await findPostOfflineUser(input.actorId, tx)
     if (!latestUser) {
-      apiError(401, "当前用户不存在")
+      throw new Error("当前用户不存在")
     }
 
     const latestPrice = resolvePostOfflinePrice(latestUser, settings)
     const post = await findPostOfflineTarget(input.postId, tx)
 
     if (!post || post.authorId !== latestUser.id) {
-      apiError(403, "只能下线自己发布的帖子")
+      throw new Error("只能下线自己发布的帖子")
     }
 
     if (post.status !== PostStatus.NORMAL) {
-      apiError(409, "当前帖子状态不支持下线")
+      throw new Error("当前帖子状态不支持下线")
     }
 
     if (latestUser.points < latestPrice.amount) {
-      apiError(400, `当前${settings.pointName}不足`)
+      throw new Error(`当前${settings.pointName}不足`)
     }
 
     if (latestPrice.amount > 0) {

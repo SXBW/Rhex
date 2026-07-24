@@ -105,7 +105,7 @@ export function NotificationListItem({ id, href, isRead, typeLabel, title, conte
           </Button>
         </div>
       </div>
-      <a href={href} onClick={handleClick} className="mt-3 block rounded-lg outline-hidden focus-visible:ring-2 focus-visible:ring-ring">
+      <a href={href} onClick={handleClick} data-disable-touch-native-navigation={isRead ? undefined : "true"} className="mt-3 block rounded-lg outline-hidden focus-visible:ring-2 focus-visible:ring-ring">
         <h2 className="text-base font-semibold">{title}</h2>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">{content}</p>
         <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">

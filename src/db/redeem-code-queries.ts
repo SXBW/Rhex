@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client"
 
 import { prisma } from "@/db/client"
-import { apiError } from "@/lib/api-route"
 
 export const redeemCodeListInclude = {
 
@@ -122,24 +121,14 @@ export async function listRedeemedCodesByUserWithTx(tx: Prisma.TransactionClient
   }) as Promise<RedeemCodeCoreRow[]>
 }
 
-export async function countRedeemedCodesByUserCategoryWithTx(
+export function countRedeemedCodesByUserCategoryWithTx(
   tx: Prisma.TransactionClient,
   params: {
     userId: number
     codeCategory: string
   },
 ) {
-  // Category limits are checked before the code is marked used. Serialize
-  // claims for the same user/category so two different codes cannot both pass
-  // the count check and exceed the configured limit.
-  await tx.$executeRaw(Prisma.sql`
-    SELECT pg_advisory_xact_lock(
-      hashtext('redeem-code-category'),
-      hashtext(${`${params.userId}:${params.codeCategory}`})
-    )
-  `)
-
-  const rows = await tx.$queryRaw<Array<{ count: number | string | bigint }>>(Prisma.sql`
+  return tx.$queryRaw<Array<{ count: number | string | bigint }>>(Prisma.sql`
     SELECT COUNT(*)::int AS "count"
     FROM "RedeemCode"
     WHERE "redeemedById" = ${params.userId}
@@ -148,9 +137,7 @@ export async function countRedeemedCodesByUserCategoryWithTx(
           ? Prisma.sql`("codeCategory" = 'default' OR "codeCategory" IS NULL)`
           : Prisma.sql`"codeCategory" = ${params.codeCategory}`
       }
-  `)
-
-  return Number(rows[0]?.count ?? 0)
+  `).then((rows) => Number(rows[0]?.count ?? 0))
 }
 
 export function findUserPointsByIdWithTx(tx: Prisma.TransactionClient, userId: number) {
@@ -168,26 +155,11 @@ export function runRedeemCodeTransaction<T>(
 
 
 export async function markRedeemCodeUsedWithTx(tx: Prisma.TransactionClient, redeemCodeId: string, userId: number) {
-  // Re-check usage and expiry in the write itself. A read followed by an
-  // unconditional update lets concurrent transactions award the same code.
-  const claimed = await tx.redeemCode.updateMany({
-    where: {
-      id: redeemCodeId,
-      redeemedById: null,
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: new Date() } },
-      ],
-    },
+  return tx.redeemCode.update({
+    where: { id: redeemCodeId },
     data: {
       redeemedById: userId,
       redeemedAt: new Date(),
     },
   })
-
-  if (claimed.count !== 1) {
-    apiError(400, "兑换码已被使用或已过期")
-  }
-
-  return claimed
 }

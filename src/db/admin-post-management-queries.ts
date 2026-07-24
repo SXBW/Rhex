@@ -64,6 +64,10 @@ export async function countAdminPostSummary(where: Prisma.PostWhereInput) {
   }
 }
 
+export function countAdminPosts(where: Prisma.PostWhereInput) {
+  return prisma.post.count({ where })
+}
+
 export function findAdminPostBoardOptions(where?: Prisma.BoardWhereInput) {
   return prisma.board.findMany({
     where,

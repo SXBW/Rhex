@@ -1,8 +1,10 @@
 import { listActiveGiftDefinitions } from "@/db/post-gift-queries"
+import { recalculateAllPostScores } from "@/db/post-score-queries"
 import { updateSiteSettingsRecord, updateSiteSettingsRecordWithGiftDefinitions } from "@/db/site-settings-write-queries"
 import { apiError, readOptionalNumberField, readOptionalStringField, type JsonObject } from "@/lib/api-route"
 import { finalizeSiteSettingsUpdate, type SiteSettingsRecord } from "@/lib/admin-site-settings-shared"
 import { normalizeCommentLoadMode } from "@/lib/comment-load-mode"
+import { revalidateContentListCaches } from "@/lib/content-list-cache"
 import {
   mergeAnonymousPostSettings,
   mergeBoardTreasurySettings,
@@ -326,6 +328,8 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
       heatStageThresholds: heatStageThresholds.join(","),
       heatStageColors: heatStageColors.join(","),
     }, tippingGifts)
+    await recalculateAllPostScores()
+    revalidateContentListCaches()
 
     return finalizeSiteSettingsUpdate({
       settings,

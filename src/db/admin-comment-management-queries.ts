@@ -63,6 +63,10 @@ export async function countAdminCommentSummary(where: Prisma.CommentWhereInput) 
   }
 }
 
+export function countAdminComments(where: Prisma.CommentWhereInput) {
+  return prisma.comment.count({ where })
+}
+
 export function findAdminCommentBoardOptions(where?: Prisma.BoardWhereInput) {
   return prisma.board.findMany({
     where,

@@ -94,7 +94,7 @@ export function AiReplySummaryPage() {
   )
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadPage(page, filters))
+    void loadPage(page, filters)
   }, [page, loadPage, filters])
 
   const callClear = useCallback(

@@ -7,11 +7,10 @@ import {
   findVerificationTypeById,
   listActiveVerificationTypes,
   listUserVerificationApplications,
-  lockUserVerificationState,
+  updateUserVerificationById,
 } from "@/db/verification-queries"
 import { prisma } from "@/db/client"
 import { getCurrentUser } from "@/lib/auth"
-import { apiError } from "@/lib/api-route"
 import { enforceSensitiveText } from "@/lib/content-safety"
 import { isSvgMarkup } from "@/lib/icon-source"
 import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
@@ -119,33 +118,6 @@ const CUSTOM_VERIFICATION_ICON_MAX_LENGTH = 24
 const CUSTOM_VERIFICATION_ICON_URL_MAX_LENGTH = 2048
 const REMOTE_ICON_URL_PATTERN = /^https?:\/\/\S+$/i
 const LOCAL_ICON_PATH_PATTERN = /^(\/|\.\/|\.\.\/)\S+$/
-const VERIFICATION_CONTENT_MAX_LENGTH = 4_000
-const VERIFICATION_FORM_VALUE_MAX_LENGTH = 1_000
-const VERIFICATION_CUSTOM_DESCRIPTION_MAX_LENGTH = 600
-
-function normalizeVerificationFormResponse(input: Record<string, string>, fields: VerificationFormField[]) {
-  const allowedFieldIds = new Set(fields.map((field) => field.id))
-  const entries = Object.entries(input)
-
-  if (entries.length > Math.max(20, fields.length)) {
-    throw new Error("Verification form has too many fields")
-  }
-
-  const normalized: Record<string, string> = {}
-  for (const [key, value] of entries) {
-    if (!allowedFieldIds.has(key)) {
-      throw new Error("Verification form contains an invalid field")
-    }
-
-    const text = String(value ?? "").trim()
-    if (text.length > VERIFICATION_FORM_VALUE_MAX_LENGTH) {
-      throw new Error("Verification form value is too long")
-    }
-    normalized[key] = text
-  }
-
-  return normalized
-}
 
 function hasNonEmptyFormResponse(input: Record<string, string>) {
   return Object.values(input).some((value) => value.trim().length > 0)
@@ -342,19 +314,14 @@ export async function submitVerificationApplication(input: {
   customDescription?: string
   formResponse?: Record<string, string>
 }) {
-  const verificationTypeId = input.verificationTypeId.trim()
-  if (!verificationTypeId || verificationTypeId.length > 100) {
-    throw new Error("Invalid verification type")
-  }
-
-  const verificationType = await findVerificationTypeById(verificationTypeId)
+  const verificationType = await findVerificationTypeById(input.verificationTypeId)
 
   if (!verificationType || !verificationType.status) {
     throw new Error("认证类型不存在或已停用")
   }
 
   const existingApproved = await findApprovedUserVerification(input.userId)
-  const approvedSameTypeApplication = existingApproved?.typeId === verificationTypeId
+  const approvedSameTypeApplication = existingApproved?.typeId === input.verificationTypeId
     ? existingApproved
     : null
 
@@ -362,7 +329,7 @@ export async function submitVerificationApplication(input: {
     throw new Error(`你已通过 ${existingApproved.type.name}，暂不支持重复申请其它认证`)
   }
 
-  const latestApplication = await findLatestUserVerificationApplication(input.userId, verificationTypeId)
+  const latestApplication = await findLatestUserVerificationApplication(input.userId, input.verificationTypeId)
 
   if (latestApplication?.status === "PENDING") {
     throw new Error("该认证已在审核中，请等待后台审核")
@@ -378,7 +345,7 @@ export async function submitVerificationApplication(input: {
 
   const formFields = parseVerificationFormSchema(verificationType.formSchemaJson)
   const rawFormResponse = input.formResponse ?? {}
-  const normalizedFormResponse = normalizeVerificationFormResponse(rawFormResponse, formFields)
+  const normalizedFormResponse = Object.fromEntries(Object.entries(rawFormResponse).map(([key, value]) => [key, String(value ?? "").trim()]))
   const approvedFormResponse = approvedSameTypeApplication
     ? parseFormResponseJson(approvedSameTypeApplication.formResponseJson)
     : {}
@@ -387,9 +354,6 @@ export async function submitVerificationApplication(input: {
     : normalizedFormResponse
   const customIconText = normalizeCustomVerificationIconText(input.customIconText)
   const customDescription = String(input.customDescription ?? "").trim()
-  if (customDescription.length > VERIFICATION_CUSTOM_DESCRIPTION_MAX_LENGTH) {
-    throw new Error("Verification description is too long")
-  }
   const hasManualCustomizationChange = approvedSameTypeApplication
     ? customIconText !== (approvedSameTypeApplication.customIconText?.trim() ?? "")
       || customDescription !== (approvedSameTypeApplication.customDescription?.trim() ?? "")
@@ -416,9 +380,6 @@ export async function submitVerificationApplication(input: {
   const rawContent = approvedSameTypeApplication
     ? approvedSameTypeApplication.content
     : String(input.content ?? "").trim()
-  if (rawContent.length > VERIFICATION_CONTENT_MAX_LENGTH) {
-    throw new Error("Verification content is too long")
-  }
   const contentSafety = formFields.length === 0 && rawContent
     ? await enforceSensitiveText({ scene: "verification.content", text: rawContent })
     : null
@@ -433,10 +394,6 @@ export async function submitVerificationApplication(input: {
     throw new Error(formFields.length > 0 ? "请完善认证申请表单" : "请填写申请说明")
   }
 
-  if (content.length > VERIFICATION_CONTENT_MAX_LENGTH) {
-    throw new Error("Verification application content is too long")
-  }
-
   const shouldChargePoints = !approvedSameTypeApplication && verificationType.pointsCost > 0
   const settings = shouldChargePoints ? await getSiteSettings() : null
   const preparedApplicationCost = shouldChargePoints
@@ -448,43 +405,30 @@ export async function submitVerificationApplication(input: {
     : null
 
   const application = await prisma.$transaction(async (tx) => {
-    // Serialize application and unbind state for this user. A request guard only
-    // protects a short window and cannot prevent independent parallel writes.
-    const latestUser = await lockUserVerificationState(tx, input.userId)
+    const latestUser = await tx.user.findUnique({
+      where: { id: input.userId },
+      select: { id: true, points: true },
+    })
+
     if (!latestUser) {
       throw new Error("用户不存在")
-    }
-
-    const approvedInTx = await tx.userVerification.findFirst({
-      where: { userId: input.userId, status: "APPROVED" },
-      orderBy: [{ reviewedAt: "desc" }, { submittedAt: "desc" }],
-      select: { id: true, typeId: true },
-    })
-    if ((approvedInTx?.id ?? null) !== (approvedSameTypeApplication?.id ?? null)) {
-      apiError(409, "认证状态已变化，请刷新后重试")
-    }
-    if (approvedInTx && approvedInTx.typeId !== verificationTypeId) {
-      apiError(409, "已经绑定其他已通过的认证")
     }
 
     const latestApplicationInTx = await tx.userVerification.findFirst({
       where: {
         userId: input.userId,
-        typeId: verificationTypeId,
+        typeId: input.verificationTypeId,
       },
       orderBy: [{ submittedAt: "desc" }],
-      select: { status: true },
     })
+
     if (latestApplicationInTx?.status === "PENDING") {
       throw new Error("该认证已在审核中，请等待后台审核")
-    }
-    if (latestApplicationInTx?.status === "REJECTED" && !verificationType.allowResubmitAfterReject && !approvedInTx) {
-      throw new Error("该认证类型不允许被驳回后重新提交")
     }
 
     const createdApplication = await createUserVerificationApplication({
       userId: input.userId,
-      verificationTypeId: verificationTypeId,
+      verificationTypeId: input.verificationTypeId,
       content,
       customIconText: customIconText || null,
       customDescription: customDescriptionSafety?.sanitizedText || null,
@@ -570,39 +514,20 @@ export async function getVerificationTypeDetailBySlug(slug: string, options: {
 }
 
 export async function unbindCurrentUserVerification(userId: number) {
-  const result = await prisma.$transaction(async (tx) => {
-    const user = await lockUserVerificationState(tx, userId)
-    if (!user) {
-      throw new Error("用户不存在")
-    }
+  const approvedApplication = await findApprovedUserVerification(userId)
 
-    const current = await tx.userVerification.findFirst({
-      where: { userId, status: "APPROVED" },
-      orderBy: [{ reviewedAt: "desc" }, { submittedAt: "desc" }],
-      select: { id: true },
-    })
-    if (!current) {
-      throw new Error("当前没有已绑定的认证")
-    }
+  if (!approvedApplication) {
+    throw new Error("当前没有已绑定的认证")
+  }
 
-    const cancelled = await tx.userVerification.updateMany({
-      where: { id: current.id, userId, status: "APPROVED" },
-      data: {
-        status: "CANCELLED",
-        note: "用户主动解除认证绑定",
-        reviewedAt: new Date(),
-      },
-    })
-    if (cancelled.count !== 1) {
-      apiError(409, "认证状态已变化，请刷新后重试")
-    }
-
-    return { username: user.username }
+  await updateUserVerificationById(approvedApplication.id, {
+    status: "CANCELLED",
+    note: "用户主动解除认证绑定",
+    reviewedAt: new Date(),
   })
-
   revalidateUserProfileMutation({
     userId,
-    username: result.username,
+    username: approvedApplication.user.username,
   })
 }
 

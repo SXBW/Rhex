@@ -2,6 +2,7 @@ import { getPublicPostContentText } from "@/lib/post-content"
 
 const HTML_IMAGE_PATTERN = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*]\((?:<)?([^)\s>]+)(?:[^)]*)\)/i
+const CONTENT_IMAGE_PATTERN = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>|!\[[^\]]*]\((?:<)?([^)\s>]+)(?:[^)]*)\)/gi
 
 function normalizeImageUrl(value: string | null | undefined) {
   const normalized = String(value ?? "").trim()
@@ -20,6 +21,23 @@ export function extractFirstImageFromText(rawText: string) {
   }
 
   return null
+}
+
+export function extractImagesFromText(rawText: string) {
+  const images: string[] = []
+  const seen = new Set<string>()
+
+  for (const match of rawText.matchAll(CONTENT_IMAGE_PATTERN)) {
+    const imageUrl = normalizeImageUrl(match[1] ?? match[2])
+    if (!imageUrl || seen.has(imageUrl)) {
+      continue
+    }
+
+    seen.add(imageUrl)
+    images.push(imageUrl)
+  }
+
+  return images
 }
 
 export function resolvePostCoverImage(rawContent: string, manualCoverPath?: string | null) {

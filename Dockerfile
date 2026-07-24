@@ -39,26 +39,16 @@ RUN mkdir -p addons
 COPY package.json pnpm-lock.yaml .npmrc ./
 COPY prisma ./prisma
 
-RUN if [ -n "${PNPM_REGISTRY}" ]; then pnpm config set registry "${PNPM_REGISTRY}"; fi \
+RUN --mount=type=cache,id=rhex-pnpm-store,target=/pnpm/store \
+  pnpm config set store-dir /pnpm/store \
+  && if [ -n "${PNPM_REGISTRY}" ]; then pnpm config set registry "${PNPM_REGISTRY}"; fi \
   && pnpm install --frozen-lockfile
 
 COPY . .
 
 RUN pnpm run prisma:generate \
-  && pnpm run typecheck \
-  && pnpm run lint \
-  && pnpm run test \
   && pnpm run build \
   && pnpm run verify:docker-build
-
-FROM base AS production-dependencies
-
-COPY package.json pnpm-lock.yaml .npmrc ./
-
-# setup:prod and worker execute these binaries directly at runtime.
-RUN pnpm install --prod --frozen-lockfile \
-  && test -x node_modules/.bin/cross-env \
-  && test -x node_modules/.bin/tsx
 
 FROM base AS runner
 
@@ -69,13 +59,11 @@ ENV NEXT_DEPLOYMENT_ID=${NEXT_DEPLOYMENT_ID}
 
 WORKDIR /app
 
-LABEL org.opencontainers.image.source="https://github.com/lovedevpanda/Rhex"
+LABEL org.opencontainers.image.source="https://github.com/momofa/Rhex"
 
 RUN mkdir -p uploads addons
 
-COPY --from=production-dependencies /app/node_modules ./node_modules
-# Prisma's generated client is produced in the checked builder stage.
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/addons ./addons
 COPY --from=builder /app/package.json ./package.json

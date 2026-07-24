@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { AuthInlineMessage } from "@/components/auth/auth-form-primitives"
 import { BuiltinCaptchaField } from "@/components/auth/builtin-captcha-field"
@@ -26,15 +26,7 @@ interface SmsCaptchaDialogProps {
   onVerified: (payload: SmsCaptchaPayload) => void | Promise<void>
 }
 
-export function SmsCaptchaDialog(props: SmsCaptchaDialogProps) {
-  if (!props.open || props.mode === "OFF") {
-    return null
-  }
-
-  return <SmsCaptchaDialogContent key={props.mode} {...props} />
-}
-
-function SmsCaptchaDialogContent({
+export function SmsCaptchaDialog({
   open,
   mode,
   siteKey,
@@ -47,6 +39,20 @@ function SmsCaptchaDialogContent({
   const [powNonce, setPowNonce] = useState("")
   const [message, setMessage] = useState("")
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    setCaptchaToken("")
+    setBuiltinCaptchaCode("")
+    setPowNonce("")
+    setMessage("")
+  }, [open, mode])
+
+  if (!open || mode === "OFF") {
+    return null
+  }
 
   const turnstileMissing = mode === "TURNSTILE" && !siteKey
   const canSubmit = !sending && !turnstileMissing && (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -63,14 +63,9 @@ export function PostTagManager({ postId, tags }: PostTagManagerProps) {
   const [message, setMessage] = useState("")
   const [saving, setSaving] = useState(false)
 
-  function openModal() {
+  useEffect(() => {
     setTagNames(initialNames)
-    setTagInput("")
-    setEditingIndex(null)
-    setEditingValue("")
-    setMessage("")
-    setOpen(true)
-  }
+  }, [initialNames])
 
   function closeModal() {
     if (saving) {
@@ -170,7 +165,7 @@ export function PostTagManager({ postId, tags }: PostTagManagerProps) {
 
   return (
     <>
-      <Button type="button" variant="outline" size="xs" onClick={openModal}>
+      <Button type="button" variant="outline" size="xs" onClick={() => setOpen(true)}>
         {tags.length > 0 ? "编辑标签" : "添加标签"}
       </Button>
 

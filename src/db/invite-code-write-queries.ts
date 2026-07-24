@@ -34,7 +34,7 @@ export async function purchaseInviteCodeTransaction(params: {
       const unusedCount = await tx.inviteCode.count({
         where: {
           createdById: latestUser.id,
-          usedById: null,
+          usedAt: null,
         },
       })
 

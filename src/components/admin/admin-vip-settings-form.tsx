@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 
 import {
   AdminBooleanSelectField,
@@ -124,17 +124,7 @@ export function AdminVipSettingsForm({
   const normalizedCheckInVip3RewardText = initialSettings.checkInVip3RewardText ?? String(initialSettings.checkInVip3Reward ?? initialSettings.checkInReward ?? 0)
   const initialVipNameColors = normalizeVipNameColors(initialSettings.vipNameColors)
   const router = useRouter()
-  const initialActiveTab = resolveVipTab(initialSubTab)
-  const [activeTabSelection, setActiveTabSelection] = useState(() => ({
-    initialSubTab,
-    value: initialActiveTab,
-  }))
-  const activeTab = activeTabSelection.initialSubTab === initialSubTab
-    ? activeTabSelection.value
-    : initialActiveTab
-  const setActiveTab = (value: typeof initialActiveTab) => {
-    setActiveTabSelection({ initialSubTab, value })
-  }
+  const [activeTab, setActiveTab] = useState(() => resolveVipTab(initialSubTab))
   const [pointName, setPointName] = useState(initialSettings.pointName)
   const [redeemCodeHelpEnabled, setRedeemCodeHelpEnabled] = useState(initialSettings.redeemCodeHelpEnabled)
   const [redeemCodeHelpTitle, setRedeemCodeHelpTitle] = useState(initialSettings.redeemCodeHelpTitle)
@@ -184,6 +174,10 @@ export function AdminVipSettingsForm({
   const [feedback, setFeedback] = useState("")
 
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    setActiveTab(resolveVipTab(initialSubTab))
+  }, [initialSubTab])
 
   return (
     <div className="space-y-4">

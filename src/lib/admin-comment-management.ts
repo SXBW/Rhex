@@ -38,6 +38,7 @@ export interface AdminCommentListResult {
     sort: string
     review: string
     type: string
+    god: string
   }
   summary: {
     total: number

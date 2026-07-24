@@ -1,6 +1,7 @@
 import { CommentStatus, NotificationType, Prisma } from "@/db/types"
 import { incrementBoardTreasuryPoints } from "@/db/board-treasury-queries"
 import { prisma } from "@/db/client"
+import { recalculatePostScore } from "@/db/post-score-queries"
 import { applyPointDelta, type PreparedPointDelta } from "@/lib/point-center"
 import { getBoardTreasuryCreditFromConfiguredCharge } from "@/lib/board-treasury"
 import { createNotifications } from "@/lib/notification-writes"
@@ -1017,6 +1018,7 @@ export async function createCommentWithRelations(params: {
         activityAt: commentedAt,
       },
     })
+    await recalculatePostScore(params.postId, tx)
     return comment
   })
 }

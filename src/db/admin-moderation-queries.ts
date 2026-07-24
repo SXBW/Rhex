@@ -1,6 +1,7 @@
 import { BoardStatus, CommentStatus, Prisma } from "@/db/types"
 
 import { prisma } from "@/db/client"
+import { recalculatePostScore } from "@/db/post-score-queries"
 
 export function hideCommentById(commentId: string) {
   return prisma.comment.update({
@@ -145,6 +146,7 @@ export async function deleteCommentPermanently(commentId: string) {
         },
       },
     })
+    await recalculatePostScore(comment.postId, tx)
 
     for (const group of authorGroups) {
       await tx.user.update({

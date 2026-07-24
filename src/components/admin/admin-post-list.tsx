@@ -12,7 +12,7 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react"
-import { useMemo, useState, useTransition } from "react"
+import { useCallback, useMemo, useState, useTransition } from "react"
 
 import { AdminPostActionButton } from "@/components/admin/admin-post-action-button"
 import {
@@ -125,6 +125,7 @@ export function AdminPostList({ data }: AdminPostListProps) {
     sort: data.filters.sort,
     pin: data.filters.pin,
     featured: data.filters.featured,
+    announcement: data.filters.announcement,
     review: data.filters.review,
     pageSize: String(data.pagination.pageSize),
   })
@@ -270,6 +271,29 @@ export function AdminPostList({ data }: AdminPostListProps) {
     submitBatchAction("post.moveBoard", { boardSlug: batchMoveBoardSlug })
   }
 
+  const buildStatHref = useCallback((updates: Record<string, string>) => {
+    const query = new URLSearchParams({
+      tab: "posts",
+      type: "ALL",
+      status: "ALL",
+      board: "",
+      keyword: "",
+      sort: data.filters.sort,
+      pin: "ALL",
+      featured: "ALL",
+      announcement: "ALL",
+      review: "ALL",
+      postPage: "1",
+      postPageSize: String(data.pagination.pageSize),
+    })
+
+    for (const [key, value] of Object.entries(updates)) {
+      query.set(key, value)
+    }
+
+    return `/admin?${query.toString()}`
+  }, [data.filters.sort, data.pagination.pageSize])
+
   const statCards = useMemo(
     () => [
       {
@@ -277,6 +301,8 @@ export function AdminPostList({ data }: AdminPostListProps) {
         value: data.summary.total,
         icon: <FileText className="h-4 w-4" />,
         hint: `当前结果 ${formatNumber(data.pagination.total)} 篇`,
+        href: buildStatHref({}),
+        active: data.filters.type === "ALL" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.keyword === "" && data.filters.pin === "ALL" && data.filters.featured === "ALL" && data.filters.announcement === "ALL" && data.filters.review === "ALL",
       },
       {
         label: "待审核",
@@ -284,6 +310,8 @@ export function AdminPostList({ data }: AdminPostListProps) {
         icon: <TrendingUp className="h-4 w-4" />,
         hint: "优先处理待发布内容",
         tone: "amber" as const,
+        href: buildStatHref({ status: "PENDING" }),
+        active: data.filters.type === "ALL" && data.filters.status === "PENDING" && data.filters.board === "" && data.filters.keyword === "" && data.filters.pin === "ALL" && data.filters.featured === "ALL" && data.filters.announcement === "ALL" && data.filters.review === "ALL",
       },
       {
         label: "已置顶",
@@ -291,6 +319,8 @@ export function AdminPostList({ data }: AdminPostListProps) {
         icon: <Pin className="h-4 w-4" />,
         hint: "含节点 / 分区 / 全局置顶",
         tone: "orange" as const,
+        href: buildStatHref({ pin: "pinned" }),
+        active: data.filters.type === "ALL" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.keyword === "" && data.filters.pin === "pinned" && data.filters.featured === "ALL" && data.filters.announcement === "ALL" && data.filters.review === "ALL",
       },
       {
         label: "已推荐",
@@ -298,6 +328,8 @@ export function AdminPostList({ data }: AdminPostListProps) {
         icon: <Sparkles className="h-4 w-4" />,
         hint: "首页或运营位可见",
         tone: "emerald" as const,
+        href: buildStatHref({ featured: "featured" }),
+        active: data.filters.type === "ALL" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.keyword === "" && data.filters.pin === "ALL" && data.filters.featured === "featured" && data.filters.announcement === "ALL" && data.filters.review === "ALL",
       },
       {
         label: "公告帖",
@@ -305,9 +337,11 @@ export function AdminPostList({ data }: AdminPostListProps) {
         icon: <Megaphone className="h-4 w-4" />,
         hint: "用于公告和通知类内容",
         tone: "sky" as const,
+        href: buildStatHref({ announcement: "announcement" }),
+        active: data.filters.type === "ALL" && data.filters.status === "ALL" && data.filters.board === "" && data.filters.keyword === "" && data.filters.pin === "ALL" && data.filters.featured === "ALL" && data.filters.announcement === "announcement" && data.filters.review === "ALL",
       },
     ],
-    [data.pagination.total, data.summary],
+    [buildStatHref, data.filters, data.pagination, data.summary],
   )
 
   const activeFilterBadges = useMemo(() => {
@@ -334,6 +368,9 @@ export function AdminPostList({ data }: AdminPostListProps) {
     if (filters.featured !== "ALL") {
       badges.push(`推荐: ${binaryFilters.featured.find((item) => item.value === filters.featured)?.label ?? filters.featured}`)
     }
+    if (filters.announcement !== "ALL") {
+      badges.push(`公告: ${filters.announcement === "announcement" ? "仅公告" : "非公告"}`)
+    }
     if (filters.review !== "ALL") {
       badges.push(`审核: ${binaryFilters.review.find((item) => item.value === filters.review)?.label ?? filters.review}`)
     }
@@ -353,6 +390,7 @@ export function AdminPostList({ data }: AdminPostListProps) {
     sort: data.filters.sort,
     pin: data.filters.pin,
     featured: data.filters.featured,
+    announcement: data.filters.announcement,
     review: data.filters.review,
     postPageSize: String(data.pagination.pageSize),
   })
@@ -365,6 +403,8 @@ export function AdminPostList({ data }: AdminPostListProps) {
 
   return (
     <div className="space-y-4">
+      <AdminSummaryStrip items={statCards} />
+
       <AdminFilterCard
         title="帖子筛选"
         description="按节点、状态、推荐置顶和关键词快速收敛待处理内容。"
@@ -380,6 +420,7 @@ export function AdminPostList({ data }: AdminPostListProps) {
           <input type="hidden" name="sort" value={filters.sort} />
           <input type="hidden" name="pin" value={filters.pin} />
           <input type="hidden" name="featured" value={filters.featured} />
+          <input type="hidden" name="announcement" value={filters.announcement} />
           <input type="hidden" name="review" value={filters.review} />
           <input type="hidden" name="postPageSize" value={filters.pageSize} />
 
@@ -448,8 +489,6 @@ export function AdminPostList({ data }: AdminPostListProps) {
           />
         </form>
       </AdminFilterCard>
-
-      <AdminSummaryStrip items={statCards} />
 
       <Card>
         <CardHeader className="border-b">

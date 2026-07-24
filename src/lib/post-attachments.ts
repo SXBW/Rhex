@@ -295,6 +295,10 @@ function isSiteDownloadEnabledForAttachment(
   return attachment.sourceType === "EXTERNAL_LINK" ? true : settings.attachmentDownloadEnabled
 }
 
+function isUniqueConstraintError(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "P2002")
+}
+
 export async function normalizePostAttachmentInputs(
   rawAttachments: unknown,
   options: {
@@ -751,17 +755,23 @@ export async function purchasePostAttachment(input: {
       userId: attachment.post.authorId,
     })
 
-    const purchaseInsert = await createPostAttachmentPurchase({
-      id: `pap_${randomUUID()}`,
-      postId: attachment.postId,
-      attachmentId: attachment.id,
-      buyerId: input.userId,
-      sellerId: attachment.post.authorId,
-      pointsCost: attachment.pointsCost,
-    }, tx)
+    let purchaseRecord: Awaited<ReturnType<typeof createPostAttachmentPurchase>> | null = null
 
-    if (purchaseInsert.count === 0) {
-      return { alreadyOwned: true }
+    try {
+      purchaseRecord = await createPostAttachmentPurchase({
+        id: `pap_${randomUUID()}`,
+        postId: attachment.postId,
+        attachmentId: attachment.id,
+        buyerId: input.userId,
+        sellerId: attachment.post.authorId,
+        pointsCost: attachment.pointsCost,
+      }, tx)
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        return { alreadyOwned: true }
+      }
+
+      throw error
     }
 
     await applyPointDelta({
@@ -807,6 +817,7 @@ export async function purchasePostAttachment(input: {
 
     return {
       alreadyOwned: false,
+      purchase: purchaseRecord!,
       attachment,
     }
   })

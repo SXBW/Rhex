@@ -206,7 +206,7 @@ function IconActionButton({
   )
 }
 
-function PostNoteActions({ item, postPath }: { item: PostStreamDisplayItem; postPath: string }) {
+function PostNoteActions({ item, postPath, showPinBadge }: { item: PostStreamDisplayItem; postPath: string; showPinBadge: boolean }) {
   const [likes, setLikes] = useState(item.likeCount ?? 0)
   const [favorites, setFavorites] = useState(item.favoriteCount ?? 0)
   const [liked, setLiked] = useState(false)
@@ -277,6 +277,21 @@ function PostNoteActions({ item, postPath }: { item: PostStreamDisplayItem; post
         )}
       </div>
       <div className="flex items-center gap-1.5">
+        <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
+        {item.hasRedPacket ? (
+          <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+            <span className="inline-flex h-5 w-5 items-center justify-center" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
+              <PostRewardPoolIcon mode={item.rewardMode} />
+            </span>
+          </Tooltip>
+        ) : null}
+        {item.hasAttachments ? (
+          <Tooltip content="含附件">
+            <span className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground" aria-label="含附件">
+              <Paperclip className="h-4 w-4" />
+            </span>
+          </Tooltip>
+        ) : null}
         <PostListLink href={`${postPath}#comments`} title={`${formatNumber(item.commentCount)} 回复`} className="inline-flex h-9 items-center gap-1 rounded-full px-2 transition-colors hover:opacity-90" style={{ backgroundColor: `${item.commentAccentColor}14`, color: item.commentAccentColor }}>
           <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
           <span className="tabular-nums">{formatCompactNumber(item.commentCount)}</span>
@@ -338,10 +353,6 @@ export function PostWeiboFeed({ items, showBoard = true, postLinkDisplayMode = "
                       <span className="truncate">{item.boardName}</span>
                     </Link>
                   ) : null}
-                  <PostTypeBadge type={item.type} label={item.typeLabel} compact />
-                  <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
-                  {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact /> : null}
-                  {item.isFeatured ? <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground">精华</span> : null}
                   <TimeTooltip value={item.metaPrimaryRaw}>
                     <span className="shrink-0 text-xs font-medium text-muted-foreground">{item.metaPrimary}</span>
                   </TimeTooltip>
@@ -349,27 +360,18 @@ export function PostWeiboFeed({ items, showBoard = true, postLinkDisplayMode = "
               </div>
 
               <div className="mt-5">
-                <div className="flex min-w-0 flex-wrap items-start gap-2">
-                  <PostListLink href={postPath} visitedPath={postPath} dimWhenRead className="min-w-0 flex-1">
+                <div className="min-w-0">
+                  <PostListLink href={postPath} visitedPath={postPath} dimWhenRead className="block min-w-0">
                     <h2 className={getPostTitleClassName({ isFeatured: item.isFeatured, pinScope: item.pinScope, compact: false })}>
+                      <span className="mr-2 inline-flex items-center gap-2 align-middle empty:hidden">
+                        <PostTypeBadge type={item.type} label={item.typeLabel} compact display="text" />
+                        <PostStatusBadge status={item.status} label={item.statusLabel} reviewNote={item.reviewNote} compact />
+                        {showPinBadge ? <PostPinBadge scope={item.pinScope} label={item.pinLabel} compact display="text" /> : null}
+                        {item.isFeatured ? <span className="inline-flex h-5 items-center rounded-[4px] bg-emerald-100 px-1.5 text-[10px] leading-none text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 sm:px-2 sm:text-[11px]">精华</span> : null}
+                      </span>
                       {item.title}
                     </h2>
                   </PostListLink>
-                  {item.hasRedPacket ? (
-                    <Tooltip content={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-                      <span className="shrink-0" aria-label={item.rewardMode === "JACKPOT" ? "聚宝盆帖" : "红包帖"}>
-                        <PostRewardPoolIcon mode={item.rewardMode} />
-                      </span>
-                    </Tooltip>
-                  ) : null}
-                  {item.hasAttachments ? (
-                    <Tooltip content="含附件">
-                      <span className="shrink-0 text-muted-foreground" aria-label="含附件">
-                        <Paperclip className="h-4 w-4" />
-                      </span>
-                    </Tooltip>
-                  ) : null}
-                  <PostAccessBadges minViewLevel={item.minViewLevel} minViewVipLevel={item.minViewVipLevel} compact />
                 </div>
 
                 <PostNoteMedia href={postPath} media={item.previewMedia} title={item.title} />
@@ -388,7 +390,7 @@ export function PostWeiboFeed({ items, showBoard = true, postLinkDisplayMode = "
             </div>
 
             <div className="flex items-center gap-2 border-t border-border px-4 py-3 sm:px-6">
-              <PostNoteActions item={item} postPath={postPath} />
+              <PostNoteActions item={item} postPath={postPath} showPinBadge={showPinBadge} />
             </div>
           </article>
         )

@@ -17,7 +17,7 @@ import { AdminUploadSettingsForm } from "@/components/admin/admin-upload-setting
 import { AdminVipSettingsForm } from "@/components/admin/admin-vip-settings-form"
 import { getAdminTaskList } from "@/lib/admin-task-center"
 import { getBoards } from "@/lib/boards"
-import { getInviteCodeList } from "@/lib/invite-codes"
+import { getInviteCodePage } from "@/lib/invite-codes"
 import { getLevelDefinitions } from "@/lib/level-system"
 import { getAdminOAuthClientPageData } from "@/lib/oauth-server"
 import { getAdminPaymentApplicationPageData } from "@/lib/payment-applications"
@@ -114,8 +114,11 @@ export default async function AdminSettingsPage(
       ? getServerSiteSettings()
       : Promise.resolve<Awaited<ReturnType<typeof getServerSiteSettings>> | null>(null),
     resolved.section === "registration"
-      ? getInviteCodeList()
-      : Promise.resolve<Awaited<ReturnType<typeof getInviteCodeList>>>([]),
+      ? getInviteCodePage({
+          page: readSearchParam(searchParams?.page),
+          status: readSearchParam(searchParams?.status),
+        })
+      : Promise.resolve<Awaited<ReturnType<typeof getInviteCodePage>> | null>(null),
     resolved.section === "vip"
       ? getRedeemCodeList()
       : Promise.resolve<Awaited<ReturnType<typeof getRedeemCodeList>>>([]),
@@ -220,7 +223,7 @@ export default async function AdminSettingsPage(
             mode="registration"
             initialSubTab={resolved.subTab}
             subTabRouteSection="registration"
-            initialInviteCodes={inviteCodes}
+            initialInviteCodePage={inviteCodes ?? undefined}
           />
         ) : null}
 

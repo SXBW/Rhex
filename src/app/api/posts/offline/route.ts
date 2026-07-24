@@ -1,14 +1,14 @@
-import { apiSuccess, createUserRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
+import { apiSuccess, createRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
 import { revalidateUpdatedPostMutation } from "@/lib/content-mutation-revalidation"
 import { revalidateHomeSidebarStatsCache } from "@/lib/home-sidebar-stats"
 import { offlineOwnPost } from "@/lib/post-offline"
 
-export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
+export const POST = createRouteHandler(async ({ request }) => {
   const body = await readJsonBody(request)
   const postId = requireStringField(body, "postId", "缺少帖子标识")
   const reason = String(body.reason ?? "").trim()
 
-  const result = await offlineOwnPost({ postId, reason, actorId: currentUser.id })
+  const result = await offlineOwnPost({ postId, reason })
 
   revalidateHomeSidebarStatsCache()
   revalidateUpdatedPostMutation({
@@ -26,10 +26,5 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
 }, {
   errorMessage: "帖子下线失败",
   logPrefix: "[api/posts/offline] unexpected error",
-  unauthorizedMessage: "请先登录后再下线帖子",
-  allowStatuses: ["ACTIVE", "MUTED"],
-  forbiddenMessages: {
-    BANNED: "账号已被拉黑，无法下线帖子",
-  },
 })
 

@@ -1,5 +1,8 @@
 "use client"
 
+import { useState } from "react"
+import { X } from "lucide-react"
+
 import type { AdminUserDetailResult, AdminUserListItem } from "@/lib/admin-user-management"
 import { formatDateTime } from "@/lib/formatters"
 import { CONFIGURABLE_VIP_LEVELS } from "@/lib/vip-status"
@@ -10,6 +13,16 @@ import { UserInfoGrid } from "@/components/admin/user-modal/components/UserInfo"
 import type { UserActionsState } from "@/components/admin/user-modal/hooks/use-user-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { USER_STATUS_EXPIRATION_PRESETS } from "@/lib/user-status-expiration-presets"
 
 const VIP_LEVEL_OPTIONS = CONFIGURABLE_VIP_LEVELS.map((level) => ({
@@ -18,6 +31,7 @@ const VIP_LEVEL_OPTIONS = CONFIGURABLE_VIP_LEVELS.map((level) => ({
 }))
 
 const EMPTY_BADGE_SELECT_VALUE = "__empty_badge__"
+type GrantedBadge = NonNullable<AdminUserDetailResult>["grantedBadges"][number]
 
 export function ActionsTab({
   activeUser,
@@ -36,6 +50,8 @@ export function ActionsTab({
   operations: UserActionsState["operations"]
   isPending: boolean
 }) {
+  const [revokeBadgeTarget, setRevokeBadgeTarget] = useState<GrantedBadge | null>(null)
+  const [revokeBadgeNote, setRevokeBadgeNote] = useState("")
   const isAdminTarget = activeUser.role === "ADMIN"
   const canMute = activeUser.status === "ACTIVE" && !isAdminTarget
   const canActivate = activeUser.status !== "ACTIVE"
@@ -216,9 +232,24 @@ export function ActionsTab({
                 <p className="text-xs font-medium text-muted-foreground">已持有勋章</p>
                 <div className="flex flex-wrap gap-1.5">
                   {detail.grantedBadges.map((item) => (
-                    <span key={`${item.badgeId}-${item.grantedAt}`} className="rounded-full border border-border px-2.5 py-1 text-[11px]" style={{ color: item.color, borderColor: `${item.color}55`, backgroundColor: `${item.color}12` }}>
-                      {item.name}
-                      {item.isDisplayed ? ` · 展示第 ${item.displayOrder || 1} 位` : ""}
+                    <span key={`${item.badgeId}-${item.grantedAt}`} className="inline-flex items-center gap-1 rounded-full border border-border py-1 pl-2.5 pr-1 text-[11px]" style={{ color: item.color, borderColor: `${item.color}55`, backgroundColor: `${item.color}12` }}>
+                      <span>
+                        {item.name}
+                        {item.isDisplayed ? ` · 展示第 ${item.displayOrder || 1} 位` : ""}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`撤销勋章：${item.name}`}
+                        title={`撤销勋章：${item.name}`}
+                        disabled={isPending}
+                        className="inline-flex size-5 items-center justify-center rounded-full transition-colors hover:bg-destructive/15 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
+                        onClick={() => {
+                          setRevokeBadgeNote("")
+                          setRevokeBadgeTarget(item)
+                        }}
+                      >
+                        <X className="size-3" />
+                      </button>
                     </span>
                   ))}
                 </div>
@@ -247,6 +278,51 @@ export function ActionsTab({
           </div>
         </section>
       </div>
+
+      <AlertDialog
+        open={Boolean(revokeBadgeTarget)}
+        onOpenChange={(open) => {
+          if (!open && !isPending) {
+            setRevokeBadgeTarget(null)
+            setRevokeBadgeNote("")
+          }
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认撤销勋章</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              确认撤销「{revokeBadgeTarget?.name ?? "该勋章"}」吗？撤销后对应的佩戴状态、特效和相关权限会立即失效，领取时消耗的积分不会自动退回。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <TextAreaField
+            label="操作备注（必填）"
+            value={revokeBadgeNote}
+            onChange={setRevokeBadgeNote}
+            placeholder="填写撤销原因、工单号或审核说明"
+            rows={4}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-w-24" disabled={isPending}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              className="min-w-24"
+              disabled={isPending || !revokeBadgeNote.trim()}
+              onClick={() => {
+                if (!revokeBadgeTarget || !revokeBadgeNote.trim()) {
+                  return
+                }
+
+                operations.revokeBadge(revokeBadgeTarget.badgeId, revokeBadgeTarget.name, revokeBadgeNote.trim())
+                setRevokeBadgeTarget(null)
+                setRevokeBadgeNote("")
+              }}
+            >
+              {isPending ? "撤销中..." : "确认撤销"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
