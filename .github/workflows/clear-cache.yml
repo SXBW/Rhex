@@ -1,14 +1,63 @@
-name: Clear old caches
+name: Weekly Cleanup - Cache & Old Runs
+
 on:
   schedule:
-    - cron: "0 4 * * 0"
-  workflow_dispatch:
+    - cron: "0 4 * * 0"   # 每周日凌晨 04:00 UTC
+  workflow_dispatch:       # 支持手动触发
+
 permissions:
-  actions: write
+  actions: write           # 删 run 和 cache 都需要
+  contents: read
+
+env:
+  KEEP_RUNS: 5            # 保留最近多少条运行记录
+
 jobs:
-  clear:
+  cleanup:
     runs-on: ubuntu-latest
     steps:
-      - run: gh cache delete --all --repo $GITHUB_REPOSITORY
+      - name: Delete old workflow runs (keep latest ${{ env.KEEP_RUNS }})
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          
+          REPO="${{ github.repository }}"
+          echo "=== 清理运行记录：保留最近 ${{ env.KEEP_RUNS }} 条 ==="
+          
+          # 获取所有运行记录 ID（按创建时间倒序），跳过前 KEEP_RUNS 条，删除剩余的
+          gh run list --repo "$REPO" --limit 1000 \
+            --json databaseId,createdAt \
+            -q 'sort_by(.createdAt) | reverse | .[${{ env.KEEP_RUNS }}:] | .[].databaseId' \
+          | while read -r id; do
+              if [ -n "$id" ]; then
+                echo "删除运行记录 #$id"
+                gh run delete "$id" --repo "$REPO" || echo "  ⚠️  跳过 #$id（可能正在运行）"
+              fi
+            done
+          
+          echo "✅ 运行记录清理完成"
+
+      - name: Delete all Actions caches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== 清理 Actions 缓存 ==="
+          gh cache delete --all --repo "${{ github.repository }}" || echo "⚠️  缓存清理失败或无缓存可清理"
+          echo "✅ 缓存清理完成"
+
+      - name: Show summary after cleanup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== 清理后状态 ==="
+          
+          # 统计剩余运行记录
+          RUNS_COUNT=$(gh run list --repo "${{ github.repository }}" --limit 25 --json databaseId -q 'length' 2>/dev/null || echo "0")
+          echo "📋 剩余运行记录：${RUNS_COUNT} 条"
+          
+          # 统计剩余缓存
+          CACHE_COUNT=$(gh cache list --repo "${{ github.repository }}" --json id -q 'length' 2>/dev/null || echo "0")
+          echo "📦 剩余缓存条目：${CACHE_COUNT} 个"
+          
+          echo "🎉 本周清理完成！"
