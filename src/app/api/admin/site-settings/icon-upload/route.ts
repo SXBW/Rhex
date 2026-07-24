@@ -39,18 +39,7 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
     apiError(400, `上传文件不能超过 ${maxSizeMb}MB`)
   }
 
-  const preparedFile = await prepareUploadedFile(file, {
-    folder: "icon",
-    maxFileSizeBytes: maxSizeBytes,
-    settings,
-    request,
-    actor: {
-      id: adminUser.id,
-      username: adminUser.username,
-      role: adminUser.role,
-      kind: "admin",
-    },
-  })
+  const preparedFile = await prepareUploadedFile(file)
 
   if (!isAllowedUploadMimeType(preparedFile.detectedMime, ALLOWED_SITE_ICON_EXTENSIONS)) {
     apiError(400, `仅支持上传 ${ALLOWED_SITE_ICON_EXTENSIONS.join(" / ")} 格式的站点图标`)

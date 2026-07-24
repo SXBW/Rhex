@@ -29,10 +29,6 @@ export interface AddonUploadProviderSaveResult {
   fileHash?: string
 }
 
-export interface AddonUploadProviderTransformResult {
-  buffer: Uint8Array
-}
-
 interface AddonUploadProviderRuntimeBaseInput {
   addon: LoadedAddonRuntime
   provider: AddonProviderRegistration
@@ -45,11 +41,6 @@ interface AddonUploadProviderRuntimeBaseInput {
 }
 
 export interface AddonUploadProviderRuntimeHooks {
-  transformFile?: (
-    input: AddonUploadProviderRuntimeBaseInput,
-  ) => AddonMaybePromise<
-    AddonUploadProviderTransformResult | null | undefined
-  >
   uploadFile?: (
     input: AddonUploadProviderRuntimeBaseInput,
   ) => AddonMaybePromise<

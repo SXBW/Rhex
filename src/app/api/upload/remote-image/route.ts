@@ -197,14 +197,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   })
   const preparedFile = await prepareUploadedFile(file, {
     folder,
-    maxFileSizeBytes: maxSizeBytes,
     settings,
-    request,
-    actor: {
-      id: currentUser.id,
-      username: currentUser.username,
-      kind: "user",
-    },
   })
 
   if (!isAllowedUploadMimeType(preparedFile.detectedMime, allowedExtensions)) {
