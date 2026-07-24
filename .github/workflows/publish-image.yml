@@ -61,7 +61,7 @@ jobs:
             NEXT_DEPLOYMENT_ID=${{ github.sha }}
             NEXT_ASSET_PREFIX=https://rhex-runtime-asset-prefix.invalid
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
           progress: plain
           env: |
             SESSION_SECRET=build-session-secret-for-testing-only

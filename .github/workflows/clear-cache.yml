@@ -1,0 +1,14 @@
+rname: Clear old caches
+on:
+  schedule:
+    - cron: "0 4 * * 0"
+  workflow_dispatch:
+permissions:
+  actions: write
+jobs:
+  clear:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh cache delete --all --repo $GITHUB_REPOSITORY
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
