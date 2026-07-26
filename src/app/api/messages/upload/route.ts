@@ -55,7 +55,14 @@ export const POST = createUserRouteHandler<MessageUploadResponse>(async ({ reque
 
     const preparedFile = await prepareUploadedFile(file, {
       folder: MESSAGE_IMAGE_UPLOAD_FOLDER,
+      maxFileSizeBytes: maxSizeBytes,
       settings,
+      request,
+      actor: {
+        id: currentUser.id,
+        username: currentUser.username,
+        kind: "user",
+      },
     })
 
     if (!isAllowedUploadMimeType(preparedFile.detectedMime, allowedImageExtensions)) {
@@ -121,7 +128,17 @@ export const POST = createUserRouteHandler<MessageUploadResponse>(async ({ reque
     apiError(400, `文件大小不能超过 ${settings.attachmentMaxFileSizeMb}MB`)
   }
 
-  const preparedFile = await prepareBinaryUploadedFile(file)
+  const preparedFile = await prepareBinaryUploadedFile(file, {
+    folder: MESSAGE_FILE_UPLOAD_FOLDER,
+    maxFileSizeBytes: maxSizeBytes,
+    settings,
+    request,
+    actor: {
+      id: currentUser.id,
+      username: currentUser.username,
+      kind: "user",
+    },
+  })
 
   return withRequestWriteGuard(createRequestWriteGuardOptions("messages-upload", {
     request,

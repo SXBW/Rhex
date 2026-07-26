@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Camera, LoaderCircle, Mail, PencilLine, Smartphone, UserRound } from "lucide-react"
 
+import { SmsCaptchaDialog, type SmsCaptchaPayload } from "@/components/auth/sms-captcha-dialog"
 import { PasswordChangeForm } from "@/components/profile/password-change-form"
 import { Modal } from "@/components/ui/modal"
 import { UserAvatar } from "@/components/user/user-avatar"
@@ -14,6 +15,7 @@ import { toast } from "@/components/ui/toast"
 import type { AddonEditorProps } from "@/components/addon-editor"
 import type { AvatarCropModalProps } from "@/components/profile/avatar-crop-modal"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
+import type { SiteSettingsData } from "@/lib/site-settings"
 import type { UserProfileVisibility } from "@/lib/user-profile-settings"
 import { markContentMutated, markContentMutationRefreshHandled } from "@/lib/content-mutation-marker.client"
 
@@ -50,6 +52,8 @@ interface ProfileEditFormProps {
   initialPhoneVerified: boolean
   passwordChangeRequireEmailVerification?: boolean
   emailDeliveryEnabled?: boolean
+  smsCaptchaMode?: SiteSettingsData["smsCaptchaMode"]
+  turnstileSiteKey?: string | null
   initialActivityVisibility: UserProfileVisibility
   initialIntroductionVisibility: UserProfileVisibility
   nicknameChangePointCost: number
@@ -139,6 +143,8 @@ export function ProfileEditForm({
   initialPhoneVerified,
   passwordChangeRequireEmailVerification = false,
   emailDeliveryEnabled = false,
+  smsCaptchaMode = "OFF",
+  turnstileSiteKey,
   initialActivityVisibility,
   initialIntroductionVisibility,
   nicknameChangePointCost,
@@ -192,6 +198,7 @@ export function ProfileEditForm({
   const [uploading, setUploading] = useState(false)
   const [sendingCode, setSendingCode] = useState(false)
   const [sendingPhoneCode, setSendingPhoneCode] = useState(false)
+  const [smsCaptchaOpen, setSmsCaptchaOpen] = useState(false)
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [showIntroductionModal, setShowIntroductionModal] = useState(false)
   const [pendingNickname, setPendingNickname] = useState(initialNickname)
@@ -591,8 +598,8 @@ export function ProfileEditForm({
     }
   }
 
-  async function handleSendPhoneCode() {
-    if (!phone) {
+  async function sendPhoneCode(captchaPayload: SmsCaptchaPayload = {}) {
+    if (!phone.trim()) {
       toast.warning("请先填写手机号", "手机验证")
       return
     }
@@ -605,7 +612,7 @@ export function ProfileEditForm({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ channel: "PHONE", target: phone }),
+        body: JSON.stringify({ channel: "PHONE", target: phone.trim(), ...captchaPayload }),
       })
 
       const result = await response.json()
@@ -614,12 +621,27 @@ export function ProfileEditForm({
         throw new Error(result.message ?? "验证码发送失败")
       }
 
+      setSmsCaptchaOpen(false)
       toast.success(result.message ?? "验证码已发送", "手机验证")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "验证码发送失败", "手机验证")
     } finally {
       setSendingPhoneCode(false)
     }
+  }
+
+  function handleSendPhoneCode() {
+    if (!phone.trim()) {
+      toast.warning("请先填写手机号", "手机验证")
+      return
+    }
+
+    if (smsCaptchaMode === "OFF") {
+      void sendPhoneCode()
+      return
+    }
+
+    setSmsCaptchaOpen(true)
   }
 
   async function handlePhoneSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -936,6 +958,15 @@ export function ProfileEditForm({
           <p className="text-xs text-muted-foreground">{nicknameHint}</p>
         </form>
       </Modal>
+
+      <SmsCaptchaDialog
+        open={smsCaptchaOpen}
+        mode={smsCaptchaMode}
+        siteKey={turnstileSiteKey}
+        sending={sendingPhoneCode}
+        onClose={() => setSmsCaptchaOpen(false)}
+        onVerified={sendPhoneCode}
+      />
 
       {profileIntroductionEnabled ? (
         <Modal

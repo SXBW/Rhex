@@ -168,7 +168,11 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
   const [timeoutMs, setTimeoutMs] = useState(String(initialData.config.timeoutMs))
   const [writeBoardAutoSelectEnabled, setWriteBoardAutoSelectEnabled] = useState(initialData.autoCategorizeConfig.writeBoardAutoSelectEnabled)
   const [writeTagAutoExtractEnabled, setWriteTagAutoExtractEnabled] = useState(initialData.autoCategorizeConfig.writeTagAutoExtractEnabled)
+  const [titleOptimizeEnabled, setTitleOptimizeEnabled] = useState(initialData.autoCategorizeConfig.titleOptimizeEnabled)
+  const [contentOptimizeEnabled, setContentOptimizeEnabled] = useState(initialData.autoCategorizeConfig.contentOptimizeEnabled)
   const [defaultBoardSlug, setDefaultBoardSlug] = useState(initialData.autoCategorizeConfig.defaultBoardSlug)
+  const [titleOptimizePrompt, setTitleOptimizePrompt] = useState(initialData.autoCategorizeConfig.titleOptimizePrompt)
+  const [contentOptimizePrompt, setContentOptimizePrompt] = useState(initialData.autoCategorizeConfig.contentOptimizePrompt)
   const [autoCategorizePromptTemplate, setAutoCategorizePromptTemplate] = useState(initialData.autoCategorizeConfig.promptTemplate)
   const [apiKey, setApiKey] = useState("")
   const [clearApiKey, setClearApiKey] = useState(false)
@@ -207,7 +211,11 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
     setTimeoutMs(String(nextData.config.timeoutMs))
     setWriteBoardAutoSelectEnabled(nextData.autoCategorizeConfig.writeBoardAutoSelectEnabled)
     setWriteTagAutoExtractEnabled(nextData.autoCategorizeConfig.writeTagAutoExtractEnabled)
+    setTitleOptimizeEnabled(nextData.autoCategorizeConfig.titleOptimizeEnabled)
+    setContentOptimizeEnabled(nextData.autoCategorizeConfig.contentOptimizeEnabled)
     setDefaultBoardSlug(nextData.autoCategorizeConfig.defaultBoardSlug)
+    setTitleOptimizePrompt(nextData.autoCategorizeConfig.titleOptimizePrompt)
+    setContentOptimizePrompt(nextData.autoCategorizeConfig.contentOptimizePrompt)
     setAutoCategorizePromptTemplate(nextData.autoCategorizeConfig.promptTemplate)
     setApiKey("")
     setClearApiKey(false)
@@ -251,9 +259,13 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
         clearApiKey,
       },
       autoCategorizeConfig: {
+        titleOptimizeEnabled,
+        contentOptimizeEnabled,
         writeBoardAutoSelectEnabled,
         writeTagAutoExtractEnabled,
         defaultBoardSlug,
+        titleOptimizePrompt,
+        contentOptimizePrompt,
         promptTemplate: autoCategorizePromptTemplate,
       },
       pagination: {
@@ -500,6 +512,28 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
             <TextField label="请求超时（毫秒）" value={timeoutMs} onChange={setTimeoutMs} placeholder="30000" />
           </div>
 
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+            <TextField
+              label="API Key"
+              value={apiKey}
+              onChange={setApiKey}
+              placeholder="留空则保留当前密钥"
+              type="password"
+              autoComplete="new-password"
+              data-1p-ignore="true"
+              data-lpignore="true"
+            />
+            <div className="rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">清空已保存密钥</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{apiKeyStateLabel}</p>
+                </div>
+                <Switch checked={clearApiKey} onCheckedChange={setClearApiKey} />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -615,25 +649,6 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
             )}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
-            <TextField
-              label="API Key"
-              value={apiKey}
-              onChange={setApiKey}
-              placeholder="留空则保留当前密钥"
-              type="password"
-              autoComplete="current-password"
-            />
-            <div className="rounded-xl border border-border p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-medium">清空已保存密钥</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{apiKeyStateLabel}</p>
-                </div>
-                <Switch checked={clearApiKey} onCheckedChange={setClearApiKey} />
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -643,6 +658,24 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
         </CardHeader>
         <CardContent className="space-y-4 py-5">
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">标题 AI 优化</p>
+                  <p className="mt-1 text-sm text-muted-foreground">在发帖和编辑页面显示 AI 标题优化与撤销按钮。</p>
+                </div>
+                <Switch checked={titleOptimizeEnabled} onCheckedChange={setTitleOptimizeEnabled} />
+              </div>
+            </div>
+            <div className="rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">正文 AI 优化</p>
+                  <p className="mt-1 text-sm text-muted-foreground">在发帖和编辑页面显示 AI 内容优化与撤销按钮。</p>
+                </div>
+                <Switch checked={contentOptimizeEnabled} onCheckedChange={setContentOptimizeEnabled} />
+              </div>
+            </div>
             <div className="rounded-xl border border-border p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -685,7 +718,19 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
         <CardHeader className="border-b">
           <CardTitle>发帖辅助提示词</CardTitle>
         </CardHeader>
-        <CardContent className="py-5">
+        <CardContent className="space-y-5 py-5">
+          <LabeledTextarea
+            label="标题优化提示词"
+            value={titleOptimizePrompt}
+            onChange={setTitleOptimizePrompt}
+            placeholder="定义 AI 如何优化帖子标题。"
+          />
+          <LabeledTextarea
+            label="内容优化提示词"
+            value={contentOptimizePrompt}
+            onChange={setContentOptimizePrompt}
+            placeholder="定义 AI 如何优化帖子正文。"
+          />
           <LabeledTextarea
             label="发帖辅助提示词"
             value={autoCategorizePromptTemplate}

@@ -326,6 +326,8 @@ export default async function WritePage(props: PageProps<"/write">) {
                     aiAssist={{
                       boardAutoSelectEnabled: autoCategorizeConfig.writeBoardAutoSelectEnabled,
                       tagAutoExtractEnabled: autoCategorizeConfig.writeTagAutoExtractEnabled,
+                      titleOptimizeEnabled: autoCategorizeConfig.titleOptimizeEnabled,
+                      contentOptimizeEnabled: autoCategorizeConfig.contentOptimizeEnabled,
                     }}
                     {...addonFormSlots}
                   />
@@ -373,6 +375,8 @@ export default async function WritePage(props: PageProps<"/write">) {
                   aiAssist={{
                     boardAutoSelectEnabled: autoCategorizeConfig.writeBoardAutoSelectEnabled,
                     tagAutoExtractEnabled: autoCategorizeConfig.writeTagAutoExtractEnabled,
+                    titleOptimizeEnabled: autoCategorizeConfig.titleOptimizeEnabled,
+                    contentOptimizeEnabled: autoCategorizeConfig.contentOptimizeEnabled,
                   }}
                 />
               )}

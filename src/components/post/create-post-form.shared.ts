@@ -289,6 +289,8 @@ export interface CreatePostFormProps {
   aiAssist?: {
     boardAutoSelectEnabled: boolean
     tagAutoExtractEnabled: boolean
+    titleOptimizeEnabled: boolean
+    contentOptimizeEnabled: boolean
   }
 }
 

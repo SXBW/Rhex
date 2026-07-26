@@ -60,6 +60,8 @@ interface UseCreatePostDraftOptions {
   aiAssist?: {
     boardAutoSelectEnabled: boolean
     tagAutoExtractEnabled: boolean
+    titleOptimizeEnabled: boolean
+    contentOptimizeEnabled: boolean
   }
 }
 
@@ -408,6 +410,8 @@ export function useCreatePostDraft({
     selectedPostTypeOption,
     autoExtractedTags: tags.autoExtractedTags,
     canUseAutoBoardSelection: aiAssistController.canUseAutoBoardSelection,
+    titleOptimizeEnabled: aiAssist?.titleOptimizeEnabled ?? false,
+    contentOptimizeEnabled: aiAssist?.contentOptimizeEnabled ?? false,
     boardSelectionMode: aiAssistController.boardSelectionMode,
     setBoardSelectionMode: aiAssistController.setBoardSelectionMode,
     aiSuggestedBoard: aiAssistController.aiSuggestedBoard,

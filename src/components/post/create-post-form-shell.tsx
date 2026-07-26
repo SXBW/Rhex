@@ -1,7 +1,7 @@
 "use client"
 
 import { createElement, useState, type ComponentPropsWithoutRef, type ReactNode } from "react"
-import { ChevronDown, Coins, Gavel, Gift, Info, Loader2, MessageSquareText, Vote, type LucideIcon } from "lucide-react"
+import { ChevronDown, Coins, Gavel, Gift, Info, Loader2, MessageSquareText, Sparkles, Undo2, Vote, type LucideIcon } from "lucide-react"
 
 import { AddonSurfaceClientRenderer } from "@/addons-host/client/addon-surface-client-renderer"
 import { BoardSelectField } from "@/components/board/board-select-field"
@@ -24,6 +24,8 @@ import type { AccessThresholdOption } from "@/lib/access-threshold-options"
 import type { CreatePostFormBoardGroup } from "@/components/post/create-post-form.shared"
 import type { CreatePostDraftController } from "@/components/post/use-create-post-draft"
 import type { CreatePostSubmitController } from "@/components/post/use-create-post-submit"
+import { usePostTextOptimizer } from "@/components/post/use-post-text-optimizer"
+import { toast } from "@/components/ui/toast"
 import type { LocalPostType } from "@/lib/post-types"
 import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 
@@ -114,6 +116,8 @@ export function CreatePostFormShell({
     selectedPostTypeOption,
     autoExtractedTags,
     canUseAutoBoardSelection,
+    titleOptimizeEnabled,
+    contentOptimizeEnabled,
     boardSelectionMode,
     setBoardSelectionMode,
     aiSuggestedBoard,
@@ -162,6 +166,30 @@ export function CreatePostFormShell({
   const { loading, showSlowSubmitHint, slowSubmitWaitSeconds, handleSubmit } =
     submitController
   const [draftBoxModalOpen, setDraftBoxModalOpen] = useState(false)
+  const { optimize, pendingTarget } = usePostTextOptimizer()
+  const [previousTitle, setPreviousTitle] = useState<string | null>(null)
+  const [previousContent, setPreviousContent] = useState<string | null>(null)
+
+  async function optimizeField(target: "title" | "content") {
+    try {
+      const optimized = await optimize({
+        target,
+        text: target === "title" ? draft.title : draft.content,
+        title: draft.title,
+        content: draft.content,
+      })
+      if (target === "title") {
+        setPreviousTitle(draft.title)
+        updateDraftField("title", optimized)
+      } else {
+        setPreviousContent(draft.content)
+        updateDraftField("content", optimized)
+      }
+      toast.success(target === "title" ? "标题已优化" : "正文已优化")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "AI 优化失败")
+    }
+  }
 
   const hasDraftBoxEntries = draftBoxEntries.length > 0
   const draftMetaTimestamp = pendingDraftToRestore?.updatedAt ?? lastSavedDraftAt
@@ -480,8 +508,10 @@ export function CreatePostFormShell({
   const editorContent = (
     <div className="space-y-2">
       {addonEditorBefore}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium">公开正文</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto text-sm font-medium">公开正文</p>
+        {contentOptimizeEnabled ? <Button type="button" variant="outline" size="sm" disabled={pendingTarget !== null || !draft.content.trim()} onClick={() => void optimizeField("content")}><Sparkles className="size-4" />{pendingTarget === "content" ? "优化中..." : "AI 优化正文"}</Button> : null}
+        {contentOptimizeEnabled ? <Button type="button" variant="ghost" size="sm" disabled={previousContent === null || pendingTarget !== null} onClick={() => { if (previousContent !== null) { updateDraftField("content", previousContent); setPreviousContent(null) } }}><Undo2 className="size-4" />撤销</Button> : null}
         <p className="text-xs text-muted-foreground">请遵守社区规则，文明发帖！</p>
       </div>
       <AddonEditor
@@ -671,7 +701,11 @@ export function CreatePostFormShell({
       />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">标题</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium">标题</p>
+          {titleOptimizeEnabled ? <Button type="button" variant="outline" size="sm" disabled={pendingTarget !== null || !draft.title.trim()} onClick={() => void optimizeField("title")}><Sparkles className="size-4" />{pendingTarget === "title" ? "优化中..." : "AI 优化标题"}</Button> : null}
+          {titleOptimizeEnabled ? <Button type="button" variant="ghost" size="sm" disabled={previousTitle === null || pendingTarget !== null} onClick={() => { if (previousTitle !== null) { updateDraftField("title", previousTitle); setPreviousTitle(null) } }}><Undo2 className="size-4" />撤销</Button> : null}
+        </div>
         <input
           value={draft.title}
           onChange={(event) => updateDraftField("title", event.target.value)}
