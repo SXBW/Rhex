@@ -273,6 +273,7 @@ export function PostEnhancementsSection({
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const [localCollapsed, setLocalCollapsed] = useState(false)
   const [localPanelSide, setLocalPanelSide] = useState<"left" | "right">("right")
+  const [editorFullscreen, setEditorFullscreen] = useState(false)
   
   const isExternalControlled = externalCollapsed !== undefined
   const collapsed = isExternalControlled ? externalCollapsed : localCollapsed
@@ -281,6 +282,24 @@ export function PostEnhancementsSection({
     ? (externalOnCollapseChange || (() => {})) 
     : setLocalCollapsed
   const handlePanelSideChange = externalOnPanelSideChange || (() => {})
+
+  useEffect(() => {
+    const checkFullscreen = () => {
+      const fullscreenElement = document.querySelector("[data-markdown-editor-fullscreen='true']")
+      setEditorFullscreen(!!fullscreenElement)
+    }
+    
+    checkFullscreen()
+    
+    const observer = new MutationObserver(checkFullscreen)
+    observer.observe(document.body, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    })
+    
+    return () => observer.disconnect()
+  }, [])
 
   const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -698,15 +717,98 @@ export function PostEnhancementsSection({
           title="展开功能区"
           onClick={() => handleCollapseChange(false)}
           className={cn(
-            "hidden min-[1220px]:flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background/92 px-3 py-2 text-sm font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]",
+            "hidden min-[1220px]:flex min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] h-12 w-12 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]",
+            panelSide === "left" ? "left-[calc(50%-600px-24px)]" : "right-[calc(50%-600px-24px)]",
           )}
         >
-          <PanelRightOpen className="size-4" />
-          <span>{configuredCount > 0 ? `功能区 (${configuredCount})` : "功能区"}</span>
+          <PanelRightOpen className="size-5" />
+          {configuredCount > 0 ? (
+            <span className={cn(
+              "absolute inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background",
+              panelSide === "left" ? "-right-1 -top-1" : "-left-1 -top-1",
+            )}>
+              {configuredCount > 9 ? "9+" : configuredCount}
+            </span>
+          ) : null}
         </button>
+      ) : editorFullscreen ? (
+        <div
+          className={cn(
+            "hidden min-[1220px]:block min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] w-[200px]",
+            panelSide === "left" ? "left-[calc(50%-640px-200px)]" : "right-[calc(50%-640px-200px)]",
+          )}
+        >
+          <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+              <button
+                type="button"
+                aria-label="拖拽移动功能区"
+                title="拖拽移动功能区"
+                className="cursor-grab active:cursor-grabbing opacity-60 hover:opacity-100"
+                onMouseDown={handleDragStart}
+              >
+                <GripVertical className="size-4" />
+              </button>
+              <span className="text-xs font-medium">{configuredCount > 0 ? `功能区 (${configuredCount})` : "功能区"}</span>
+              <button
+                type="button"
+                onClick={() => handlePanelSideChange(panelSide === "left" ? "right" : "left")}
+                className="ml-auto transition-transform hover:rotate-180"
+              >
+                {panelSide === "left" ? <PanelRightOpen className="size-4" /> : <PanelRightClose className="size-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCollapseChange(true)}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            
+            {hasDesktopSummary ? (
+              <div className="mb-4 space-y-4 p-3">
+                {finalTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {finalTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1"
+                      >
+                        <span>#{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => actions.onRemoveManualTag(tag)}
+                          className="transition-opacity hover:opacity-70"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                {redPacketEnabled ? (
+                  <RewardPoolSummary
+                    pointName={pointName}
+                    redPacketMode={redPacketMode}
+                    redPacketGrantMode={redPacketGrantMode}
+                    redPacketTriggerType={redPacketTriggerType}
+                    jackpotInitialPoints={jackpotInitialPoints}
+                    fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
+                    postJackpotMinInitialPoints={postJackpotMinInitialPoints}
+                    postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
+                    postJackpotHitProbability={postJackpotHitProbability}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
+            {desktopPanelContent}
+          </div>
+        </div>
       ) : (
         <div className="hidden min-[1220px]:block w-[200px] shrink-0">
-          <div className="sticky top-20 z-10 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
+          <div className="sticky top-24 z-50 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <button
                 type="button"

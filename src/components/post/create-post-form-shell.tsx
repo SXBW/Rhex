@@ -802,19 +802,19 @@ export function CreatePostFormShell({
             />
           </div>
         )}
-        
-        {desktopPanelCollapsed && (
-          <AddonSurfaceClientRenderer
-            surface="post.create.enhancements"
-            surfaceProps={{
-              draft,
-              draftController,
-              pointName,
-            }}
-            fallback={enhancementsContent}
-          />
-        )}
       </div>
+      
+      {desktopPanelCollapsed && (
+        <AddonSurfaceClientRenderer
+          surface="post.create.enhancements"
+          surfaceProps={{
+            draft,
+            draftController,
+            pointName,
+          }}
+          fallback={enhancementsContent}
+        />
+      )}
 
       <Modal
         open={draftBoxModalOpen}
