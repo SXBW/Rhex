@@ -770,7 +770,7 @@ export function CreatePostFormShell({
           </div>
         )}
         
-        <div className="space-y-5">
+        <div className="flex min-h-full flex-col gap-5">
           {addonFormBefore}
           <AddonSurfaceClientRenderer
             surface="post.create.form"
