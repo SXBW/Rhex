@@ -563,7 +563,7 @@ export function CreatePostFormShell({
         {!desktopPanelCollapsed && (
           <div className="hidden min-[1220px]:block">
             <div className="sticky top-2">
-              {enhancementsContent}
+              {enhancementsContent()}
             </div>
           </div>
         )}
@@ -572,7 +572,7 @@ export function CreatePostFormShell({
     </div>
   )
 
-  const enhancementsContent = (
+  const enhancementsContent = () => (
     <>
       {addonEnhancementsBefore}
       <PostEnhancementsSection
@@ -810,7 +810,7 @@ export function CreatePostFormShell({
                 draftController,
                 pointName,
               }}
-              fallback={enhancementsContent}
+              fallback={enhancementsContent()}
             />
           </div>
         )}
@@ -843,7 +843,7 @@ export function CreatePostFormShell({
                 draftController,
                 pointName,
               }}
-              fallback={enhancementsContent}
+              fallback={enhancementsContent()}
             />
           </div>
         )}
@@ -857,7 +857,7 @@ export function CreatePostFormShell({
             draftController,
             pointName,
           }}
-          fallback={enhancementsContent}
+          fallback={enhancementsContent()}
         />
       )}
 
