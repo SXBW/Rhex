@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react"
 import {
@@ -32,16 +31,8 @@ import { cn } from "@/lib/utils"
 import { formatCompactPointValue } from "@/lib/formatters"
 import { getPostRewardPoolModeLabel } from "@/lib/post-reward-pool-config"
 
-const DESKTOP_PANEL_STORAGE_KEY = "post-enhancements-panel-position"
 const DESKTOP_PANEL_COLLAPSED_STORAGE_KEY = "post-enhancements-panel-collapsed"
 const DESKTOP_PANEL_WIDTH = 202
-const DESKTOP_PANEL_MARGIN = 12
-const DESKTOP_PANEL_DEFAULT_TOP = 112
-
-interface DesktopPanelPosition {
-  left: number
-  top: number
-}
 
 function DesktopActionCard({
   icon,
@@ -212,6 +203,10 @@ function RewardPoolSummary({
 interface PostEnhancementsSectionProps {
   pointName: string
   rewardPoolEnabled: boolean
+  collapsed?: boolean
+  panelSide?: "left" | "right"
+  onCollapseChange?: (collapsed: boolean) => void
+  onPanelSideChange?: (side: "left" | "right") => void
   settings: {
     finalTags: string[]
     autoExtractedTags: string[]
@@ -270,21 +265,25 @@ interface PostEnhancementsSectionProps {
 export function PostEnhancementsSection({
   pointName,
   rewardPoolEnabled,
+  collapsed: externalCollapsed,
+  panelSide: externalPanelSide = "right",
+  onCollapseChange: externalOnCollapseChange,
+  onPanelSideChange: externalOnPanelSideChange,
   settings,
   actions,
 }: PostEnhancementsSectionProps) {
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
-  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
-  const [desktopPanelPosition, setDesktopPanelPosition] = useState<DesktopPanelPosition | null>(null)
-  const [panelSide, setPanelSide] = useState<"left" | "right">("right")
-  const desktopPanelRef = useRef<HTMLDivElement | null>(null)
-  const desktopPanelDragRef = useRef<{
-    pointerId: number
-    startX: number
-    startY: number
-    startLeft: number
-    startTop: number
-  } | null>(null)
+  const [localCollapsed, setLocalCollapsed] = useState(false)
+  const [localPanelSide, setLocalPanelSide] = useState<"left" | "right">("right")
+  
+  const isExternalControlled = externalCollapsed !== undefined
+  const collapsed = isExternalControlled ? externalCollapsed : localCollapsed
+  const panelSide = externalPanelSide
+  const handleCollapseChange = isExternalControlled 
+    ? (externalOnCollapseChange || (() => {})) 
+    : setLocalCollapsed
+  const handlePanelSideChange = externalOnPanelSideChange || (() => {})
+
   const {
     finalTags,
     autoExtractedTags,
@@ -365,170 +364,22 @@ export function PostEnhancementsSection({
     setMobilePanelOpen(false)
     action()
   }
-  const getDefaultDesktopPanelPosition = () => {
-    if (typeof window === "undefined") {
-      return { left: 0, top: DESKTOP_PANEL_DEFAULT_TOP }
-    }
-
-    const left = panelSide === "left" 
-      ? DESKTOP_PANEL_MARGIN 
-      : window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN
-
-    return {
-      left,
-      top: DESKTOP_PANEL_DEFAULT_TOP,
-    }
-  }
-  const clampDesktopPanelPosition = (position: DesktopPanelPosition) => {
-    if (typeof window === "undefined") {
-      return position
-    }
-
-    const panelWidth = desktopPanelRef.current?.offsetWidth ?? DESKTOP_PANEL_WIDTH
-    const panelHeight = desktopPanelRef.current?.offsetHeight ?? 420
-    const maxTop = Math.max(DESKTOP_PANEL_MARGIN + 64, window.innerHeight - panelHeight - DESKTOP_PANEL_MARGIN)
-
-    const targetLeft = panelSide === "left"
-      ? DESKTOP_PANEL_MARGIN
-      : window.innerWidth - panelWidth - DESKTOP_PANEL_MARGIN
-
-    return {
-      left: targetLeft,
-      top: Math.min(Math.max(DESKTOP_PANEL_MARGIN + 64, position.top), maxTop),
-    }
-  }
-  const resetDesktopPanelPosition = () => {
-    const nextPosition = clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
-    setDesktopPanelPosition(nextPosition)
-    window.localStorage.removeItem(DESKTOP_PANEL_STORAGE_KEY)
-  }
-  const collapseDesktopPanel = () => {
-    const currentPosition = desktopPanelPosition ?? getDefaultDesktopPanelPosition()
-    const targetLeft = panelSide === "left"
-      ? DESKTOP_PANEL_MARGIN
-      : window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN
-    setDesktopPanelPosition(
-      clampDesktopPanelPosition({
-        left: targetLeft,
-        top: currentPosition.top,
-      }),
-    )
-    desktopPanelDragRef.current = null
-    setDesktopPanelCollapsed(true)
-  }
-  const handleDesktopPanelPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0) {
-      return
-    }
-
-    const position = desktopPanelPosition ?? clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
-    desktopPanelDragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startLeft: position.left,
-      startTop: position.top,
-    }
-    setDesktopPanelPosition(position)
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId)
-    } catch {
-      // Synthetic pointer events in tests may not have an active pointer to capture.
-    }
-  }
-  const handleDesktopPanelPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const drag = desktopPanelDragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) {
-      return
-    }
-
-    event.preventDefault()
-    setDesktopPanelPosition(
-      clampDesktopPanelPosition({
-        left: drag.startLeft + event.clientX - drag.startX,
-        top: drag.startTop + event.clientY - drag.startY,
-      }),
-    )
-  }
-  const handleDesktopPanelPointerEnd = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const drag = desktopPanelDragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) {
-      return
-    }
-
-    desktopPanelDragRef.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-
-    const newPosition = clampDesktopPanelPosition({
-      left: drag.startLeft + event.clientX - drag.startX,
-      top: drag.startTop + event.clientY - drag.startY,
-    })
-    setDesktopPanelPosition(newPosition)
-  }
-  const desktopPanelStyle = desktopPanelPosition
-    ? ({
-        left: desktopPanelPosition.left,
-        top: desktopPanelPosition.top,
-      } satisfies CSSProperties)
-    : undefined
-  const desktopDockStyle = desktopPanelPosition
-    ? ({
-        top: desktopPanelPosition.top,
-      } satisfies CSSProperties)
-    : undefined
 
   useEffect(() => {
-    let nextPosition = clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
-    const storedPosition = window.localStorage.getItem(DESKTOP_PANEL_STORAGE_KEY)
-    if (storedPosition) {
-      try {
-        const parsedPosition = JSON.parse(storedPosition) as Partial<DesktopPanelPosition>
-        if (typeof parsedPosition.left === "number" && typeof parsedPosition.top === "number") {
-          nextPosition = clampDesktopPanelPosition(parsedPosition as DesktopPanelPosition)
-        }
-      } catch {
-        window.localStorage.removeItem(DESKTOP_PANEL_STORAGE_KEY)
-      }
-    }
-
-    setDesktopPanelPosition(nextPosition)
-
     const storedCollapsed = window.localStorage.getItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY)
-    setDesktopPanelCollapsed(storedCollapsed === "true")
-  }, [])
-
-  useEffect(() => {
-    function handleResize() {
-      setDesktopPanelPosition((current) =>
-        clampDesktopPanelPosition(current ?? getDefaultDesktopPanelPosition()),
-      )
+    if (!isExternalControlled) {
+      setLocalCollapsed(storedCollapsed === "true")
     }
-
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+  }, [isExternalControlled])
 
   useEffect(() => {
-    if (!desktopPanelPosition) {
-      return
-    }
-
-    window.localStorage.setItem(
-      DESKTOP_PANEL_STORAGE_KEY,
-      JSON.stringify(desktopPanelPosition),
-    )
-  }, [desktopPanelPosition])
-
-  useEffect(() => {
-    if (desktopPanelCollapsed) {
+    if (!isExternalControlled && collapsed) {
       window.localStorage.setItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY, "true")
       return
     }
 
     window.localStorage.removeItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY)
-  }, [desktopPanelCollapsed])
+  }, [collapsed, isExternalControlled])
 
   const desktopPanelContent = (
     <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
@@ -537,7 +388,7 @@ export function PostEnhancementsSection({
           type="button"
           aria-label="切换功能区位置"
           title="切换功能区位置"
-          onClick={() => setPanelSide((prev) => (prev === "left" ? "right" : "left"))}
+          onClick={() => handlePanelSideChange(panelSide === "left" ? "right" : "left")}
           className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
         >
           <GripVertical className="size-3.5 shrink-0" />
@@ -549,19 +400,10 @@ export function PostEnhancementsSection({
           type="button"
           aria-label="收起功能区"
           title="收起功能区"
-          onClick={collapseDesktopPanel}
+          onClick={() => handleCollapseChange(true)}
           className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <PanelRightClose className="size-3" />
-        </button>
-        <button
-          type="button"
-          aria-label="重置功能区位置"
-          title="重置功能区位置"
-          onClick={resetDesktopPanelPosition}
-          className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <RotateCcw className="size-3" />
         </button>
       </div>
 
@@ -672,13 +514,7 @@ export function PostEnhancementsSection({
   )
 
   return (
-    <div
-      className={cn(
-        hasDesktopSummary
-          ? "min-[1240px]:rounded-xl min-[1240px]:border min-[1240px]:border-border min-[1240px]:bg-card min-[1240px]:px-4 min-[1240px]:py-3"
-          : "min-[1240px]:border-0 min-[1240px]:bg-transparent min-[1240px]:p-0",
-      )}
-    >
+    <>
       <div className="min-[1240px]:hidden">
         <button
           type="button"
@@ -702,7 +538,6 @@ export function PostEnhancementsSection({
           >
             <SheetHeader className="border-b border-border/70 pr-12">
               <SheetTitle>功能区</SheetTitle>
-
             </SheetHeader>
 
             <div className="flex h-full flex-col overflow-y-auto px-4 pb-6">
@@ -749,7 +584,7 @@ export function PostEnhancementsSection({
                   summary={coverSummary}
                   active={Boolean(coverPath.trim())}
                   onClick={openMobilePanelAction(actions.onOpenCoverModal)}
-                  onClear={actions.onCoverClear}
+                  onCoverClear={actions.onCoverClear}
                 />
 
                 <DesktopToggleCard
@@ -837,87 +672,69 @@ export function PostEnhancementsSection({
         </Sheet>
       </div>
 
-      <div className="hidden min-[1240px]:block">
-        {hasDesktopSummary ? (
-          <div className="space-y-4">
-            {finalTags.length > 0 ? (
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {finalTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1"
-                  >
-                    <span>#{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => actions.onRemoveManualTag(tag)}
-                      className="transition-opacity hover:opacity-70"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : null}
-
-            {redPacketEnabled ? (
-              <RewardPoolSummary
-                pointName={pointName}
-                redPacketMode={redPacketMode}
-                redPacketGrantMode={redPacketGrantMode}
-                redPacketTriggerType={redPacketTriggerType}
-                jackpotInitialPoints={jackpotInitialPoints}
-                fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
-                postJackpotMinInitialPoints={postJackpotMinInitialPoints}
-                postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
-                postJackpotHitProbability={postJackpotHitProbability}
-              />
-            ) : null}
-          </div>
-        ) : null}
-
-        {desktopPanelCollapsed ? (
+      <div className="hidden min-[1240px]:block w-[202px] shrink-0">
+        {collapsed ? (
           <button
             type="button"
             aria-label="展开功能区"
             title="展开功能区"
-            onClick={() => setDesktopPanelCollapsed(false)}
+            onClick={() => handleCollapseChange(false)}
             className={cn(
-              "fixed z-30 inline-flex min-h-24 items-center gap-2 border border-border bg-background/92 px-2 py-3 text-xs font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform",
-              panelSide === "left" 
-                ? "left-0 rounded-r-xl border-l-0 hover:translate-x-0.5 active:translate-x-0" 
-                : "right-0 rounded-l-xl border-r-0 hover:-translate-x-0.5 active:translate-x-0",
-              desktopPanelPosition ? "" : "top-28",
+              "flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border border-border bg-background/92 px-2 py-3 text-xs font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]",
             )}
-            style={desktopDockStyle}
           >
-            {panelSide === "left" ? <PanelRightClose className="size-4 shrink-0" /> : <PanelRightOpen className="size-4 shrink-0" />}
+            {panelSide === "left" ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}
             <span className="[writing-mode:vertical-rl]">功能区</span>
             {configuredCount > 0 ? (
-              <span className={cn(
-                "absolute inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background",
-                panelSide === "left" ? "-right-2 -top-2" : "-left-2 -top-2"
-              )}>
+              <span className="absolute top-2 right-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
                 {configuredCount > 9 ? "9+" : configuredCount}
               </span>
             ) : null}
           </button>
         ) : (
-          <div
-            ref={desktopPanelRef}
-            className={cn(
-              "fixed z-30 w-[202px]",
-              panelSide === "left" ? "left-4" : "",
-              panelSide === "right" ? "right-4" : "",
-              desktopPanelPosition ? "" : "top-28",
-            )}
-            style={desktopPanelStyle}
-          >
+          <div className="h-fit">
+            {hasDesktopSummary ? (
+              <div className="mb-4 space-y-4">
+                {finalTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {finalTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1"
+                      >
+                        <span>#{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => actions.onRemoveManualTag(tag)}
+                          className="transition-opacity hover:opacity-70"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                {redPacketEnabled ? (
+                  <RewardPoolSummary
+                    pointName={pointName}
+                    redPacketMode={redPacketMode}
+                    redPacketGrantMode={redPacketGrantMode}
+                    redPacketTriggerType={redPacketTriggerType}
+                    jackpotInitialPoints={jackpotInitialPoints}
+                    fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
+                    postJackpotMinInitialPoints={postJackpotMinInitialPoints}
+                    postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
+                    postJackpotHitProbability={postJackpotHitProbability}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
             {desktopPanelContent}
           </div>
         )}
       </div>
-
-    </div>
+    </>
   )
 }

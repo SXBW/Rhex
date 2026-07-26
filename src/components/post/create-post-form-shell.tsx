@@ -169,6 +169,8 @@ export function CreatePostFormShell({
   const { optimize, pendingTarget } = usePostTextOptimizer()
   const [previousTitle, setPreviousTitle] = useState<string | null>(null)
   const [previousContent, setPreviousContent] = useState<string | null>(null)
+  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
+  const [desktopPanelSide, setDesktopPanelSide] = useState<"left" | "right">("right")
 
   async function optimizeField(target: "title" | "content") {
     try {
@@ -531,6 +533,10 @@ export function CreatePostFormShell({
       <PostEnhancementsSection
         pointName={pointName}
         rewardPoolEnabled={showRewardPoolEntry}
+        collapsed={desktopPanelCollapsed}
+        panelSide={desktopPanelSide}
+        onCollapseChange={setDesktopPanelCollapsed}
+        onPanelSideChange={setDesktopPanelSide}
         settings={{
           finalTags: draft.manualTags,
           autoExtractedTags,
@@ -724,16 +730,6 @@ export function CreatePostFormShell({
         fallback={editorContent}
       />
 
-      <AddonSurfaceClientRenderer
-        surface="post.create.enhancements"
-        surfaceProps={{
-          draft,
-          draftController,
-          pointName,
-        }}
-        fallback={enhancementsContent}
-      />
-
       {addonCaptcha}
 
       <AddonSurfaceClientRenderer
@@ -751,23 +747,72 @@ export function CreatePostFormShell({
   )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {addonFormBefore}
-      <AddonSurfaceClientRenderer
-        surface="post.create.form"
-        surfaceProps={{
-          addonCaptcha,
-          boardOptions,
-          draft,
-          draftController,
-          pointName,
-          submitController,
-          viewLevelOptions,
-          viewVipLevelOptions,
-        }}
-        fallback={formContent}
-      />
-      {addonFormAfter}
+    <form onSubmit={handleSubmit}>
+      <div className={cn(
+        "min-[1240px]:grid min-[1240px]:gap-4",
+        desktopPanelSide === "left" ? "min-[1240px]:grid-cols-[220px_1fr]" : "min-[1240px]:grid-cols-[1fr_220px]",
+        desktopPanelCollapsed && "min-[1240px]:grid-cols-[1fr]"
+      )}>
+        {desktopPanelSide === "left" && !desktopPanelCollapsed && (
+          <div className="min-[1240px]:shrink-0">
+            <AddonSurfaceClientRenderer
+              surface="post.create.enhancements"
+              surfaceProps={{
+                draft,
+                draftController,
+                pointName,
+              }}
+              fallback={enhancementsContent}
+            />
+          </div>
+        )}
+        
+        <div className="space-y-5">
+          {addonFormBefore}
+          <AddonSurfaceClientRenderer
+            surface="post.create.form"
+            surfaceProps={{
+              addonCaptcha,
+              boardOptions,
+              draft,
+              draftController,
+              pointName,
+              submitController,
+              viewLevelOptions,
+              viewVipLevelOptions,
+            }}
+            fallback={formContent}
+          />
+          {addonFormAfter}
+          
+          {desktopPanelCollapsed && (
+            <div className="hidden min-[1240px]:flex justify-center">
+              <button
+                type="button"
+                onClick={() => setDesktopPanelCollapsed(false)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/92 px-4 py-2 text-sm font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                展开功能区
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {desktopPanelSide === "right" && !desktopPanelCollapsed && (
+          <div className="min-[1240px]:shrink-0">
+            <AddonSurfaceClientRenderer
+              surface="post.create.enhancements"
+              surfaceProps={{
+                draft,
+                draftController,
+                pointName,
+              }}
+              fallback={enhancementsContent}
+            />
+          </div>
+        )}
+      </div>
+
       <Modal
         open={draftBoxModalOpen}
         onClose={() => setDraftBoxModalOpen(false)}
