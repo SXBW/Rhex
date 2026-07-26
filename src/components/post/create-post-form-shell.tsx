@@ -27,6 +27,7 @@ import type { CreatePostSubmitController } from "@/components/post/use-create-po
 import { usePostTextOptimizer } from "@/components/post/use-post-text-optimizer"
 import { toast } from "@/components/ui/toast"
 import type { LocalPostType } from "@/lib/post-types"
+import { cn } from "@/lib/utils"
 import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 
 interface CreatePostFormShellProps {
