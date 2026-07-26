@@ -276,6 +276,7 @@ export function PostEnhancementsSection({
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
   const [desktopPanelPosition, setDesktopPanelPosition] = useState<DesktopPanelPosition | null>(null)
+  const [panelSide, setPanelSide] = useState<"left" | "right">("right")
   const desktopPanelRef = useRef<HTMLDivElement | null>(null)
   const desktopPanelDragRef = useRef<{
     pointerId: number
@@ -369,8 +370,12 @@ export function PostEnhancementsSection({
       return { left: 0, top: DESKTOP_PANEL_DEFAULT_TOP }
     }
 
+    const left = panelSide === "left" 
+      ? DESKTOP_PANEL_MARGIN 
+      : window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN
+
     return {
-      left: window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN,
+      left,
       top: DESKTOP_PANEL_DEFAULT_TOP,
     }
   }
@@ -381,12 +386,15 @@ export function PostEnhancementsSection({
 
     const panelWidth = desktopPanelRef.current?.offsetWidth ?? DESKTOP_PANEL_WIDTH
     const panelHeight = desktopPanelRef.current?.offsetHeight ?? 420
-    const maxLeft = Math.max(DESKTOP_PANEL_MARGIN, window.innerWidth - panelWidth - DESKTOP_PANEL_MARGIN)
-    const maxTop = Math.max(DESKTOP_PANEL_MARGIN, window.innerHeight - panelHeight - DESKTOP_PANEL_MARGIN)
+    const maxTop = Math.max(DESKTOP_PANEL_MARGIN + 64, window.innerHeight - panelHeight - DESKTOP_PANEL_MARGIN)
+
+    const targetLeft = panelSide === "left"
+      ? DESKTOP_PANEL_MARGIN
+      : window.innerWidth - panelWidth - DESKTOP_PANEL_MARGIN
 
     return {
-      left: Math.min(Math.max(DESKTOP_PANEL_MARGIN, position.left), maxLeft),
-      top: Math.min(Math.max(DESKTOP_PANEL_MARGIN, position.top), maxTop),
+      left: targetLeft,
+      top: Math.min(Math.max(DESKTOP_PANEL_MARGIN + 64, position.top), maxTop),
     }
   }
   const resetDesktopPanelPosition = () => {
@@ -396,9 +404,12 @@ export function PostEnhancementsSection({
   }
   const collapseDesktopPanel = () => {
     const currentPosition = desktopPanelPosition ?? getDefaultDesktopPanelPosition()
+    const targetLeft = panelSide === "left"
+      ? DESKTOP_PANEL_MARGIN
+      : window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN
     setDesktopPanelPosition(
       clampDesktopPanelPosition({
-        left: window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN,
+        left: targetLeft,
         top: currentPosition.top,
       }),
     )
@@ -449,6 +460,12 @@ export function PostEnhancementsSection({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
+
+    const newPosition = clampDesktopPanelPosition({
+      left: drag.startLeft + event.clientX - drag.startX,
+      top: drag.startTop + event.clientY - drag.startY,
+    })
+    setDesktopPanelPosition(newPosition)
   }
   const desktopPanelStyle = desktopPanelPosition
     ? ({
@@ -512,6 +529,147 @@ export function PostEnhancementsSection({
 
     window.localStorage.removeItem(DESKTOP_PANEL_COLLAPSED_STORAGE_KEY)
   }, [desktopPanelCollapsed])
+
+  const desktopPanelContent = (
+    <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
+      <div className="flex items-center justify-between gap-2 px-0.5">
+        <button
+          type="button"
+          aria-label="切换功能区位置"
+          title="切换功能区位置"
+          onClick={() => setPanelSide((prev) => (prev === "left" ? "right" : "left"))}
+          className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
+        >
+          <GripVertical className="size-3.5 shrink-0" />
+          <p className="truncate text-[10px] font-medium tracking-[0.12em]">
+            功能区
+          </p>
+        </button>
+        <button
+          type="button"
+          aria-label="收起功能区"
+          title="收起功能区"
+          onClick={collapseDesktopPanel}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <PanelRightClose className="size-3" />
+        </button>
+        <button
+          type="button"
+          aria-label="重置功能区位置"
+          title="重置功能区位置"
+          onClick={resetDesktopPanelPosition}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <RotateCcw className="size-3" />
+        </button>
+      </div>
+
+      <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto pr-0.5">
+        <DesktopActionCard
+          icon={<Sparkles className="h-4 w-4" />}
+          title="标签提取"
+          summary={
+            finalTags.length > 0
+              ? `已选 ${finalTags.length} 个`
+              : autoExtractedTags.length > 0
+                ? `候选 ${autoExtractedTags.length} 个`
+                : "提取候选标签"
+          }
+          active={finalTags.length > 0}
+          onClick={actions.onOpenTagModal}
+        />
+
+      {rewardPoolEnabled ? (
+        <DesktopActionCard
+          icon={<Sparkles className="h-4 w-4" />}
+          title="帖子激励池"
+          summary={rewardPoolDesktopSummary}
+          active={redPacketEnabled}
+          onClick={actions.onOpenRewardPoolModal}
+          onClear={actions.onClearRewardPool}
+          disabled={!rewardPoolEditable}
+        />
+      ) : null}
+
+      {showAttachmentEntry ? (
+        <DesktopActionCard
+          icon={<Paperclip className="h-4 w-4" />}
+          title="帖子附件"
+          summary={attachmentCount > 0 ? `已添加 ${attachmentCount} 项` : "未配置附件"}
+          active={attachmentCount > 0}
+          onClick={actions.onOpenAttachmentModal}
+        />
+      ) : null}
+
+      <DesktopActionCard
+        icon={
+          coverUploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImageIcon className="h-4 w-4" />
+          )
+        }
+        title="封面图"
+        summary={coverUploading ? "上传中..." : coverPath.trim() ? "已设置" : "自动提取"}
+        active={Boolean(coverPath.trim())}
+        onClick={actions.onOpenCoverModal}
+        onClear={actions.onCoverClear}
+      />
+
+      <DesktopToggleCard
+        checked={commentsVisibleToAuthorOnly}
+        onChange={actions.onCommentsVisibleToAuthorOnlyChange}
+      />
+
+      <DesktopActionCard
+        icon={<MessageSquareLock className="h-4 w-4" />}
+        title="登录后可看"
+        summary={loginUnlockContent.trim() ? "已配置" : "未配置"}
+        active={Boolean(loginUnlockContent.trim())}
+        onClick={actions.onOpenLoginModal}
+        onClear={actions.onClearLoginUnlock}
+      />
+
+      <DesktopActionCard
+        icon={<MessageSquareLock className="h-4 w-4" />}
+        title="回复后可看"
+        summary={replyUnlockContent.trim() ? "已配置" : "未配置"}
+        active={Boolean(replyUnlockContent.trim())}
+        onClick={actions.onOpenReplyModal}
+        onClear={actions.onClearReplyUnlock}
+      />
+
+      <DesktopActionCard
+        icon={<Info className="h-4 w-4" />}
+        title="购买后可看"
+        summary={
+          purchaseUnlockContent.trim() ? `${formatCompactPointValue(Number(purchasePrice) || 0)} / ${pointName}` : "未配置"
+        }
+        active={Boolean(purchaseUnlockContent.trim())}
+        onClick={actions.onOpenPurchaseModal}
+        onClear={actions.onClearPurchaseUnlock}
+      />
+
+      <DesktopActionCard
+        icon={<Info className="h-4 w-4" />}
+        title="整帖门槛"
+        summary={
+          Number(minViewVipLevel) > 0
+            ? `VIP${Number(minViewVipLevel)}${
+                Number(minViewLevel) > 0 ? ` / Lv.${Number(minViewLevel)}` : ""
+              }`
+            : Number(minViewLevel) > 0
+              ? `Lv.${Number(minViewLevel)}`
+              : "公开可见"
+        }
+        active={Number(minViewLevel) > 0 || Number(minViewVipLevel) > 0}
+        onClick={actions.onOpenViewLevelModal}
+        onClear={actions.onClearViewLevel}
+      />
+      </div>
+    </div>
+  )
 
   return (
     <div
@@ -725,15 +883,21 @@ export function PostEnhancementsSection({
             title="展开功能区"
             onClick={() => setDesktopPanelCollapsed(false)}
             className={cn(
-              "fixed right-0 z-30 inline-flex min-h-24 items-center gap-2 rounded-l-xl border border-r-0 border-border bg-background/92 px-2 py-3 text-xs font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:-translate-x-0.5 active:translate-x-0",
+              "fixed z-30 inline-flex min-h-24 items-center gap-2 border border-border bg-background/92 px-2 py-3 text-xs font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform",
+              panelSide === "left" 
+                ? "left-0 rounded-r-xl border-l-0 hover:translate-x-0.5 active:translate-x-0" 
+                : "right-0 rounded-l-xl border-r-0 hover:-translate-x-0.5 active:translate-x-0",
               desktopPanelPosition ? "" : "top-28",
             )}
             style={desktopDockStyle}
           >
-            <PanelRightOpen className="size-4 shrink-0" />
+            {panelSide === "left" ? <PanelRightClose className="size-4 shrink-0" /> : <PanelRightOpen className="size-4 shrink-0" />}
             <span className="[writing-mode:vertical-rl]">功能区</span>
             {configuredCount > 0 ? (
-              <span className="absolute -left-2 -top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
+              <span className={cn(
+                "absolute inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background",
+                panelSide === "left" ? "-right-2 -top-2" : "-left-2 -top-2"
+              )}>
                 {configuredCount > 9 ? "9+" : configuredCount}
               </span>
             ) : null}
@@ -743,151 +907,13 @@ export function PostEnhancementsSection({
             ref={desktopPanelRef}
             className={cn(
               "fixed z-30 w-[202px]",
-              desktopPanelPosition ? "" : "left-[calc(50%+444px)] top-28",
+              panelSide === "left" ? "left-4" : "",
+              panelSide === "right" ? "right-4" : "",
+              desktopPanelPosition ? "" : "top-28",
             )}
             style={desktopPanelStyle}
           >
-            <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
-              <div className="flex items-center justify-between gap-2 px-0.5">
-                <button
-                  type="button"
-                  aria-label="拖动功能区"
-                  title="拖动功能区"
-                  onPointerDown={handleDesktopPanelPointerDown}
-                  onPointerMove={handleDesktopPanelPointerMove}
-                  onPointerUp={handleDesktopPanelPointerEnd}
-                  onPointerCancel={handleDesktopPanelPointerEnd}
-                  className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
-                >
-                  <GripVertical className="size-3.5 shrink-0" />
-                  <p className="truncate text-[10px] font-medium tracking-[0.12em]">
-                    功能区
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  aria-label="收起功能区"
-                  title="收起功能区"
-                  onClick={collapseDesktopPanel}
-                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <PanelRightClose className="size-3" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="重置功能区位置"
-                  title="重置功能区位置"
-                  onClick={resetDesktopPanelPosition}
-                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <RotateCcw className="size-3" />
-                </button>
-              </div>
-
-              <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto pr-0.5">
-                <DesktopActionCard
-                  icon={<Sparkles className="h-4 w-4" />}
-                  title="标签提取"
-                  summary={
-                    finalTags.length > 0
-                      ? `已选 ${finalTags.length} 个`
-                      : autoExtractedTags.length > 0
-                        ? `候选 ${autoExtractedTags.length} 个`
-                        : "提取候选标签"
-                  }
-                  active={finalTags.length > 0}
-                  onClick={actions.onOpenTagModal}
-                />
-
-              {rewardPoolEnabled ? (
-                <DesktopActionCard
-                  icon={<Sparkles className="h-4 w-4" />}
-                  title="帖子激励池"
-                  summary={rewardPoolDesktopSummary}
-                  active={redPacketEnabled}
-                  onClick={actions.onOpenRewardPoolModal}
-                  onClear={actions.onClearRewardPool}
-                  disabled={!rewardPoolEditable}
-                />
-              ) : null}
-
-              {showAttachmentEntry ? (
-                <DesktopActionCard
-                  icon={<Paperclip className="h-4 w-4" />}
-                  title="帖子附件"
-                  summary={attachmentCount > 0 ? `已添加 ${attachmentCount} 项` : "未配置附件"}
-                  active={attachmentCount > 0}
-                  onClick={actions.onOpenAttachmentModal}
-                />
-              ) : null}
-
-              <DesktopActionCard
-                icon={
-                  coverUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ImageIcon className="h-4 w-4" />
-                  )
-                }
-                title="封面图"
-                summary={coverUploading ? "上传中..." : coverPath.trim() ? "已设置" : "自动提取"}
-                active={Boolean(coverPath.trim())}
-                onClick={actions.onOpenCoverModal}
-                onClear={actions.onCoverClear}
-              />
-
-              <DesktopToggleCard
-                checked={commentsVisibleToAuthorOnly}
-                onChange={actions.onCommentsVisibleToAuthorOnlyChange}
-              />
-
-              <DesktopActionCard
-                icon={<MessageSquareLock className="h-4 w-4" />}
-                title="登录后可看"
-                summary={loginUnlockContent.trim() ? "已配置" : "未配置"}
-                active={Boolean(loginUnlockContent.trim())}
-                onClick={actions.onOpenLoginModal}
-                onClear={actions.onClearLoginUnlock}
-              />
-
-              <DesktopActionCard
-                icon={<MessageSquareLock className="h-4 w-4" />}
-                title="回复后可看"
-                summary={replyUnlockContent.trim() ? "已配置" : "未配置"}
-                active={Boolean(replyUnlockContent.trim())}
-                onClick={actions.onOpenReplyModal}
-                onClear={actions.onClearReplyUnlock}
-              />
-
-              <DesktopActionCard
-                icon={<Info className="h-4 w-4" />}
-                title="购买后可看"
-                summary={
-                  purchaseUnlockContent.trim() ? `${formatCompactPointValue(Number(purchasePrice) || 0)} / ${pointName}` : "未配置"
-                }
-                active={Boolean(purchaseUnlockContent.trim())}
-                onClick={actions.onOpenPurchaseModal}
-                onClear={actions.onClearPurchaseUnlock}
-              />
-
-              <DesktopActionCard
-                icon={<Info className="h-4 w-4" />}
-                title="整帖门槛"
-                summary={
-                  Number(minViewVipLevel) > 0
-                    ? `VIP${Number(minViewVipLevel)}${
-                        Number(minViewLevel) > 0 ? ` / Lv.${Number(minViewLevel)}` : ""
-                      }`
-                    : Number(minViewLevel) > 0
-                      ? `Lv.${Number(minViewLevel)}`
-                      : "公开可见"
-                }
-                active={Number(minViewLevel) > 0 || Number(minViewVipLevel) > 0}
-                onClick={actions.onOpenViewLevelModal}
-                onClear={actions.onClearViewLevel}
-              />
-              </div>
-            </div>
+            {desktopPanelContent}
           </div>
         )}
       </div>
