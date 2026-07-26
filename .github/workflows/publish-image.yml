@@ -41,18 +41,25 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/rhex
           tags: |
-            # 总是生成 latest 标签（仅在默认分支）
+            # 仅在 main 分支推送时生成 latest 标签
             type=raw,value=latest,enable={{is_default_branch}}
             # 语义化版本标签（例如 v1.2.3 → 1.2.3, 1.2, 1）
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            # 保留原始 git ref 标签
+            # 保留原始 git ref 标签（例如 v1.0.0）
             type=ref,event=tag
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.created=${{ github.event.repository.updated_at }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Debug generated tags
+        run: |
+          echo "Generated tags: ${{ steps.meta.outputs.tags }}"
+          echo "Generated labels: ${{ steps.meta.outputs.labels }}"
+          echo "Current ref: ${{ github.ref }}"
+          echo "Is default branch: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}"
 
       - name: Build and push image
         id: build
@@ -66,13 +73,24 @@ jobs:
           build-args: |
             NEXT_DEPLOYMENT_ID=${{ github.sha }}
             NEXT_ASSET_PREFIX=https://rhex-runtime-asset-prefix.invalid
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          progress: plain
-          # 注意：env 应该放在这里，而不是作为 build-args
+            DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test?schema=public
+            REDIS_URL=redis://127.0.0.1:6379
           secrets: |
             "session_secret=build-session-secret-for-testing-only"
             "captcha_secret_key=build-captcha-secret-for-testing-only"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify pushed image
+        run: |
+          echo "Verifying pushed image..."
+          TAGS="${{ steps.meta.outputs.tags }}"
+          echo "$TAGS" | tr ',' '\n' | while read tag; do
+            if [ -n "$tag" ]; then
+              echo "Checking tag: $tag"
+              docker pull "$tag" && echo "✅ Successfully pulled $tag" || echo "❌ Failed to pull $tag"
+            fi
+          done
 
       - name: Clean up old untagged images
         if: github.ref_name == 'main'
@@ -80,31 +98,64 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           PACKAGE="rhex"
           
+          echo "Starting cleanup of untagged images for $OWNER/$PACKAGE..."
+          
           API_URL="https://api.github.com/user/packages/container/$PACKAGE/versions"
           
-          # 添加重试逻辑和错误处理
+          # 获取所有版本，带重试机制
           for i in 1 2 3; do
-            VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
-            if [ $? -eq 0 ]; then
+            RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            VERSIONS=$(echo "$RESPONSE" | sed '$d')
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Successfully fetched package versions"
               break
+            else
+              echo "Attempt $i failed with HTTP code $HTTP_CODE, retrying..."
+              sleep 3
             fi
-            sleep 2
           done
           
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Failed to fetch package versions after 3 attempts"
+            exit 1
+          fi
+          
+          # 提取未标记的版本 ID
           UNTAGGED_VERSIONS=$(echo "$VERSIONS" | jq -r '.[] | select(.metadata.container.tags == [] or .metadata.container.tags == null) | .id')
           
           if [ -n "$UNTAGGED_VERSIONS" ] && [ "$UNTAGGED_VERSIONS" != "null" ]; then
             COUNT=$(echo "$UNTAGGED_VERSIONS" | grep -c '[^[:space:]]')
             echo "Found $COUNT untagged images to delete"
-            echo "$UNTAGGED_VERSIONS" | while read -r version_id; do
+            
+            # 限制每次清理数量，避免 API rate limiting
+            echo "$UNTAGGED_VERSIONS" | head -n 10 | while read -r version_id; do
               if [ -n "$version_id" ] && [ "$version_id" != "null" ]; then
                 echo "Deleting version $version_id..."
-                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+                DELETE_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
                   -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   "$API_URL/$version_id")
-                echo "Delete response code: $HTTP_CODE"
+                
+                case $DELETE_RESPONSE in
+                  204)
+                    echo "✅ Successfully deleted version $version_id"
+                    ;;
+                  404)
+                    echo "⚠️ Version $version_id not found (already deleted)"
+                    ;;
+                  429)
+                    echo "⏳ Rate limited, waiting before continuing..."
+                    sleep 30
+                    ;;
+                  *)
+                    echo "❌ Failed to delete version $version_id (HTTP $DELETE_RESPONSE)"
+                    ;;
+                esac
               fi
             done
           else
             echo "No untagged images to delete"
           fi
+          
+          echo "Cleanup completed"
