@@ -68,6 +68,8 @@ export function ProfileSettingsSection({ data }: { data: SettingsPageData }) {
             initialPhoneVerified={Boolean(dbUser?.phoneVerifiedAt)}
             passwordChangeRequireEmailVerification={settings.passwordChangeRequireEmailVerification}
             emailDeliveryEnabled={settings.smtpEnabled}
+            smsCaptchaMode={settings.smsCaptchaMode}
+            turnstileSiteKey={settings.turnstileSiteKey}
             initialActivityVisibility={dbUser?.activityVisibility ?? "PUBLIC"}
             initialIntroductionVisibility={dbUser?.introductionVisibility ?? "PUBLIC"}
             nicknameChangePointCost={data.nicknameChangePointCost}

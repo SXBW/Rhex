@@ -13,7 +13,10 @@ import { normalizeUploadProvider } from "@/lib/upload-provider"
 import { buildUploadStoragePath } from "@/lib/upload-path"
 import { getPrimaryUploadExtensionForMimeType, getUploadMimeType } from "@/lib/upload-rules"
 import { applyTextWatermarkToBuffer } from "@/lib/watermark-lib.server"
-import { saveWithAddonUploadProvider } from "@/lib/addon-upload-providers"
+import {
+  saveWithAddonUploadProvider,
+  transformWithAddonUploadProviders,
+} from "@/lib/addon-upload-providers"
 import type { AddonUploadActor } from "@/addons-host/upload-types"
 import { resolveWatermarkLogoBuffer } from "@/lib/watermark-logo.server"
 
@@ -37,6 +40,12 @@ export interface PreparedUploadFile {
 export interface SaveUploadedFileOptions {
   request?: Request
   actor?: AddonUploadActor | null
+}
+
+export interface PrepareUploadedFileOptions extends SaveUploadedFileOptions {
+  folder?: string
+  maxFileSizeBytes?: number
+  settings?: WatermarkUploadSettings
 }
 
 type UploadSettings = Awaited<ReturnType<typeof getServerSiteSettings>>
@@ -84,6 +93,158 @@ const IMAGE_MIME_TYPES = new Set([
 type WatermarkSupportedMimeType = "image/jpeg" | "image/png" | "image/webp" | "image/avif"
 const WATERMARK_SUPPORTED_MIME_TYPES = new Set<WatermarkSupportedMimeType>(["image/jpeg", "image/png", "image/webp", "image/avif"])
 const WATERMARK_APPLICABLE_FOLDERS = new Set(["posts", "comments", "post-covers"])
+const DEFAULT_IMAGE_MAX_WIDTH = 16_384
+const DEFAULT_IMAGE_MAX_HEIGHT = 16_384
+const DEFAULT_IMAGE_MAX_PIXELS = 40_000_000
+
+function readPositiveIntegerEnv(name: string, fallback: number) {
+  const value = Number.parseInt(process.env[name]?.trim() ?? "", 10)
+  return Number.isFinite(value) && value > 0 ? value : fallback
+}
+
+function readUint24Le(buffer: Buffer, offset: number) {
+  return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16)
+}
+
+function detectJpegDimensions(buffer: Buffer) {
+  let offset = 2
+
+  while (offset + 9 < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1
+      continue
+    }
+
+    const marker = buffer[offset + 1]
+    offset += 2
+    if (marker === 0xd8 || marker === 0xd9 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      continue
+    }
+
+    if (offset + 2 > buffer.length) {
+      break
+    }
+
+    const segmentLength = buffer.readUInt16BE(offset)
+    if (segmentLength < 2 || offset + segmentLength > buffer.length) {
+      break
+    }
+
+    if (
+      (marker >= 0xc0 && marker <= 0xc3)
+      || (marker >= 0xc5 && marker <= 0xc7)
+      || (marker >= 0xc9 && marker <= 0xcb)
+      || (marker >= 0xcd && marker <= 0xcf)
+    ) {
+      return {
+        width: buffer.readUInt16BE(offset + 5),
+        height: buffer.readUInt16BE(offset + 3),
+      }
+    }
+
+    offset += segmentLength
+  }
+
+  return null
+}
+
+function detectWebpDimensions(buffer: Buffer) {
+  const chunkType = buffer.subarray(12, 16).toString("ascii")
+  if (chunkType === "VP8X" && buffer.length >= 30) {
+    return {
+      width: readUint24Le(buffer, 24) + 1,
+      height: readUint24Le(buffer, 27) + 1,
+    }
+  }
+
+  if (chunkType === "VP8 " && buffer.length >= 30 && buffer[23] === 0x9d && buffer[24] === 0x01 && buffer[25] === 0x2a) {
+    return {
+      width: buffer.readUInt16LE(26) & 0x3fff,
+      height: buffer.readUInt16LE(28) & 0x3fff,
+    }
+  }
+
+  if (chunkType === "VP8L" && buffer.length >= 25 && buffer[20] === 0x2f) {
+    return {
+      width: 1 + buffer[21] + ((buffer[22] & 0x3f) << 8),
+      height: 1 + (buffer[22] >> 6) + (buffer[23] << 2) + ((buffer[24] & 0x0f) << 10),
+    }
+  }
+
+  return null
+}
+
+function detectAvifDimensions(buffer: Buffer) {
+  const marker = Buffer.from("ispe")
+  let offset = buffer.indexOf(marker)
+
+  while (offset >= 4) {
+    const boxSize = buffer.readUInt32BE(offset - 4)
+    if (boxSize >= 20 && offset + 16 <= buffer.length) {
+      const width = buffer.readUInt32BE(offset + 8)
+      const height = buffer.readUInt32BE(offset + 12)
+      if (width > 0 && height > 0) {
+        return { width, height }
+      }
+    }
+
+    offset = buffer.indexOf(marker, offset + marker.length)
+  }
+
+  return null
+}
+
+function detectSvgDimensions(buffer: Buffer) {
+  const svgTag = buffer.subarray(0, Math.min(buffer.length, 4096)).toString("utf8").match(/<svg\b[^>]*>/i)?.[0]
+  if (!svgTag) {
+    return null
+  }
+
+  const readDimension = (name: string) => {
+    const matched = svgTag.match(new RegExp(`\\b${name}\\s*=\\s*["']\\s*([0-9]+(?:\\.[0-9]+)?)`, "i"))
+    return matched ? Number.parseFloat(matched[1]) : null
+  }
+  const width = readDimension("width")
+  const height = readDimension("height")
+  if (width && height) {
+    return { width, height }
+  }
+
+  const viewBox = svgTag.match(/\bviewBox\s*=\s*["']\s*[-+]?\d+(?:\.\d+)?(?:\s+|,)\s*[-+]?\d+(?:\.\d+)?(?:\s+|,)\s*([0-9]+(?:\.\d+)?)(?:\s+|,)\s*([0-9]+(?:\.\d+)?)/i)
+  return viewBox
+    ? { width: Number.parseFloat(viewBox[1]), height: Number.parseFloat(viewBox[2]) }
+    : null
+}
+
+function detectImageDimensions(buffer: Buffer, mimeType: string) {
+  if (mimeType === "image/png" && buffer.length >= 24) {
+    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) }
+  }
+  if (mimeType === "image/gif" && buffer.length >= 10) {
+    return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) }
+  }
+  if (mimeType === "image/jpeg") return detectJpegDimensions(buffer)
+  if (mimeType === "image/webp") return detectWebpDimensions(buffer)
+  if (mimeType === "image/avif") return detectAvifDimensions(buffer)
+  if (mimeType === "image/svg+xml") return detectSvgDimensions(buffer)
+  return null
+}
+
+function assertSafeImageDimensions(buffer: Buffer, mimeType: string) {
+  const dimensions = detectImageDimensions(buffer, mimeType)
+  if (!dimensions || !Number.isFinite(dimensions.width) || !Number.isFinite(dimensions.height) || dimensions.width <= 0 || dimensions.height <= 0) {
+    throw new Error("无法读取图片尺寸，文件可能已损坏或格式不受支持")
+  }
+
+  const maxWidth = readPositiveIntegerEnv("UPLOAD_IMAGE_MAX_WIDTH", DEFAULT_IMAGE_MAX_WIDTH)
+  const maxHeight = readPositiveIntegerEnv("UPLOAD_IMAGE_MAX_HEIGHT", DEFAULT_IMAGE_MAX_HEIGHT)
+  const maxPixels = readPositiveIntegerEnv("UPLOAD_IMAGE_MAX_PIXELS", DEFAULT_IMAGE_MAX_PIXELS)
+  const pixels = dimensions.width * dimensions.height
+
+  if (dimensions.width > maxWidth || dimensions.height > maxHeight || pixels > maxPixels) {
+    throw new Error(`图片尺寸过大，最大允许 ${maxWidth}×${maxHeight} 且不超过 ${maxPixels} 像素`)
+  }
+}
 
 /**
  * 通过文件头魔数（magic bytes）检测真实 MIME 类型。
@@ -244,16 +405,35 @@ async function computeFileHash(file: File) {
 /**
  * 单次读取整文件，复用同一块 Buffer 完成哈希计算、类型检测和后续写盘。
  */
-export async function prepareUploadedFile(file: File, options?: {
-  folder?: string
-  settings?: WatermarkUploadSettings
-}): Promise<PreparedUploadFile> {
+function prepareImageBuffer(buffer: Buffer): PreparedUploadFile {
+  const detectedMime = detectMimeTypeFromBytes(buffer.subarray(0, 12)) ?? detectSvgMimeType(buffer)
+
+  if (!detectedMime || !IMAGE_MIME_TYPES.has(detectedMime)) {
+    throw new Error("图片处理插件返回了不受支持的图片格式")
+  }
+
+  assertSafeImageDimensions(buffer, detectedMime)
+
+  return {
+    buffer,
+    fileHash: createHash("sha256").update(buffer).digest("hex"),
+    detectedMime,
+    fileSize: buffer.byteLength,
+  }
+}
+
+export async function prepareUploadedFile(
+  file: File,
+  options?: PrepareUploadedFileOptions,
+): Promise<PreparedUploadFile> {
   const sourceBuffer = await readFileStreamToBuffer(file)
   const detectedMime = detectMimeTypeFromBytes(sourceBuffer.subarray(0, 12)) ?? detectSvgMimeType(sourceBuffer)
 
   if (!detectedMime || !IMAGE_MIME_TYPES.has(detectedMime)) {
     throw new Error("仅支持上传常见图片格式文件")
   }
+
+  assertSafeImageDimensions(sourceBuffer, detectedMime)
 
   const buffer = await applyImageWatermarkToBuffer({
     buffer: sourceBuffer,
@@ -262,11 +442,32 @@ export async function prepareUploadedFile(file: File, options?: {
     settings: options?.settings,
   })
 
+  const preparedFile = prepareImageBuffer(buffer)
+  const transformedFile = await transformWithAddonUploadProviders({
+    request: options?.request,
+    actor: options?.actor,
+    file,
+    preparedFile,
+    folder: options?.folder || "avatars",
+    normalizeTransformedFile: ({ buffer: transformedBuffer }) => {
+      const normalized = prepareImageBuffer(Buffer.from(transformedBuffer))
+      if (options?.maxFileSizeBytes && normalized.fileSize > options.maxFileSizeBytes) {
+        throw new Error("图片处理后的文件大小超过站点上传限制")
+      }
+      return normalized
+    },
+  })
+
+  if (
+    options?.maxFileSizeBytes
+    && transformedFile.fileSize > options.maxFileSizeBytes
+  ) {
+    throw new Error("图片处理后的文件大小超过站点上传限制")
+  }
+
   return {
-    buffer,
-    fileHash: createHash("sha256").update(buffer).digest("hex"),
-    detectedMime,
-    fileSize: buffer.byteLength,
+    ...transformedFile,
+    buffer: transformedFile.buffer ? Buffer.from(transformedFile.buffer) : null,
   }
 }
 
@@ -312,7 +513,18 @@ async function saveToLocal(
   }
 }
 
-export async function prepareBinaryUploadedFile(file: File): Promise<PreparedUploadFile> {
+export async function prepareBinaryUploadedFile(
+  file: File,
+  options?: PrepareUploadedFileOptions,
+): Promise<PreparedUploadFile> {
+  const headerBuffer = Buffer.from(await file.slice(0, 4096).arrayBuffer())
+  const detectedImageMime = detectMimeTypeFromBytes(headerBuffer.subarray(0, 12))
+    ?? detectSvgMimeType(headerBuffer)
+
+  if (detectedImageMime && IMAGE_MIME_TYPES.has(detectedImageMime)) {
+    return prepareUploadedFile(file, options)
+  }
+
   return {
     buffer: null,
     fileHash: await computeFileHash(file),

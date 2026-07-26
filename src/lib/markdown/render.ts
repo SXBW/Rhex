@@ -649,13 +649,13 @@ function getCalloutTypeTitle(type: CalloutType) {
 }
 
 function applyMarkdownEmojiShortcodes(input: string, emojiItems: MarkdownEmojiItem[]) {
-  return input.replace(/(^|[^\\]):([a-zA-Z0-9_-]{1,32}):/g, (matched, prefix: string, shortcode: string) => {
+  return input.replace(/(?<!\\):([a-zA-Z0-9_-]{1,32}):/g, (matched, shortcode: string) => {
     const rendered = renderMarkdownEmojiHtml(shortcode, emojiItems)
     if (!rendered) {
       return matched
     }
 
-    return `${prefix}${rendered}`
+    return rendered
   })
 }
 

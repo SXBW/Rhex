@@ -16,12 +16,18 @@ const AUTO_CATEGORIZE_ENTRY_KEY = "autoCategorize"
 
 export interface AutoCategorizeConfig {
   enabled: boolean
+  /** 发布页：允许用户手动优化标题。 */
+  titleOptimizeEnabled: boolean
+  /** 发布页：允许用户手动优化正文。 */
+  contentOptimizeEnabled: boolean
   /** 发布页创建阶段：标题/正文变化后由 AI 自动选择节点。 */
   writeBoardAutoSelectEnabled: boolean
   /** 发布页创建阶段：使用 AI 产出标签候选。 */
   writeTagAutoExtractEnabled: boolean
   /** AI 未给出可用节点时回退到该 slug。留空则不回退。 */
   defaultBoardSlug: string
+  titleOptimizePrompt: string
+  contentOptimizePrompt: string
   promptTemplate: string
   /** 为空则放行所有 ACTIVE 板块；否则只允许这些 slug 作为候选 */
   boardWhitelistSlugs: string[]
@@ -31,9 +37,13 @@ export interface AutoCategorizeConfig {
 
 const AUTO_CATEGORIZE_DEFAULTS: AutoCategorizeConfig = {
   enabled: false,
+  titleOptimizeEnabled: false,
+  contentOptimizeEnabled: false,
   writeBoardAutoSelectEnabled: false,
   writeTagAutoExtractEnabled: false,
   defaultBoardSlug: "",
+  titleOptimizePrompt: "你是论坛标题优化助手。保留原意，输出一个更准确、清晰、有吸引力但不夸张的中文标题。只输出优化后的标题，不要解释，不要添加引号。",
+  contentOptimizePrompt: "你是论坛内容编辑助手。保留原意和事实，不虚构信息，优化结构、语句和可读性。直接输出优化后的正文，保留必要的 Markdown，不要解释修改过程。",
   promptTemplate: [
     "你是论坛的板块/标签分类助手。",
     "根据帖子的标题与正文，从候选板块里选出最合适的板块 slug；",
@@ -86,6 +96,8 @@ function normalizeAutoCategorize(entry: unknown): AutoCategorizeConfig {
   const parsedMaxTags = parsePositiveSafeInteger(cfg.maxTagCount)
   return {
     enabled: normalizeBoolean(cfg.enabled, AUTO_CATEGORIZE_DEFAULTS.enabled),
+    titleOptimizeEnabled: normalizeBoolean(cfg.titleOptimizeEnabled, AUTO_CATEGORIZE_DEFAULTS.titleOptimizeEnabled),
+    contentOptimizeEnabled: normalizeBoolean(cfg.contentOptimizeEnabled, AUTO_CATEGORIZE_DEFAULTS.contentOptimizeEnabled),
     writeBoardAutoSelectEnabled: normalizeBoolean(
       cfg.writeBoardAutoSelectEnabled,
       AUTO_CATEGORIZE_DEFAULTS.writeBoardAutoSelectEnabled,
@@ -95,6 +107,8 @@ function normalizeAutoCategorize(entry: unknown): AutoCategorizeConfig {
       AUTO_CATEGORIZE_DEFAULTS.writeTagAutoExtractEnabled,
     ),
     defaultBoardSlug: normalizeOptionalSlug(cfg.defaultBoardSlug, 120),
+    titleOptimizePrompt: normalizeRequiredString(cfg.titleOptimizePrompt, AUTO_CATEGORIZE_DEFAULTS.titleOptimizePrompt, 4_000),
+    contentOptimizePrompt: normalizeRequiredString(cfg.contentOptimizePrompt, AUTO_CATEGORIZE_DEFAULTS.contentOptimizePrompt, 4_000),
     promptTemplate: normalizeRequiredString(cfg.promptTemplate, AUTO_CATEGORIZE_DEFAULTS.promptTemplate, 4_000),
     boardWhitelistSlugs: normalizeStringList(cfg.boardWhitelistSlugs, 100, 100),
     maxTagCount: Math.min(
@@ -114,9 +128,13 @@ export async function getAutoCategorizeConfig(): Promise<AutoCategorizeConfig> {
 
 export interface UpdateAutoCategorizeInput {
   enabled?: unknown
+  titleOptimizeEnabled?: unknown
+  contentOptimizeEnabled?: unknown
   writeBoardAutoSelectEnabled?: unknown
   writeTagAutoExtractEnabled?: unknown
   defaultBoardSlug?: unknown
+  titleOptimizePrompt?: unknown
+  contentOptimizePrompt?: unknown
   promptTemplate?: unknown
   boardWhitelistSlugs?: unknown
   maxTagCount?: unknown
@@ -133,6 +151,8 @@ export async function updateAutoCategorizeConfig(
 
   const merged: Record<string, unknown> = { ...currentAuto }
   if (input.enabled !== undefined) merged.enabled = input.enabled
+  if (input.titleOptimizeEnabled !== undefined) merged.titleOptimizeEnabled = input.titleOptimizeEnabled
+  if (input.contentOptimizeEnabled !== undefined) merged.contentOptimizeEnabled = input.contentOptimizeEnabled
   if (input.writeBoardAutoSelectEnabled !== undefined) {
     merged.writeBoardAutoSelectEnabled = input.writeBoardAutoSelectEnabled
   }
@@ -140,6 +160,8 @@ export async function updateAutoCategorizeConfig(
     merged.writeTagAutoExtractEnabled = input.writeTagAutoExtractEnabled
   }
   if (input.defaultBoardSlug !== undefined) merged.defaultBoardSlug = input.defaultBoardSlug
+  if (input.titleOptimizePrompt !== undefined) merged.titleOptimizePrompt = input.titleOptimizePrompt
+  if (input.contentOptimizePrompt !== undefined) merged.contentOptimizePrompt = input.contentOptimizePrompt
   if (input.promptTemplate !== undefined) merged.promptTemplate = input.promptTemplate
   if (input.boardWhitelistSlugs !== undefined) merged.boardWhitelistSlugs = input.boardWhitelistSlugs
   if (input.maxTagCount !== undefined) merged.maxTagCount = input.maxTagCount
@@ -147,9 +169,13 @@ export async function updateAutoCategorizeConfig(
   const normalized = normalizeAutoCategorize(merged)
   existingEntry[AUTO_CATEGORIZE_ENTRY_KEY] = {
     enabled: normalized.enabled,
+    titleOptimizeEnabled: normalized.titleOptimizeEnabled,
+    contentOptimizeEnabled: normalized.contentOptimizeEnabled,
     writeBoardAutoSelectEnabled: normalized.writeBoardAutoSelectEnabled,
     writeTagAutoExtractEnabled: normalized.writeTagAutoExtractEnabled,
     defaultBoardSlug: normalized.defaultBoardSlug,
+    titleOptimizePrompt: normalized.titleOptimizePrompt,
+    contentOptimizePrompt: normalized.contentOptimizePrompt,
     promptTemplate: normalized.promptTemplate,
     boardWhitelistSlugs: normalized.boardWhitelistSlugs,
     maxTagCount: normalized.maxTagCount,
