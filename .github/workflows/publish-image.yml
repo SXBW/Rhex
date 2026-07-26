@@ -41,10 +41,18 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/rhex
           tags: |
-            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            # 总是生成 latest 标签（仅在默认分支）
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 语义化版本标签（例如 v1.2.3 → 1.2.3, 1.2, 1）
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # 保留原始 git ref 标签
             type=ref,event=tag
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Build and push image
         id: build
@@ -61,11 +69,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           progress: plain
-          env: |
-            SESSION_SECRET=build-session-secret-for-testing-only
-            CAPTCHA_SECRET_KEY=build-captcha-secret-for-testing-only
-            DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test?schema=public
-            REDIS_URL=redis://127.0.0.1:6379
+          # 注意：env 应该放在这里，而不是作为 build-args
+          secrets: |
+            "session_secret=build-session-secret-for-testing-only"
+            "captcha_secret_key=build-captcha-secret-for-testing-only"
 
       - name: Clean up old untagged images
         if: github.ref_name == 'main'
@@ -75,17 +82,27 @@ jobs:
           
           API_URL="https://api.github.com/user/packages/container/$PACKAGE/versions"
           
-          VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
+          # 添加重试逻辑和错误处理
+          for i in 1 2 3; do
+            VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
+            if [ $? -eq 0 ]; then
+              break
+            fi
+            sleep 2
+          done
           
-          UNTAGGED_VERSIONS=$(echo "$VERSIONS" | jq -r '.[] | select(.metadata.container.tags == []) | .id')
+          UNTAGGED_VERSIONS=$(echo "$VERSIONS" | jq -r '.[] | select(.metadata.container.tags == [] or .metadata.container.tags == null) | .id')
           
-          if [ -n "$UNTAGGED_VERSIONS" ]; then
-            echo "Found $(echo "$UNTAGGED_VERSIONS" | wc -l) untagged images to delete"
+          if [ -n "$UNTAGGED_VERSIONS" ] && [ "$UNTAGGED_VERSIONS" != "null" ]; then
+            COUNT=$(echo "$UNTAGGED_VERSIONS" | grep -c '[^[:space:]]')
+            echo "Found $COUNT untagged images to delete"
             echo "$UNTAGGED_VERSIONS" | while read -r version_id; do
-              if [ -n "$version_id" ]; then
+              if [ -n "$version_id" ] && [ "$version_id" != "null" ]; then
                 echo "Deleting version $version_id..."
-                curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                  "$API_URL/$version_id"
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  "$API_URL/$version_id")
+                echo "Delete response code: $HTTP_CODE"
               fi
             done
           else
