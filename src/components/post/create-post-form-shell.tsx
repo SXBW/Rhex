@@ -549,13 +549,25 @@ export function CreatePostFormShell({
         {contentOptimizeEnabled ? <Button type="button" variant="ghost" size="sm" disabled={previousContent === null || pendingTarget !== null} onClick={() => { if (previousContent !== null) { updateDraftField("content", previousContent); setPreviousContent(null) } }}><Undo2 className="size-4" />撤销</Button> : null}
         <p className="text-xs text-muted-foreground">请遵守社区规则，文明发帖！</p>
       </div>
-      <AddonEditor
-        context="post"
-        value={draft.content}
-        onChange={(value) => updateDraftField("content", value)}
-        placeholder="文明社区，文明发言。支持 Markdown 语法"
-        markdownEmojiMap={markdownEmojiMap}
-      />
+      <div className={cn(
+        "grid gap-4",
+        desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr]" : "min-[1220px]:grid-cols-[1fr_200px]",
+      )}>
+        <AddonEditor
+          context="post"
+          value={draft.content}
+          onChange={(value) => updateDraftField("content", value)}
+          placeholder="文明社区，文明发言。支持 Markdown 语法"
+          markdownEmojiMap={markdownEmojiMap}
+        />
+        {!desktopPanelCollapsed && (
+          <div className="hidden min-[1220px]:block">
+            <div className="sticky top-2">
+              {enhancementsContent}
+            </div>
+          </div>
+        )}
+      </div>
       {addonEditorAfter}
     </div>
   )

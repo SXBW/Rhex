@@ -783,13 +783,7 @@ export function PostEnhancementsSection({
           </div>
         </div>
       ) : (
-        <div
-          className={cn(
-            "hidden min-[1220px]:block min-[1220px]:fixed min-[1220px]:z-[300] w-[200px]",
-            panelSide === "left" ? "left-[calc(50%-600px-200px)]" : "right-[calc(50%-600px-200px)]",
-          )}
-          style={{ top: stickyTop ?? 160 }}
-        >
+        <div className="w-[200px]">
           <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <button
