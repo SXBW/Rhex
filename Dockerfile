@@ -59,7 +59,7 @@ ENV NEXT_DEPLOYMENT_ID=${NEXT_DEPLOYMENT_ID}
 
 WORKDIR /app
 
-LABEL org.opencontainers.image.source="https://github.com/momofa/Rhex"
+LABEL org.opencontainers.image.source="https://github.com/herper/Rhex"
 
 RUN mkdir -p uploads addons
 
