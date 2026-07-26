@@ -2,9 +2,7 @@
 
 import {
   useEffect,
-  useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from "react"
 import {
@@ -16,7 +14,6 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Paperclip,
-  RotateCcw,
   Sparkles,
 } from "lucide-react"
 
@@ -672,27 +669,30 @@ export function PostEnhancementsSection({
         </Sheet>
       </div>
 
-      <div className="hidden min-[1240px]:block w-[202px] shrink-0">
-        {collapsed ? (
-          <button
-            type="button"
-            aria-label="展开功能区"
-            title="展开功能区"
-            onClick={() => handleCollapseChange(false)}
-            className={cn(
-              "flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border border-border bg-background/92 px-2 py-3 text-xs font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]",
-            )}
-          >
-            {panelSide === "left" ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}
-            <span className="[writing-mode:vertical-rl]">功能区</span>
-            {configuredCount > 0 ? (
-              <span className="absolute top-2 right-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
-                {configuredCount > 9 ? "9+" : configuredCount}
-              </span>
-            ) : null}
-          </button>
-        ) : (
-          <div className="h-fit">
+      {collapsed ? (
+        <button
+          type="button"
+          aria-label="展开功能区"
+          title="展开功能区"
+          onClick={() => handleCollapseChange(false)}
+          className={cn(
+            "hidden min-[1220px]:fixed min-[1220px]:bottom-8 min-[1220px]:z-[300] inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]",
+            panelSide === "left" ? "left-4" : "right-4",
+          )}
+        >
+          <PanelRightOpen className="size-5" />
+          {configuredCount > 0 ? (
+            <span className={cn(
+              "absolute inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background",
+              panelSide === "left" ? "-right-1 -top-1" : "-left-1 -top-1",
+            )}>
+              {configuredCount > 9 ? "9+" : configuredCount}
+            </span>
+          ) : null}
+        </button>
+      ) : (
+        <div className="hidden min-[1220px]:block w-[200px] shrink-0">
+          <div className="sticky top-20 z-[300] max-h-[calc(100vh-6rem)] overflow-y-auto">
             {hasDesktopSummary ? (
               <div className="mb-4 space-y-4">
                 {finalTags.length > 0 ? (
@@ -733,8 +733,8 @@ export function PostEnhancementsSection({
 
             {desktopPanelContent}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   )
 }

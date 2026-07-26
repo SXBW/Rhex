@@ -749,13 +749,26 @@ export function CreatePostFormShell({
 
   return (
     <form onSubmit={handleSubmit}>
+      {desktopPanelCollapsed && (
+        <AddonSurfaceClientRenderer
+          surface="post.create.enhancements"
+          surfaceProps={{
+            draft,
+            draftController,
+            pointName,
+          }}
+          fallback={enhancementsContent}
+        />
+      )}
+
       <div className={cn(
-        "min-[1240px]:grid min-[1240px]:gap-4",
-        desktopPanelSide === "left" ? "min-[1240px]:grid-cols-[220px_1fr]" : "min-[1240px]:grid-cols-[1fr_220px]",
-        desktopPanelCollapsed && "min-[1240px]:grid-cols-[1fr]"
+        "min-[1220px]:grid min-[1220px]:gap-4",
+        desktopPanelSide === "left" && !desktopPanelCollapsed ? "min-[1220px]:grid-cols-[200px_1fr]" : "",
+        desktopPanelSide === "right" && !desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr_200px]" : "",
+        desktopPanelCollapsed && "min-[1220px]:grid-cols-[1fr]"
       )}>
         {desktopPanelSide === "left" && !desktopPanelCollapsed && (
-          <div className="min-[1240px]:shrink-0">
+          <div className="min-[1220px]:shrink-0">
             <AddonSurfaceClientRenderer
               surface="post.create.enhancements"
               surfaceProps={{
@@ -785,22 +798,10 @@ export function CreatePostFormShell({
             fallback={formContent}
           />
           {addonFormAfter}
-          
-          {desktopPanelCollapsed && (
-            <div className="hidden min-[1240px]:flex justify-center">
-              <button
-                type="button"
-                onClick={() => setDesktopPanelCollapsed(false)}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/92 px-4 py-2 text-sm font-medium text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                展开功能区
-              </button>
-            </div>
-          )}
         </div>
         
         {desktopPanelSide === "right" && !desktopPanelCollapsed && (
-          <div className="min-[1240px]:shrink-0">
+          <div className="min-[1220px]:shrink-0">
             <AddonSurfaceClientRenderer
               surface="post.create.enhancements"
               surfaceProps={{

@@ -177,7 +177,7 @@ export default async function WritePage(props: PageProps<"/write">) {
   return (
     <div className="min-h-screen ">
       <SiteHeader />
-      <main className="mx-auto max-w-[1200px] px-1 py-6 min-[1240px]:max-w-[1480px] min-[1240px]:px-4">
+      <main className="mx-auto max-w-[1200px] px-1 py-6">
         <AddonSlotRenderer slot="write.page.before" />
         <AddonSurfaceRenderer surface="write.page" props={{ mode, preferredBoardSlug, settings, user }}>
           <Card className="min-[1220px]:overflow-visible">
