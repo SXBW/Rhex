@@ -172,50 +172,38 @@ export function CreatePostFormShell({
   const [previousContent, setPreviousContent] = useState<string | null>(null)
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
   const [desktopPanelSide, setDesktopPanelSide] = useState<"left" | "right">("right")
-  const [enhancementsFixedTop, setEnhancementsFixedTop] = useState<number>(80)
-  const [enhancementsFixedLeft, setEnhancementsFixedLeft] = useState<number>(0)
+  const [enhancementsStickyTop, setEnhancementsStickyTop] = useState(160)
   const editorRef = useRef<HTMLDivElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
 
-  const updateEnhancementsPosition = useCallback(() => {
+  const calculateEnhancementsStickyTop = useCallback(() => {
     const editorEl = editorRef.current
-    const panelEl = panelRef.current
     const headerEl = typeof document !== "undefined" ? document.querySelector("header") : null
-    if (!editorEl) return
+    if (!editorEl) {
+      setEnhancementsStickyTop(160)
+      return
+    }
 
     const headerHeight = headerEl?.getBoundingClientRect().height ?? 56
     const editorRect = editorEl.getBoundingClientRect()
-    const panelHeight = panelEl?.offsetHeight ?? 400
-    const viewportHeight = window.innerHeight
-
-    const minTop = headerHeight + 8
-    const maxTop = viewportHeight - panelHeight - 8
     const editorTop = editorRect.top
-    const editorBottom = editorRect.bottom
-
-    let targetTop = editorTop
-    if (targetTop < minTop) targetTop = minTop
-    if (targetTop > maxTop) targetTop = maxTop
-
-    const containerWidth = Math.min(1200, window.innerWidth - 32)
-    const panelWidth = 200
-    const panelLeft = desktopPanelSide === "left"
-      ? (window.innerWidth - containerWidth) / 2
-      : (window.innerWidth - containerWidth) / 2 + containerWidth - panelWidth
-
-    setEnhancementsFixedTop(targetTop)
-    setEnhancementsFixedLeft(panelLeft)
-  }, [desktopPanelSide])
+    const panelTop = Math.max(headerHeight + 8, editorTop)
+    
+    const panelHeight = 500
+    const maxTop = window.innerHeight - panelHeight - 24
+    const clampedTop = Math.min(panelTop, maxTop)
+    
+    setEnhancementsStickyTop(Math.max(headerHeight + 8, clampedTop))
+  }, [])
 
   useEffect(() => {
-    updateEnhancementsPosition()
-    window.addEventListener("scroll", updateEnhancementsPosition, { passive: true })
-    window.addEventListener("resize", updateEnhancementsPosition)
+    calculateEnhancementsStickyTop()
+    window.addEventListener("resize", calculateEnhancementsStickyTop)
+    window.addEventListener("scroll", calculateEnhancementsStickyTop, { passive: true })
     return () => {
-      window.removeEventListener("scroll", updateEnhancementsPosition)
-      window.removeEventListener("resize", updateEnhancementsPosition)
+      window.removeEventListener("resize", calculateEnhancementsStickyTop)
+      window.removeEventListener("scroll", calculateEnhancementsStickyTop)
     }
-  }, [updateEnhancementsPosition])
+  }, [calculateEnhancementsStickyTop])
 
   async function optimizeField(target: "title" | "content") {
     try {
@@ -580,9 +568,7 @@ export function CreatePostFormShell({
         rewardPoolEnabled={showRewardPoolEntry}
         collapsed={desktopPanelCollapsed}
         panelSide={desktopPanelSide}
-        fixedTop={enhancementsFixedTop}
-        fixedLeft={enhancementsFixedLeft}
-        panelRef={panelRef}
+        stickyTop={enhancementsStickyTop}
         onCollapseChange={setDesktopPanelCollapsed}
         onPanelSideChange={setDesktopPanelSide}
         settings={{
@@ -796,7 +782,27 @@ export function CreatePostFormShell({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="space-y-5">
+      <div className={cn(
+        "space-y-5",
+        "min-[1220px]:grid min-[1220px]:gap-4",
+        desktopPanelSide === "left" && !desktopPanelCollapsed ? "min-[1220px]:grid-cols-[200px_1fr]" : "",
+        desktopPanelSide === "right" && !desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr_200px]" : "",
+        desktopPanelCollapsed && "min-[1220px]:grid-cols-[1fr]",
+      )}>
+        {desktopPanelSide === "left" && !desktopPanelCollapsed && (
+          <div className="min-[1220px]:shrink-0">
+            <AddonSurfaceClientRenderer
+              surface="post.create.enhancements"
+              surfaceProps={{
+                draft,
+                draftController,
+                pointName,
+              }}
+              fallback={enhancementsContent}
+            />
+          </div>
+        )}
+        
         <div className="flex min-h-full flex-col gap-5">
           {addonFormBefore}
           <AddonSurfaceClientRenderer
@@ -815,17 +821,33 @@ export function CreatePostFormShell({
           />
           {addonFormAfter}
         </div>
+        
+        {desktopPanelSide === "right" && !desktopPanelCollapsed && (
+          <div className="min-[1220px]:shrink-0">
+            <AddonSurfaceClientRenderer
+              surface="post.create.enhancements"
+              surfaceProps={{
+                draft,
+                draftController,
+                pointName,
+              }}
+              fallback={enhancementsContent}
+            />
+          </div>
+        )}
       </div>
       
-      <AddonSurfaceClientRenderer
-        surface="post.create.enhancements"
-        surfaceProps={{
-          draft,
-          draftController,
-          pointName,
-        }}
-        fallback={enhancementsContent}
-      />
+      {desktopPanelCollapsed && (
+        <AddonSurfaceClientRenderer
+          surface="post.create.enhancements"
+          surfaceProps={{
+            draft,
+            draftController,
+            pointName,
+          }}
+          fallback={enhancementsContent}
+        />
+      )}
 
       <Modal
         open={draftBoxModalOpen}
