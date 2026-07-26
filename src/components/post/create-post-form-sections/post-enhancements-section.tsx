@@ -717,7 +717,7 @@ export function PostEnhancementsSection({
           title="展开功能区"
           onClick={() => handleCollapseChange(false)}
           className={cn(
-            "hidden min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]",
+            "hidden min-[1220px]:flex min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] h-12 w-12 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]",
             editorFullscreen
               ? (panelSide === "left" ? "left-[calc(50%-640px-24px)]" : "right-[calc(50%-640px-24px)]")
               : (panelSide === "left" ? "left-[calc(50%-600px-24px)]" : "right-[calc(50%-600px-24px)]"),
@@ -736,7 +736,7 @@ export function PostEnhancementsSection({
       ) : (
         <div
           className={cn(
-            "hidden min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] w-[200px]",
+            "hidden min-[1220px]:block min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] w-[200px]",
             editorFullscreen
               ? (panelSide === "left" ? "left-[calc(50%-640px-200px)]" : "right-[calc(50%-640px-200px)]")
               : (panelSide === "left" ? "left-[calc(50%-600px-200px)]" : "right-[calc(50%-600px-200px)]"),
