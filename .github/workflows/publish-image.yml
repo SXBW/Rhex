@@ -17,6 +17,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -40,6 +44,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/rhex
+          images: ghcr.io/${{ github.repository_owner }}/rhex
           tags: |
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
             type=ref,event=tag
@@ -47,6 +52,7 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and push image
+        id: build
         id: build
         uses: docker/build-push-action@v6
         with:
