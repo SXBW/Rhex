@@ -422,29 +422,7 @@ export function PostEnhancementsSection({
   }, [collapsed, isExternalControlled])
 
   const desktopPanelContent = (
-    <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
-      <div className="flex items-center justify-between gap-2 px-0.5">
-        <button
-          type="button"
-          aria-label="切换功能区位置"
-          title="切换功能区位置"
-          onClick={() => handlePanelSideChange(panelSide === "left" ? "right" : "left")}
-          className="inline-flex size-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
-        >
-          <GripVertical className="size-3.5 shrink-0" />
-        </button>
-        <button
-          type="button"
-          aria-label="收起功能区"
-          title="收起功能区"
-          onClick={() => handleCollapseChange(true)}
-          className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <PanelRightClose className="size-3" />
-        </button>
-      </div>
-
-      <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto pr-0.5">
+    <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
         <DesktopActionCard
           icon={<Sparkles className="h-4 w-4" />}
           title="标签提取"
@@ -808,7 +786,7 @@ export function PostEnhancementsSection({
       ) : (
         <div className="hidden min-[1220px]:block w-[200px] shrink-0 self-start">
           <div
-            className="sticky z-40 rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md"
+            className="sticky z-50 rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md"
             style={{ top: stickyTop ?? 160 }}
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">

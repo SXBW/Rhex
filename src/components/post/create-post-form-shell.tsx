@@ -176,15 +176,9 @@ export function CreatePostFormShell({
   const editorRef = useRef<HTMLDivElement>(null)
 
   const calculateEnhancementsStickyTop = useCallback(() => {
-    const editorEl = editorRef.current
     const headerEl = typeof document !== "undefined" ? document.querySelector("header") : null
-    if (!editorEl) return
-
     const headerHeight = headerEl?.getBoundingClientRect().height ?? 56
-    const editorRect = editorEl.getBoundingClientRect()
-    const editorOffsetTop = editorRect.top + window.scrollY
-    const desiredTop = editorOffsetTop - headerHeight - 8
-    setEnhancementsStickyTop(Math.max(headerHeight + 8, desiredTop))
+    setEnhancementsStickyTop(headerHeight + 16)
   }, [])
 
   useEffect(() => {
