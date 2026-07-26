@@ -749,71 +749,38 @@ export function CreatePostFormShell({
 
   return (
     <form onSubmit={handleSubmit}>
-      {desktopPanelCollapsed && (
+      <div className={cn(
+        "space-y-5",
+        !desktopPanelCollapsed && desktopPanelSide === "left" && "min-[1220px]:ml-[220px]",
+        !desktopPanelCollapsed && desktopPanelSide === "right" && "min-[1220px]:mr-[220px]",
+      )}>
+        {addonFormBefore}
         <AddonSurfaceClientRenderer
-          surface="post.create.enhancements"
+          surface="post.create.form"
           surfaceProps={{
+            addonCaptcha,
+            boardOptions,
             draft,
             draftController,
             pointName,
+            submitController,
+            viewLevelOptions,
+            viewVipLevelOptions,
           }}
-          fallback={enhancementsContent}
+          fallback={formContent}
         />
-      )}
-
-      <div className={cn(
-        "min-[1220px]:grid min-[1220px]:gap-4",
-        desktopPanelSide === "left" && !desktopPanelCollapsed ? "min-[1220px]:grid-cols-[200px_1fr]" : "",
-        desktopPanelSide === "right" && !desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr_200px]" : "",
-        desktopPanelCollapsed && "min-[1220px]:grid-cols-[1fr]"
-      )}>
-        {desktopPanelSide === "left" && !desktopPanelCollapsed && (
-          <div className="min-[1220px]:shrink-0">
-            <AddonSurfaceClientRenderer
-              surface="post.create.enhancements"
-              surfaceProps={{
-                draft,
-                draftController,
-                pointName,
-              }}
-              fallback={enhancementsContent}
-            />
-          </div>
-        )}
-        
-        <div className="space-y-5">
-          {addonFormBefore}
-          <AddonSurfaceClientRenderer
-            surface="post.create.form"
-            surfaceProps={{
-              addonCaptcha,
-              boardOptions,
-              draft,
-              draftController,
-              pointName,
-              submitController,
-              viewLevelOptions,
-              viewVipLevelOptions,
-            }}
-            fallback={formContent}
-          />
-          {addonFormAfter}
-        </div>
-        
-        {desktopPanelSide === "right" && !desktopPanelCollapsed && (
-          <div className="min-[1220px]:shrink-0">
-            <AddonSurfaceClientRenderer
-              surface="post.create.enhancements"
-              surfaceProps={{
-                draft,
-                draftController,
-                pointName,
-              }}
-              fallback={enhancementsContent}
-            />
-          </div>
-        )}
+        {addonFormAfter}
       </div>
+
+      <AddonSurfaceClientRenderer
+        surface="post.create.enhancements"
+        surfaceProps={{
+          draft,
+          draftController,
+          pointName,
+        }}
+        fallback={enhancementsContent}
+      />
 
       <Modal
         open={draftBoxModalOpen}

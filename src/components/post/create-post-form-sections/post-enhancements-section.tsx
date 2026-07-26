@@ -15,6 +15,7 @@ import {
   PanelRightOpen,
   Paperclip,
   Sparkles,
+  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/rbutton"
@@ -272,6 +273,7 @@ export function PostEnhancementsSection({
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const [localCollapsed, setLocalCollapsed] = useState(false)
   const [localPanelSide, setLocalPanelSide] = useState<"left" | "right">("right")
+  const [editorFullscreen, setEditorFullscreen] = useState(false)
   
   const isExternalControlled = externalCollapsed !== undefined
   const collapsed = isExternalControlled ? externalCollapsed : localCollapsed
@@ -280,6 +282,45 @@ export function PostEnhancementsSection({
     ? (externalOnCollapseChange || (() => {})) 
     : setLocalCollapsed
   const handlePanelSideChange = externalOnPanelSideChange || (() => {})
+
+  useEffect(() => {
+    const checkFullscreen = () => {
+      const fullscreenElement = document.querySelector("[data-markdown-editor-fullscreen='true']")
+      setEditorFullscreen(!!fullscreenElement)
+    }
+    
+    checkFullscreen()
+    
+    const observer = new MutationObserver(checkFullscreen)
+    observer.observe(document.body, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    })
+    
+    return () => observer.disconnect()
+  }, [])
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const viewportCenter = window.innerWidth / 2
+      if (moveEvent.clientX < viewportCenter && panelSide === "right") {
+        handlePanelSideChange("left")
+      } else if (moveEvent.clientX > viewportCenter && panelSide === "left") {
+        handlePanelSideChange("right")
+      }
+    }
+    
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+    
+    document.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("mouseup", handleMouseUp)
+  }
 
   const {
     finalTags,
@@ -676,8 +717,10 @@ export function PostEnhancementsSection({
           title="展开功能区"
           onClick={() => handleCollapseChange(false)}
           className={cn(
-            "hidden min-[1220px]:fixed min-[1220px]:bottom-8 min-[1220px]:z-[300] inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]",
-            panelSide === "left" ? "left-4" : "right-4",
+            "hidden min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]",
+            editorFullscreen
+              ? (panelSide === "left" ? "left-[calc(50%-640px-24px)]" : "right-[calc(50%-640px-24px)]")
+              : (panelSide === "left" ? "left-[calc(50%-600px-24px)]" : "right-[calc(50%-600px-24px)]"),
           )}
         >
           <PanelRightOpen className="size-5" />
@@ -691,10 +734,43 @@ export function PostEnhancementsSection({
           ) : null}
         </button>
       ) : (
-        <div className="hidden min-[1220px]:block w-[200px] shrink-0">
-          <div className="sticky top-20 z-[300] max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <div
+          className={cn(
+            "hidden min-[1220px]:fixed min-[1220px]:top-1/2 min-[1220px]:-translate-y-1/2 min-[1220px]:z-[300] w-[200px]",
+            editorFullscreen
+              ? (panelSide === "left" ? "left-[calc(50%-640px-200px)]" : "right-[calc(50%-640px-200px)]")
+              : (panelSide === "left" ? "left-[calc(50%-600px-200px)]" : "right-[calc(50%-600px-200px)]"),
+          )}
+        >
+          <div className="max-h-[calc(100vh-3rem)] overflow-y-auto">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+              <button
+                type="button"
+                aria-label="拖拽移动功能区"
+                title="拖拽移动功能区"
+                className="cursor-grab active:cursor-grabbing opacity-60 hover:opacity-100"
+                onMouseDown={handleDragStart}
+              >
+                <GripVertical className="size-4" />
+              </button>
+              <span className="text-xs font-medium">{configuredCount > 0 ? `功能区 (${configuredCount})` : "功能区"}</span>
+              <button
+                type="button"
+                onClick={() => handlePanelSideChange(panelSide === "left" ? "right" : "left")}
+                className="ml-auto transition-transform hover:rotate-180"
+              >
+                {panelSide === "left" ? <PanelRightOpen className="size-4" /> : <PanelRightClose className="size-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCollapseChange(true)}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            
             {hasDesktopSummary ? (
-              <div className="mb-4 space-y-4">
+              <div className="mb-4 space-y-4 p-3">
                 {finalTags.length > 0 ? (
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {finalTags.map((tag) => (
