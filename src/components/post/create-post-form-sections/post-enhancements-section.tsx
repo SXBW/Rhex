@@ -524,7 +524,6 @@ export function PostEnhancementsSection({
         onClick={actions.onOpenViewLevelModal}
         onClear={actions.onClearViewLevel}
       />
-      </div>
     </div>
   )
 
