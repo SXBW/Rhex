@@ -203,6 +203,7 @@ interface PostEnhancementsSectionProps {
   rewardPoolEnabled: boolean
   collapsed?: boolean
   panelSide?: "left" | "right"
+  stickyTop?: number
   onCollapseChange?: (collapsed: boolean) => void
   onPanelSideChange?: (side: "left" | "right") => void
   settings: {
@@ -265,6 +266,7 @@ export function PostEnhancementsSection({
   rewardPoolEnabled,
   collapsed: externalCollapsed,
   panelSide: externalPanelSide = "right",
+  stickyTop,
   onCollapseChange: externalOnCollapseChange,
   onPanelSideChange: externalOnPanelSideChange,
   settings,
@@ -427,12 +429,9 @@ export function PostEnhancementsSection({
           aria-label="切换功能区位置"
           title="切换功能区位置"
           onClick={() => handlePanelSideChange(panelSide === "left" ? "right" : "left")}
-          className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
+          className="inline-flex size-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
         >
           <GripVertical className="size-3.5 shrink-0" />
-          <p className="truncate text-[10px] font-medium tracking-[0.12em]">
-            功能区
-          </p>
         </button>
         <button
           type="button"
@@ -808,7 +807,10 @@ export function PostEnhancementsSection({
         </div>
       ) : (
         <div className="hidden min-[1220px]:block w-[200px] shrink-0 self-start">
-          <div className="rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
+          <div
+            className="sticky z-40 rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md"
+            style={{ top: stickyTop ?? 160 }}
+          >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <button
                 type="button"

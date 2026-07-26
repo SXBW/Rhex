@@ -1,6 +1,6 @@
 "use client"
 
-import { createElement, useState, type ComponentPropsWithoutRef, type ReactNode } from "react"
+import { createElement, useCallback, useEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from "react"
 import { ChevronDown, Coins, Gavel, Gift, Info, Loader2, MessageSquareText, Sparkles, Undo2, Vote, type LucideIcon } from "lucide-react"
 
 import { AddonSurfaceClientRenderer } from "@/addons-host/client/addon-surface-client-renderer"
@@ -172,6 +172,28 @@ export function CreatePostFormShell({
   const [previousContent, setPreviousContent] = useState<string | null>(null)
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
   const [desktopPanelSide, setDesktopPanelSide] = useState<"left" | "right">("right")
+  const [enhancementsStickyTop, setEnhancementsStickyTop] = useState(160)
+  const editorRef = useRef<HTMLDivElement>(null)
+
+  const calculateEnhancementsStickyTop = useCallback(() => {
+    const editorEl = editorRef.current
+    const headerEl = typeof document !== "undefined" ? document.querySelector("header") : null
+    if (!editorEl) return
+
+    const headerHeight = headerEl?.getBoundingClientRect().height ?? 56
+    const editorRect = editorEl.getBoundingClientRect()
+    const editorOffsetTop = editorRect.top + window.scrollY
+    const desiredTop = editorOffsetTop - headerHeight - 8
+    setEnhancementsStickyTop(Math.max(headerHeight + 8, desiredTop))
+  }, [])
+
+  useEffect(() => {
+    calculateEnhancementsStickyTop()
+    window.addEventListener("resize", calculateEnhancementsStickyTop)
+    return () => {
+      window.removeEventListener("resize", calculateEnhancementsStickyTop)
+    }
+  }, [calculateEnhancementsStickyTop])
 
   async function optimizeField(target: "title" | "content") {
     try {
@@ -509,7 +531,7 @@ export function CreatePostFormShell({
   )
 
   const editorContent = (
-    <div className="space-y-2">
+    <div ref={editorRef} className="space-y-2">
       {addonEditorBefore}
       <div className="flex flex-wrap items-center gap-2">
         <p className="mr-auto text-sm font-medium">公开正文</p>
@@ -536,6 +558,7 @@ export function CreatePostFormShell({
         rewardPoolEnabled={showRewardPoolEntry}
         collapsed={desktopPanelCollapsed}
         panelSide={desktopPanelSide}
+        stickyTop={enhancementsStickyTop}
         onCollapseChange={setDesktopPanelCollapsed}
         onPanelSideChange={setDesktopPanelSide}
         settings={{
