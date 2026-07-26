@@ -791,7 +791,6 @@ export function PostEnhancementsSection({
           className={cn(
             "hidden w-[200px]",
             "min-[1220px]:fixed min-[1220px]:z-[300]",
-            fixedTop === null && "min-[1220px]:hidden",
           )}
           style={{
             top: fixedTop ?? 0,

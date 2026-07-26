@@ -172,8 +172,8 @@ export function CreatePostFormShell({
   const [previousContent, setPreviousContent] = useState<string | null>(null)
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false)
   const [desktopPanelSide, setDesktopPanelSide] = useState<"left" | "right">("right")
-  const [enhancementsFixedTop, setEnhancementsFixedTop] = useState<number | null>(null)
-  const [enhancementsFixedLeft, setEnhancementsFixedLeft] = useState<number | null>(null)
+  const [enhancementsFixedTop, setEnhancementsFixedTop] = useState<number>(80)
+  const [enhancementsFixedLeft, setEnhancementsFixedLeft] = useState<number>(0)
   const editorRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -181,11 +181,7 @@ export function CreatePostFormShell({
     const editorEl = editorRef.current
     const panelEl = panelRef.current
     const headerEl = typeof document !== "undefined" ? document.querySelector("header") : null
-    if (!editorEl) {
-      setEnhancementsFixedTop(null)
-      setEnhancementsFixedLeft(null)
-      return
-    }
+    if (!editorEl) return
 
     const headerHeight = headerEl?.getBoundingClientRect().height ?? 56
     const editorRect = editorEl.getBoundingClientRect()
@@ -200,9 +196,6 @@ export function CreatePostFormShell({
     let targetTop = editorTop
     if (targetTop < minTop) targetTop = minTop
     if (targetTop > maxTop) targetTop = maxTop
-    if (editorBottom < minTop || editorTop > viewportHeight) {
-      targetTop = null
-    }
 
     const containerWidth = Math.min(1200, window.innerWidth - 32)
     const panelWidth = 200
@@ -824,17 +817,15 @@ export function CreatePostFormShell({
         </div>
       </div>
       
-      {desktopPanelCollapsed && (
-        <AddonSurfaceClientRenderer
-          surface="post.create.enhancements"
-          surfaceProps={{
-            draft,
-            draftController,
-            pointName,
-          }}
-          fallback={enhancementsContent}
-        />
-      )}
+      <AddonSurfaceClientRenderer
+        surface="post.create.enhancements"
+        surfaceProps={{
+          draft,
+          draftController,
+          pointName,
+        }}
+        fallback={enhancementsContent}
+      />
 
       <Modal
         open={draftBoxModalOpen}
