@@ -203,7 +203,9 @@ interface PostEnhancementsSectionProps {
   rewardPoolEnabled: boolean
   collapsed?: boolean
   panelSide?: "left" | "right"
-  stickyTop?: number
+  fixedTop?: number | null
+  fixedLeft?: number | null
+  panelRef?: React.RefObject<HTMLDivElement>
   onCollapseChange?: (collapsed: boolean) => void
   onPanelSideChange?: (side: "left" | "right") => void
   settings: {
@@ -266,7 +268,9 @@ export function PostEnhancementsSection({
   rewardPoolEnabled,
   collapsed: externalCollapsed,
   panelSide: externalPanelSide = "right",
-  stickyTop,
+  fixedTop,
+  fixedLeft,
+  panelRef: externalPanelRef,
   onCollapseChange: externalOnCollapseChange,
   onPanelSideChange: externalOnPanelSideChange,
   settings,
@@ -783,18 +787,28 @@ export function PostEnhancementsSection({
           </div>
         </div>
       ) : (
-        <div className="hidden min-[1220px]:block w-[200px] shrink-0 self-start">
+        <div
+          className={cn(
+            "hidden w-[200px]",
+            "min-[1220px]:fixed min-[1220px]:z-[300]",
+            fixedTop === null && "min-[1220px]:hidden",
+          )}
+          style={{
+            top: fixedTop ?? 0,
+            left: fixedLeft ?? 0,
+          }}
+        >
           <div
-            className="sticky z-50 rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md"
-            style={{ top: stickyTop ?? 160 }}
+            ref={externalPanelRef}
+            className="max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md"
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <button
                 type="button"
-                aria-label="拖拽移动功能区"
-                title="拖拽移动功能区"
+                aria-label="切换功能区位置"
+                title="切换功能区位置"
+                onClick={() => handlePanelSideChange(panelSide === "left" ? "right" : "left")}
                 className="cursor-grab active:cursor-grabbing opacity-60 hover:opacity-100"
-                onMouseDown={handleDragStart}
               >
                 <GripVertical className="size-4" />
               </button>
