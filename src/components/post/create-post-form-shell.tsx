@@ -559,6 +559,7 @@ export function CreatePostFormShell({
           onChange={(value) => updateDraftField("content", value)}
           placeholder="文明社区，文明发言。支持 Markdown 语法"
           markdownEmojiMap={markdownEmojiMap}
+          shellClassName="h-full"
         />
         <div className={cn(
           "hidden",

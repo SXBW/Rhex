@@ -426,8 +426,8 @@ export function RefinedRichPostEditor({
   }), [commands.toolbarActions, onChange, selectionState, value])
 
   const editorShell = (
-    <div data-markdown-editor-fullscreen={viewState.isFullscreen ? "true" : undefined} className={viewState.isFullscreen ? "fixed inset-0 z-[215] bg-black/45 p-4 md:p-6" : ""}>
-      <div className={viewState.isFullscreen ? "flex h-full w-full items-center justify-center" : ""}>
+    <div data-markdown-editor-fullscreen={viewState.isFullscreen ? "true" : undefined} className={viewState.isFullscreen ? "fixed inset-0 z-[215] bg-black/45 p-4 md:p-6" : "h-full"}>
+      <div className={viewState.isFullscreen ? "flex h-full w-full items-center justify-center" : "h-full"}>
         <div
           className={cn(
             viewState.isFullscreen
