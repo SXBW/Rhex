@@ -560,13 +560,14 @@ export function CreatePostFormShell({
           placeholder="文明社区，文明发言。支持 Markdown 语法"
           markdownEmojiMap={markdownEmojiMap}
         />
-        {!desktopPanelCollapsed && (
-          <div className="hidden min-[1220px]:block">
-            <div className="sticky top-2">
-              {enhancementsContent()}
-            </div>
+        <div className={cn(
+          "hidden",
+          !desktopPanelCollapsed && "min-[1220px]:block",
+        )}>
+          <div className="sticky top-2">
+            {enhancementsContent()}
           </div>
-        )}
+        </div>
       </div>
       {addonEditorAfter}
     </div>
