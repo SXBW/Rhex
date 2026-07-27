@@ -426,13 +426,13 @@ export function RefinedRichPostEditor({
   }), [commands.toolbarActions, onChange, selectionState, value])
 
   const editorShell = (
-    <div data-markdown-editor-fullscreen={viewState.isFullscreen ? "true" : undefined} className={viewState.isFullscreen ? "fixed inset-0 z-[215] bg-black/45 p-4 md:p-6" : ""}>
-      <div className={viewState.isFullscreen ? "flex h-full w-full items-center justify-center" : ""}>
+    <div data-markdown-editor-fullscreen={viewState.isFullscreen ? "true" : undefined} className={viewState.isFullscreen ? "fixed inset-0 z-[215] bg-black/45 p-4 md:p-6" : "h-full"}>
+      <div className={viewState.isFullscreen ? "flex h-full w-full items-center justify-center" : "h-full"}>
         <div
           className={cn(
             viewState.isFullscreen
               ? "flex h-full min-w-0 max-h-[96vh] w-full max-w-6xl flex-col overflow-x-hidden overflow-y-visible rounded-xl border border-border bg-background shadow-2xl"
-              : "min-w-0 max-w-full overflow-x-hidden overflow-y-visible rounded-xl border border-border bg-card shadow-xs",
+              : "flex min-w-0 max-w-full flex-col overflow-x-hidden overflow-y-visible rounded-xl border border-border bg-card shadow-xs",
             !viewState.isFullscreen && shellClassName,
           )}
         >
@@ -529,6 +529,7 @@ export function RefinedRichPostEditor({
           />
             {panels.message ? <p className="mt-2 text-xs text-muted-foreground">{panels.message}</p> : null}
           </div>
+          {!viewState.isFullscreen && <div className="flex-1" />}
         </div>
       </div>
     </div>
