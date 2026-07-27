@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import type { LeftSidebarDisplayMode } from "@/lib/site-settings"
 import { cn } from "@/lib/utils"
 import {
+  getDefaultSidebarCollapsed,
   getSidebarNavigationDisplayModeAttribute,
   readSidebarNavigationCollapsedSnapshot,
   setSidebarNavigationCollapsedPreference,
@@ -135,13 +136,17 @@ export function ForumPageShell({
 }: ForumPageShellProps) {
   const { leftSidebarDisplayMode, leftSidebarNavigationMode } = useSiteSettingsContext()
   const resolvedLeftSidebarDisplayMode = leftSidebarDisplayModeOverride ?? leftSidebarDisplayMode
-  const sidebarCollapsed = useSyncExternalStore(subscribeSidebarNavigationPreference, readSidebarNavigationCollapsedSnapshot, () => false)
+  const sidebarCollapsed = useSyncExternalStore(
+    subscribeSidebarNavigationPreference,
+    () => readSidebarNavigationCollapsedSnapshot(resolvedLeftSidebarDisplayMode),
+    () => getDefaultSidebarCollapsed(resolvedLeftSidebarDisplayMode),
+  )
   const shouldUseMobileRightSidebar = useIsMobile(FORUM_MOBILE_SIDEBAR_BREAKPOINT)
   const mobileRightSidebar = buildMobileRightSidebarContent(rightSidebar)
   const hasRightSidebar = Boolean(rightSidebar)
 
   function handleToggleSidebar() {
-    setSidebarNavigationCollapsedPreference(!sidebarCollapsed)
+    setSidebarNavigationCollapsedPreference(!sidebarCollapsed, resolvedLeftSidebarDisplayMode)
   }
 
   return (
@@ -156,6 +161,7 @@ export function ForumPageShell({
       <div
         className="forum-page-shell grid grid-cols-1 gap-6"
         data-sidebar-display-mode={getSidebarNavigationDisplayModeAttribute(resolvedLeftSidebarDisplayMode)}
+        data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}
         data-has-right-sidebar={hasRightSidebar ? "true" : "false"}
       >
         <SidebarNavigation
