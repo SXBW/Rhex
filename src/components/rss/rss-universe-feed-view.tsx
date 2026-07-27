@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { ExternalLink, Gift, Heart, Loader2, Play } from "lucide-react"
+import { ExternalLink, Gift, Heart, Loader2 } from "lucide-react"
 import { useEffect, useMemo, useState, useTransition } from "react"
 
 import { LevelIcon } from "@/components/level-icon"
@@ -37,42 +37,6 @@ async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
     message: result.message as string | undefined,
     data: result.data as T,
   }
-}
-
-function RssVideoPreview({ item }: { item: RssItem }) {
-  if (!item.video || !item.linkUrl) {
-    return null
-  }
-
-  if (item.video.embedUrl) {
-    return (
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-black">
-        <iframe
-          className="block aspect-video w-full"
-          src={item.video.embedUrl}
-          title={`${item.title} · ${item.video.platformLabel} 视频`}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      </div>
-    )
-  }
-
-  return (
-    <a
-      href={item.linkUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl border border-border bg-black text-white transition hover:bg-zinc-900"
-    >
-      <span className="flex size-14 items-center justify-center rounded-full bg-white/15">
-        <Play className="ml-0.5 size-6 fill-current" aria-hidden="true" />
-      </span>
-      <span className="text-sm">打开 {item.video.platformLabel} 观看视频</span>
-    </a>
-  )
 }
 
 export function RssUniverseFeedView({
@@ -206,15 +170,13 @@ export function RssUniverseFeedView({
                   </div>
 
                   <span className="shrink-0 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground">
-                    {item.video ? "视频帖" : item.sourceName}
+                    {item.sourceName}
                   </span>
                 </div>
 
                 {item.summary ? (
                   <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">{item.summary}</p>
                 ) : null}
-
-                <RssVideoPreview item={item} />
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2">
