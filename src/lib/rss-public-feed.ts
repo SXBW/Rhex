@@ -1,6 +1,7 @@
 import { resolvePagination } from "@/db/helpers"
 import { prisma } from "@/db/client"
 import { countApprovedRssEntriesBySourceIds, countPublicRssEntries, listAllPublicRssSources, listPublicRssEntries, listPublicRssEntryViewerLikes } from "@/db/rss-public-feed-queries"
+import { resolveRssEntryVideo, type RssEntryVideo } from "@/lib/rss-entry-video"
 import { listRssSourceRuntimeStates } from "@/lib/rss-harvest-source-state"
 import { normalizeHttpUrl } from "@/lib/shared/url"
 import { getSiteSettings, type SiteTippingGiftItem } from "@/lib/site-settings"
@@ -19,6 +20,7 @@ export interface RssUniverseFeedPageData {
     author: string | null
     summary: string | null
     linkUrl: string | null
+    video: RssEntryVideo | null
     publishedAt: string | null
     createdAt: string
     likeCount: number
@@ -149,22 +151,27 @@ export async function getRssUniverseFeedPage(
     : null
 
   return {
-    items: records.map((record) => ({
-      id: record.id,
-      sourceId: record.sourceId,
-      sourceName: record.source.siteName,
-      sourceLogoPath: record.source.logoPath ?? null,
-      title: record.title,
-      author: record.author ?? null,
-      summary: buildEntrySummary(record),
-      linkUrl: normalizeExternalUrl(record.linkUrl ?? null),
-      publishedAt: record.publishedAt?.toISOString() ?? null,
-      createdAt: record.createdAt.toISOString(),
-      likeCount: record.likeCount,
-      tipCount: record.tipCount,
-      tipTotalPoints: record.tipTotalPoints,
-      viewerLiked: viewerLikedEntryIds.has(record.id),
-    })),
+    items: records.map((record) => {
+      const linkUrl = normalizeExternalUrl(record.linkUrl ?? null)
+
+      return {
+        id: record.id,
+        sourceId: record.sourceId,
+        sourceName: record.source.siteName,
+        sourceLogoPath: record.source.logoPath ?? null,
+        title: record.title,
+        author: record.author ?? null,
+        summary: buildEntrySummary(record),
+        linkUrl,
+        video: resolveRssEntryVideo(linkUrl),
+        publishedAt: record.publishedAt?.toISOString() ?? null,
+        createdAt: record.createdAt.toISOString(),
+        likeCount: record.likeCount,
+        tipCount: record.tipCount,
+        tipTotalPoints: record.tipTotalPoints,
+        viewerLiked: viewerLikedEntryIds.has(record.id),
+      }
+    }),
     availableSources,
     activeSource,
     support: {
