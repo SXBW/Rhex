@@ -450,29 +450,31 @@ export function RefinedRichPostEditor({
             recipient={privateReplyRecipient}
             onClear={onClearPrivateReply}
           />
-          <EditorBody
-            activeTab={viewState.activeTab}
-            isFullscreen={viewState.isFullscreen}
-            contentMinHeight={viewState.contentMinHeight}
-            value={value}
-            placeholder={placeholder}
-            disabled={disabled}
-            markdownEmojiMap={markdownEmojiMap}
-            textareaRef={textareaRef}
-            lineMeasureContainerRef={viewState.lineMeasureContainerRef}
-            lineMeasureRefs={viewState.lineMeasureRefs}
-            logicalLines={viewState.logicalLines}
-            lineNumbers={viewState.lineNumbers}
-            lineHeights={viewState.lineHeights}
-            activeLineNumber={viewState.activeLineNumber}
-            editorScrollTop={viewState.editorScrollTop}
-            onChange={handleEditorChange}
-            onEditorScrollSync={viewState.setEditorScrollTop}
-            onScroll={viewState.handleTextareaScroll}
-            onKeyDown={handleEditorKeyDown}
-            onSelect={viewState.handleTextareaSelect}
-            onPaste={commands.handlePaste}
-          />
+          <div className={!viewState.isFullscreen ? "flex-1 min-h-0" : ""}>
+            <EditorBody
+              activeTab={viewState.activeTab}
+              isFullscreen={viewState.isFullscreen}
+              contentMinHeight={viewState.contentMinHeight}
+              value={value}
+              placeholder={placeholder}
+              disabled={disabled}
+              markdownEmojiMap={markdownEmojiMap}
+              textareaRef={textareaRef}
+              lineMeasureContainerRef={viewState.lineMeasureContainerRef}
+              lineMeasureRefs={viewState.lineMeasureRefs}
+              logicalLines={viewState.logicalLines}
+              lineNumbers={viewState.lineNumbers}
+              lineHeights={viewState.lineHeights}
+              activeLineNumber={viewState.activeLineNumber}
+              editorScrollTop={viewState.editorScrollTop}
+              onChange={handleEditorChange}
+              onEditorScrollSync={viewState.setEditorScrollTop}
+              onScroll={viewState.handleTextareaScroll}
+              onKeyDown={handleEditorKeyDown}
+              onSelect={viewState.handleTextareaSelect}
+              onPaste={commands.handlePaste}
+            />
+          </div>
           <div className={viewState.activeTab === "write" || viewState.activeTab === "live-preview" ? (viewState.isFullscreen ? "px-3 pb-4 sm:px-5 sm:pb-8" : "px-3 pb-4 sm:px-5") : "px-3 pb-4 sm:px-5"}>
             <EditorToolbar
               context={context}
@@ -529,7 +531,6 @@ export function RefinedRichPostEditor({
           />
             {panels.message ? <p className="mt-2 text-xs text-muted-foreground">{panels.message}</p> : null}
           </div>
-          {!viewState.isFullscreen && <div className="flex-1" />}
         </div>
       </div>
     </div>
