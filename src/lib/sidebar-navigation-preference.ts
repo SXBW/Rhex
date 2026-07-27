@@ -5,7 +5,7 @@ const SIDEBAR_COLLAPSED_DOCKED_STORAGE_KEY = "rhex:sidebar-navigation-collapsed:
 const SIDEBAR_COLLAPSED_DOCKED_OPEN_STORAGE_KEY = "rhex:sidebar-navigation-collapsed:docked-open"
 const SIDEBAR_COLLAPSED_CHANGE_EVENT = "rhex:sidebar-navigation-collapsed-change"
 
-function getSidebarNavigationStorageKey(mode: LeftSidebarDisplayMode) {
+export function getSidebarNavigationStorageKey(mode: LeftSidebarDisplayMode) {
   if (mode === "DOCKED_OPEN") {
     return SIDEBAR_COLLAPSED_DOCKED_OPEN_STORAGE_KEY
   }
@@ -13,7 +13,7 @@ function getSidebarNavigationStorageKey(mode: LeftSidebarDisplayMode) {
   return mode === "DOCKED" ? SIDEBAR_COLLAPSED_DOCKED_STORAGE_KEY : SIDEBAR_COLLAPSED_STORAGE_KEY
 }
 
-function getDefaultSidebarCollapsed(mode: LeftSidebarDisplayMode) {
+export function getDefaultSidebarCollapsed(mode: LeftSidebarDisplayMode) {
   return mode === "DOCKED" || mode === "HIDDEN"
 }
 
@@ -80,12 +80,9 @@ export function getSidebarNavigationInitScript() {
   `
 }
 
-export function readSidebarNavigationCollapsedSnapshot() {
-  if (typeof document === "undefined") {
-    return false
-  }
-
-  return document.documentElement.dataset.sidebarCollapsed === "true"
+export function readSidebarNavigationCollapsedSnapshot(mode?: LeftSidebarDisplayMode) {
+  const resolvedMode = normalizeLeftSidebarDisplayMode(mode, readSidebarNavigationDisplayModeFromDocument())
+  return readStoredSidebarNavigationCollapsed(resolvedMode)
 }
 
 export function subscribeSidebarNavigationPreference(onStoreChange: () => void) {
@@ -116,18 +113,18 @@ export function subscribeSidebarNavigationPreference(onStoreChange: () => void) 
   }
 }
 
-export function setSidebarNavigationCollapsedPreference(collapsed: boolean) {
+export function setSidebarNavigationCollapsedPreference(collapsed: boolean, mode?: LeftSidebarDisplayMode) {
   if (typeof document === "undefined") {
     return
   }
 
-  const mode = readSidebarNavigationDisplayModeFromDocument()
-  if (mode === "HIDDEN") {
+  const resolvedMode = normalizeLeftSidebarDisplayMode(mode, readSidebarNavigationDisplayModeFromDocument())
+  if (resolvedMode === "HIDDEN") {
     return
   }
 
   try {
-    window.localStorage.setItem(getSidebarNavigationStorageKey(mode), collapsed ? "1" : "0")
+    window.localStorage.setItem(getSidebarNavigationStorageKey(resolvedMode), collapsed ? "1" : "0")
   } catch {
     // Ignore storage failures and still update the in-memory DOM snapshot.
   }

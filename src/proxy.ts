@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server"
 import { buildUnauthorizedResponse, getSessionFromRequest, isProtectedPath } from "@/lib/auth-guards"
 import { isForumContentPath } from "@/lib/forum-access-guard"
 import { buildHomeFeedHref, normalizeHomeFeedSort, parseHomeFeedPage, type HomeFeedSort } from "@/lib/home-feed-route"
+import { BROWSING_PREFERENCES_COOKIE_NAME } from "@/lib/browsing-preferences"
+import {
+  PUBLIC_PAGE_CACHE_RENDER_HEADER,
+  PUBLIC_PAGE_CACHE_TARGET_HEADER,
+  resolvePublicPageCacheTarget,
+} from "@/lib/public-page-cache-policy"
 import { RHEX_PATHNAME_HEADER } from "@/lib/request-context-headers"
 import { getSessionClearedCookieOptions, getSessionCookieName } from "@/lib/session"
 import { getServerSiteSettings } from "@/lib/site-settings"
@@ -22,6 +28,40 @@ function isDocumentRequest(request: NextRequest) {
 
   return request.headers.get("sec-fetch-dest") === "document"
     || request.headers.get("accept")?.includes("text/html") === true
+}
+
+function isReactServerComponentRequest(request: NextRequest) {
+  return request.headers.get("rsc") === "1"
+    || request.headers.has("next-router-state-tree")
+    || request.headers.get("accept")?.includes("text/x-component") === true
+}
+
+function getAnonymousPublicPageCacheTarget(request: NextRequest) {
+  return resolvePublicPageCacheTarget({
+    method: request.method,
+    pathname: request.nextUrl.pathname,
+    searchParams: request.nextUrl.searchParams,
+    isRenderRequest: request.headers.get(PUBLIC_PAGE_CACHE_RENDER_HEADER) === "1",
+    hasAuthorization: request.headers.has("authorization"),
+    isReactServerComponent: isReactServerComponentRequest(request),
+    hasSession: request.cookies.has(getSessionCookieName()),
+    hasBrowsingPreferences: request.cookies.has(BROWSING_PREFERENCES_COOKIE_NAME),
+  })
+}
+
+function rewriteToAnonymousPublicPageCache(request: NextRequest, target: string) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(PUBLIC_PAGE_CACHE_TARGET_HEADER, target)
+
+  const url = request.nextUrl.clone()
+  url.pathname = "/api/internal/public-page-cache"
+  url.search = ""
+
+  return NextResponse.rewrite(url, {
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 function redirectLegacyHomeFeedPageQuery(request: NextRequest) {
@@ -81,6 +121,11 @@ export async function proxy(request: NextRequest) {
   const legacyHomeFeedRedirect = redirectLegacyHomeFeedPageQuery(request)
   if (legacyHomeFeedRedirect) {
     return legacyHomeFeedRedirect
+  }
+
+  const publicPageCacheTarget = getAnonymousPublicPageCacheTarget(request)
+  if (publicPageCacheTarget) {
+    return rewriteToAnonymousPublicPageCache(request, publicPageCacheTarget)
   }
 
   const token = request.cookies.get(getSessionCookieName())?.value

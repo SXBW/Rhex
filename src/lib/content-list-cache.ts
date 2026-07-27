@@ -4,6 +4,7 @@ import {
   expireTaxonomyContentCacheImmediately,
   revalidateTaxonomyContentCache,
 } from "@/lib/taxonomy-cache"
+import { schedulePublicListPageCacheInvalidation } from "@/lib/public-page-cache"
 
 export const FORUM_FEED_CACHE_TAG = "forum-feed"
 export const HOME_SIDEBAR_HOT_TOPICS_CACHE_TAG = "home-sidebar-hot-topics"
@@ -46,10 +47,12 @@ export function revalidateContentListCaches() {
   revalidateForumFeedCache()
   revalidateHomeSidebarHotTopicsCache()
   revalidateTaxonomyContentCache()
+  schedulePublicListPageCacheInvalidation()
 }
 
 export function expireContentListCachesImmediately() {
   expireForumFeedCacheImmediately()
   expireHomeSidebarHotTopicsCacheImmediately()
   expireTaxonomyContentCacheImmediately()
+  schedulePublicListPageCacheInvalidation()
 }

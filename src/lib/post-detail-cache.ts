@@ -6,6 +6,7 @@ import { revalidateTag, unstable_cache } from "next/cache"
 import { renderAddonPostContentHtml } from "@/lib/addon-post-content-render"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import { MARKDOWN_RENDER_OUTPUT_VERSION } from "@/lib/markdown/render"
+import { schedulePublicPostPageCacheInvalidation } from "@/lib/public-page-cache"
 import { getConfiguredSiteOrigin, normalizeSiteOrigin } from "@/lib/site-origin-config"
 import type { PostLinkDisplayMode } from "@/lib/site-settings"
 
@@ -108,6 +109,8 @@ export function revalidatePostDetailCache(input: { postId?: string | null; slug?
     revalidatePostDetailTag(getPostSidebarCacheTag(input.postId))
     revalidatePostDetailTag(getPostRenderedContentCacheTag(input.postId))
   }
+
+  schedulePublicPostPageCacheInvalidation(input.slug)
 }
 
 export function revalidatePostDataCache(input: { postId?: string | null; slug?: string | null }) {
@@ -119,6 +122,8 @@ export function revalidatePostDataCache(input: { postId?: string | null; slug?: 
     revalidatePostDetailTag(getPostDetailDataCacheTag(input.postId))
     revalidatePostDetailTag(getPostSidebarCacheTag(input.postId))
   }
+
+  schedulePublicPostPageCacheInvalidation(input.slug)
 }
 
 export function revalidatePostCommentCache(input: { postId?: string | null; slug?: string | null }) {
@@ -130,6 +135,8 @@ export function revalidatePostCommentCache(input: { postId?: string | null; slug
     revalidatePostDetailTag(getPostDetailDataCacheTag(input.postId))
     revalidatePostDetailTag(getPostCommentListCacheTag(input.postId))
   }
+
+  schedulePublicPostPageCacheInvalidation(input.slug)
 }
 
 export function revalidatePostSidebarCache(input: { postId?: string | null; slug?: string | null }) {
@@ -140,6 +147,8 @@ export function revalidatePostSidebarCache(input: { postId?: string | null; slug
   if (input.postId) {
     revalidatePostDetailTag(getPostSidebarCacheTag(input.postId))
   }
+
+  schedulePublicPostPageCacheInvalidation(input.slug)
 }
 
 export function revalidatePostViewerCache(userId?: number | null) {

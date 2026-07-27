@@ -41,7 +41,7 @@ import { isUserFollowingTarget } from "@/lib/follows"
 import { resolveSidebarUser } from "@/lib/home-sidebar"
 import { checkPostAccessPermission, mergeAccessPermissions, resolvePostAccessRequirements } from "@/lib/post-access"
 import { renderCachedPostContentHtml } from "@/lib/post-detail-cache"
-import { getPostDetailBySlug, getPostSeoBySlug, incrementPostViewCount } from "@/lib/posts"
+import { getPostDetailBySlug, getPostSeoBySlug } from "@/lib/posts"
 
 import { getPostSidebarData } from "@/lib/post-sidebar"
 import { getPostRedPacketSummary } from "@/lib/post-red-packets"
@@ -298,10 +298,6 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
     getZones(),
   ])
 
-
-  if (canViewRestrictedPost) {
-    void incrementPostViewCount(basePost.id)
-  }
 
   const postWithAuction = postAuctionSummary ? { ...basePost, auction: postAuctionSummary } : basePost
   const displayPost = canViewPostContent
