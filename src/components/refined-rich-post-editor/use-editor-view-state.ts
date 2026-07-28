@@ -126,10 +126,10 @@ export function useEditorViewState({
 
   useEffect(() => {
     if (!isFullscreen) {
+      document.body.style.removeProperty("overflow")
       return
     }
 
-    const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -140,7 +140,7 @@ export function useEditorViewState({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => {
-      document.body.style.overflow = previousOverflow
+      document.body.style.removeProperty("overflow")
       window.removeEventListener("keydown", handleKeyDown)
     }
   }, [isFullscreen])

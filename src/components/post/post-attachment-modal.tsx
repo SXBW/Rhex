@@ -71,6 +71,7 @@ interface PostAttachmentModalProps {
   onAddExternal: () => void
   onRemove: (index: number) => void
   onAttachmentChange: (index: number, patch: Partial<LocalPostDraft["attachments"][number]>) => void
+  inFullscreenEditor?: boolean
 }
 
 export function PostAttachmentModal({
@@ -87,6 +88,7 @@ export function PostAttachmentModal({
   onAddExternal,
   onRemove,
   onAttachmentChange,
+  inFullscreenEditor,
 }: PostAttachmentModalProps) {
   const [expandedPermissionKeys, setExpandedPermissionKeys] = useState<Set<string>>(() => new Set())
   const [dragActive, setDragActive] = useState(false)
@@ -197,6 +199,7 @@ export function PostAttachmentModal({
       hideHeaderCloseButtonOnMobile
       description="附件会统一展示在帖子正文底部，可分别设置等级、VIP、积分购买和回复解锁条件。"
       size="xl"
+      inFullscreenEditor={inFullscreenEditor}
       footer={(
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs leading-6 text-muted-foreground">{permissionHint}</p>

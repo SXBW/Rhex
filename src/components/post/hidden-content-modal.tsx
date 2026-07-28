@@ -19,10 +19,11 @@ interface HiddenContentModalProps {
 
   onPriceChange?: (value: string) => void
   priceLabel?: string
+  inFullscreenEditor?: boolean
 }
 
 
-export function HiddenContentModal({ open, title, description, value, onChange, onClose, price, onPriceChange, priceLabel }: HiddenContentModalProps) {
+export function HiddenContentModal({ open, title, description, value, onChange, onClose, price, onPriceChange, priceLabel, inFullscreenEditor }: HiddenContentModalProps) {
   return (
     <HiddenContentModalBody
       key={open ? "open" : "closed"}
@@ -35,11 +36,12 @@ export function HiddenContentModal({ open, title, description, value, onChange, 
       onPriceChange={onPriceChange}
       onClose={onClose}
       priceLabel={priceLabel}
+      inFullscreenEditor={inFullscreenEditor}
     />
   )
 }
 
-function HiddenContentModalBody({ open, title, description, initialValue, initialPrice, onChange, onClose, onPriceChange, priceLabel }: {
+function HiddenContentModalBody({ open, title, description, initialValue, initialPrice, onChange, onClose, onPriceChange, priceLabel, inFullscreenEditor }: {
   open: boolean
   title: string
   description: string
@@ -49,6 +51,7 @@ function HiddenContentModalBody({ open, title, description, initialValue, initia
   onClose: () => void
   onPriceChange?: (value: string) => void
   priceLabel?: string
+  inFullscreenEditor?: boolean
 }) {
   const [draftValue, setDraftValue] = useState(initialValue)
   const [draftPrice, setDraftPrice] = useState(initialPrice ?? "")
@@ -66,6 +69,7 @@ function HiddenContentModalBody({ open, title, description, initialValue, initia
       size="xl"
       title={title}
       description={description}
+      inFullscreenEditor={inFullscreenEditor}
       footer={(
         <div className="flex items-center justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose}>取消</Button>

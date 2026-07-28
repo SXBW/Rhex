@@ -17,9 +17,10 @@ interface PostViewLevelModalProps {
   vipLevelOptions: AccessThresholdOption[]
   onChange: (value: { minViewLevel: string; minViewVipLevel: string }) => void
   onClose: () => void
+  inFullscreenEditor?: boolean
 }
 
-export function PostViewLevelModal({ open, value, levelOptions, vipLevelOptions, onChange, onClose }: PostViewLevelModalProps) {
+export function PostViewLevelModal({ open, value, levelOptions, vipLevelOptions, onChange, onClose, inFullscreenEditor }: PostViewLevelModalProps) {
   return (
     <PostViewLevelModalBody
       key={open ? "open" : "closed"}
@@ -29,17 +30,19 @@ export function PostViewLevelModal({ open, value, levelOptions, vipLevelOptions,
       vipLevelOptions={vipLevelOptions}
       onChange={onChange}
       onClose={onClose}
+      inFullscreenEditor={inFullscreenEditor}
     />
   )
 }
 
-function PostViewLevelModalBody({ open, initialValue, levelOptions, vipLevelOptions, onChange, onClose }: {
+function PostViewLevelModalBody({ open, initialValue, levelOptions, vipLevelOptions, onChange, onClose, inFullscreenEditor }: {
   open: boolean
   initialValue: { minViewLevel: string; minViewVipLevel: string }
   levelOptions: AccessThresholdOption[]
   vipLevelOptions: AccessThresholdOption[]
   onChange: (value: { minViewLevel: string; minViewVipLevel: string }) => void
   onClose: () => void
+  inFullscreenEditor?: boolean
 }) {
   const [draftLevelValue, setDraftLevelValue] = useState(initialValue.minViewLevel)
   const [draftVipLevelValue, setDraftVipLevelValue] = useState(initialValue.minViewVipLevel)
@@ -59,6 +62,7 @@ function PostViewLevelModalBody({ open, initialValue, levelOptions, vipLevelOpti
       size="md"
       title="设置整帖浏览门槛"
       description="这里控制整篇帖子的正文访问。"
+      inFullscreenEditor={inFullscreenEditor}
       footer={(
         <div className="flex items-center justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose}>取消</Button>

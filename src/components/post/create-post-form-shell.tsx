@@ -24,6 +24,7 @@ import type { AccessThresholdOption } from "@/lib/access-threshold-options"
 import type { CreatePostFormBoardGroup } from "@/components/post/create-post-form.shared"
 import type { CreatePostDraftController } from "@/components/post/use-create-post-draft"
 import type { CreatePostSubmitController } from "@/components/post/use-create-post-submit"
+import { useEditorFullscreen } from "@/hooks/use-editor-fullscreen"
 import { usePostTextOptimizer } from "@/components/post/use-post-text-optimizer"
 import { toast } from "@/components/ui/toast"
 import type { LocalPostType } from "@/lib/post-types"
@@ -167,6 +168,7 @@ export function CreatePostFormShell({
   const { loading, showSlowSubmitHint, slowSubmitWaitSeconds, handleSubmit } =
     submitController
   const [draftBoxModalOpen, setDraftBoxModalOpen] = useState(false)
+  const inFullscreenEditor = useEditorFullscreen()
   const { optimize, pendingTarget } = usePostTextOptimizer()
   const [previousTitle, setPreviousTitle] = useState<string | null>(null)
   const [previousContent, setPreviousContent] = useState<string | null>(null)
@@ -821,6 +823,7 @@ export function CreatePostFormShell({
         title="草稿箱"
         description="自动保存和手动保存都会更新对应草稿；恢复后会继续写回当前这份。"
         size="lg"
+        inFullscreenEditor={inFullscreenEditor}
       >
         <PostDraftBox
           entries={draftBoxEntries}

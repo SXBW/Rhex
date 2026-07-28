@@ -22,6 +22,7 @@ export function TagConfigModal({
   onCommitEditingTag,
   onCancelEditingTag,
   onRemoveManualTag,
+  inFullscreenEditor,
 }: {
   open: boolean
   autoExtractedTags: string[]
@@ -40,6 +41,7 @@ export function TagConfigModal({
   onCommitEditingTag: (index?: number | null) => void
   onCancelEditingTag: () => void
   onRemoveManualTag: (tag: string) => void
+  inFullscreenEditor?: boolean
 }) {
   return (
     <Modal
@@ -48,6 +50,7 @@ export function TagConfigModal({
       title="标签提取"
       description="自动提取仅作为候选结果，只有你手动添加后才会进入最终提交标签，并且可以继续编辑。"
       size="lg"
+      inFullscreenEditor={inFullscreenEditor}
       footer={(
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">左侧是候选标签，右侧和下方是最终提交标签，只有手动采用的标签才会被保存。</p>

@@ -8,6 +8,7 @@ import {
 import { HiddenContentModal } from "@/components/post/hidden-content-modal"
 import { PostAttachmentModal } from "@/components/post/post-attachment-modal"
 import { PostViewLevelModal } from "@/components/post/post-view-level-modal"
+import { useEditorFullscreen } from "@/hooks/use-editor-fullscreen"
 import type { AccessThresholdOption } from "@/lib/access-threshold-options"
 import type { CreatePostDraftController } from "@/components/post/use-create-post-draft"
 
@@ -74,6 +75,8 @@ export function CreatePostFormModals({
     resolveAvailableRewardPoolMode,
   } = draftController
 
+  const inFullscreenEditor = useEditorFullscreen()
+
   return (
     <>
       <CoverConfigModal
@@ -85,6 +88,7 @@ export function CreatePostFormModals({
         onCoverUpload={handleCoverUpload}
         onCoverPathChange={(value) => updateDraftField("coverPath", value)}
         onCoverClear={() => updateDraftField("coverPath", "")}
+        inFullscreenEditor={inFullscreenEditor}
       />
 
       <TagConfigModal
@@ -105,6 +109,7 @@ export function CreatePostFormModals({
         onCommitEditingTag={commitEditingTag}
         onCancelEditingTag={cancelEditingTag}
         onRemoveManualTag={removeManualTag}
+        inFullscreenEditor={inFullscreenEditor}
       />
 
       <PostAttachmentModal
@@ -129,6 +134,7 @@ export function CreatePostFormModals({
         onAddExternal={addExternalAttachment}
         onRemove={removeAttachment}
         onAttachmentChange={updateAttachment}
+        inFullscreenEditor={inFullscreenEditor}
       />
 
       <PostRewardPoolModal
@@ -155,6 +161,7 @@ export function CreatePostFormModals({
         }}
         disabled={isEditMode}
         onClose={() => setRewardPoolModalOpen(false)}
+        inFullscreenEditor={inFullscreenEditor}
         onChange={{
           onEnabledChange: (checked) =>
             patchDraft({
@@ -193,6 +200,7 @@ export function CreatePostFormModals({
         value={draft.loginUnlockContent}
         onChange={(value) => updateDraftField("loginUnlockContent", value)}
         onClose={() => setActiveModal(null)}
+        inFullscreenEditor={inFullscreenEditor}
       />
 
       <HiddenContentModal
@@ -202,6 +210,7 @@ export function CreatePostFormModals({
         value={draft.replyUnlockContent}
         onChange={(value) => updateDraftField("replyUnlockContent", value)}
         onClose={() => setActiveModal(null)}
+        inFullscreenEditor={inFullscreenEditor}
       />
 
       <PostViewLevelModal
@@ -215,6 +224,7 @@ export function CreatePostFormModals({
         onChange={({ minViewLevel, minViewVipLevel }) =>
           patchDraft({ minViewLevel, minViewVipLevel })}
         onClose={() => setActiveModal(null)}
+        inFullscreenEditor={inFullscreenEditor}
       />
 
       <HiddenContentModal
@@ -227,6 +237,7 @@ export function CreatePostFormModals({
         price={draft.purchasePrice}
         onPriceChange={(value) => updateDraftField("purchasePrice", value)}
         priceLabel={`购买价格（${pointName}）`}
+        inFullscreenEditor={inFullscreenEditor}
       />
     </>
   )

@@ -29,6 +29,7 @@ interface ModalProps {
   closeOnEscape?: boolean
   contentClassName?: string
   overlayClassName?: string
+  inFullscreenEditor?: boolean
   onClose: () => void
 }
 
@@ -108,6 +109,7 @@ export function Modal({
   closeOnEscape = true,
   contentClassName,
   overlayClassName,
+  inFullscreenEditor = false,
   onClose,
 }: ModalProps) {
   const shouldHideHeaderCloseButtonOnMobile = hideHeaderCloseButtonOnMobile || hasFooterCancelButton(footer)
@@ -133,9 +135,10 @@ export function Modal({
     >
       <DialogContent
         showCloseButton={false}
-        overlayClassName={overlayClassName}
+        overlayClassName={cn(inFullscreenEditor && "z-[240]", overlayClassName)}
         className={cn(
-          "z-[210] flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-h-[calc(100dvh-3rem)]",
+          "flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-h-[calc(100dvh-3rem)]",
+          inFullscreenEditor ? "z-[250]" : "z-[210]",
           sizeClassMap[size],
           contentClassName
         )}

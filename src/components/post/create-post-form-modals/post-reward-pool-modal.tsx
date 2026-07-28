@@ -20,6 +20,7 @@ export function PostRewardPoolModal({
   disabled,
   onClose,
   onChange,
+  inFullscreenEditor,
 }: {
   open: boolean
   pointName: string
@@ -44,6 +45,7 @@ export function PostRewardPoolModal({
   }
   disabled: boolean
   onClose: () => void
+  inFullscreenEditor?: boolean
   onChange: {
     onEnabledChange: (checked: boolean) => void
     onModeChange: (mode: "RED_PACKET" | "JACKPOT") => void
@@ -73,6 +75,7 @@ export function PostRewardPoolModal({
       title="配置帖子激励池"
       description="在这里设置帖子红包或聚宝盆。"
       size="md"
+      inFullscreenEditor={inFullscreenEditor}
       footer={(
         <div className="flex items-center justify-end">
           <Button type="button" variant="outline" onClick={onClose}>完成</Button>

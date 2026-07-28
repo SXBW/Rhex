@@ -18,6 +18,7 @@ export function CoverConfigModal({
   onCoverUpload,
   onCoverPathChange,
   onCoverClear,
+  inFullscreenEditor,
 }: {
   open: boolean
   content: string
@@ -27,6 +28,7 @@ export function CoverConfigModal({
   onCoverUpload: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>
   onCoverPathChange: (value: string) => void
   onCoverClear: () => void
+  inFullscreenEditor?: boolean
 }) {
   const contentImages = useMemo(() => extractImagesFromText(content), [content])
   const normalizedCoverPath = coverPath.trim()
@@ -39,6 +41,7 @@ export function CoverConfigModal({
       hideHeaderCloseButtonOnMobile
       description="画廊模式默认提取正文第一张图片，也可以在这里手动上传或填写封面地址。"
       size="lg"
+      inFullscreenEditor={inFullscreenEditor}
       footer={(
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">留空时，帖子列表会自动提取正文中的第一张图片作为封面。</p>
