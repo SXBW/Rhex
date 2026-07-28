@@ -709,7 +709,7 @@ export function PostEnhancementsSection({
               panelSide === "left" ? "left-[max(1rem,calc(50%-792px))]" : "right-[max(1rem,calc(50%-792px))]",
             )}
           >
-          <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
+          <div className="rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <button
                 type="button"
@@ -781,7 +781,7 @@ export function PostEnhancementsSection({
         ) : null
       ) : (
         <div className="w-[200px]">
-          <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
+          <div className="rounded-xl border border-border bg-background/92 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md">
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <button
                 type="button"
