@@ -161,14 +161,12 @@ export function EditorBody({
   const isLivePreview = activeTab === "live-preview"
   const previewPanelRef = React.useRef<HTMLDivElement | null>(null)
   const scrollSyncSourceRef = React.useRef<"editor" | "preview" | null>(null)
-  const writeContainerClassName = isFullscreen
-    ? "relative flex min-h-0 flex-1 overflow-hidden rounded-xl bg-transparent"
-    : "relative flex min-h-0 flex-1 overflow-hidden rounded-xl bg-transparent"
+  const writeContainerClassName = "relative flex min-h-0 flex-1 overflow-hidden rounded-xl bg-transparent"
   const writeContainerStyle = isFullscreen
     ? { minHeight: 0, height: "100%" }
     : { minHeight: contentMinHeight }
   const textareaStyle = isFullscreen
-    ? { minHeight: 0, height: "100%", maxHeight: "none" as const }
+    ? { minHeight: 0, maxHeight: "none" }
     : { minHeight: contentMinHeight }
   const previewStyle = isFullscreen
     ? { minHeight: 0, height: "100%" }
@@ -221,7 +219,7 @@ export function EditorBody({
         onSelect={onSelect}
         onPaste={onPaste}
         disabled={disabled}
-        className="w-full resize-none overflow-y-auto rounded-none border-0 bg-transparent pl-2 pr-0 py-1 font-mono text-sm leading-7 outline-hidden [scrollbar-width:none] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="w-full flex-1 resize-none overflow-y-auto rounded-none border-0 bg-transparent pl-2 pr-0 py-1 font-mono text-sm leading-7 outline-hidden [scrollbar-width:none] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         placeholder={placeholder}
         style={textareaStyle}
       />
@@ -324,18 +322,18 @@ export function EditorBody({
   return (
     <div
       className={activeTab === "live-preview"
-        ? (isFullscreen ? "grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0" : "grid min-h-0 flex-1 grid-cols-1 gap-4 px-3 pb-4 pt-3 sm:px-5 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0")
+        ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8 xl:grid xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0" : "grid min-h-0 flex-1 grid-cols-1 gap-4 px-3 pb-4 pt-3 sm:px-5 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0")
         : activeTab === "write"
           ? (isFullscreen ? "flex min-h-0 flex-1 flex-col px-3 pt-3 sm:px-5" : "flex min-h-0 flex-1 flex-col pl-1 pr-3 pt-3 sm:pl-1 sm:pr-5")
           : (isFullscreen ? "flex min-h-0 flex-1 flex-col px-3 pb-4 pt-3 sm:px-5 sm:pb-8" : "flex min-h-0 flex-1 flex-col px-3 pb-4 pt-3 sm:px-5")}
     >
       {isLivePreview ? (
         <>
-          <div className={cn("min-w-0 xl:pr-5", isFullscreen && "min-h-0 overflow-hidden")}>
+          <div className={cn("min-w-0 xl:pr-5", isFullscreen && "min-h-0 flex-1 overflow-hidden")}>
             {writePanel}
           </div>
           <div className={cn("hidden bg-border xl:block", isFullscreen && "min-h-0")} aria-hidden="true" />
-          <div className={cn("min-w-0 border-t border-border pt-4 xl:border-t-0 xl:pl-5 xl:pt-0", isFullscreen && "min-h-0 overflow-hidden")}>
+          <div className={cn("min-w-0 border-t border-border pt-4 xl:border-t-0 xl:pl-5 xl:pt-0", isFullscreen && "min-h-0 flex-1 overflow-hidden")}>
             {previewPanel}
           </div>
         </>
