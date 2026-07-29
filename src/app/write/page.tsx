@@ -101,7 +101,7 @@ export default async function WritePage(props: PageProps<"/write">) {
 
   if (!user) {
     return (
-      <div className="min-h-screen ">
+      <div className="min-h-screen flex flex-col">
         <SiteHeader />
         <main className="mx-auto max-w-[1200px] px-1 py-10">
           <AddonSlotRenderer slot="write.page.before" />
@@ -114,7 +114,7 @@ export default async function WritePage(props: PageProps<"/write">) {
                 </AddonSurfaceRenderer>
                 <AddonSlotRenderer slot="write.header.after" />
               </CardHeader>
-              <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
+              <CardContent className="flex-1 min-h-0 space-y-4 text-sm leading-7 text-muted-foreground">
                 <p>为了确保每篇内容都能追溯到明确作者，当前发帖功能需要先登录后再提交。</p>
                 <Link href={buildLoginHrefWithRedirect("/write")}>
                   <Button>前往登录</Button>
@@ -175,12 +175,12 @@ export default async function WritePage(props: PageProps<"/write">) {
   })
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="mx-auto max-w-[1200px] px-1 py-6">
+      <main className="mx-auto flex w-full max-w-[1200px] flex-1 min-h-0 flex-col px-1 py-6">
         <AddonSlotRenderer slot="write.page.before" />
         <AddonSurfaceRenderer surface="write.page" props={{ mode, preferredBoardSlug, settings, user }}>
-          <Card className="min-[1220px]:overflow-visible">
+          <Card className="flex-1 min-h-0 min-[1220px]:overflow-visible">
             <CardHeader>
               <AddonSlotRenderer slot="write.header.before" />
               <AddonSurfaceRenderer surface="write.header" props={{ mode, settings, user }}>
@@ -188,7 +188,7 @@ export default async function WritePage(props: PageProps<"/write">) {
               </AddonSurfaceRenderer>
               <AddonSlotRenderer slot="write.header.after" />
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
               {mode === "edit" ? (
                 !editingPost ? (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">未找到要编辑的帖子。</div>

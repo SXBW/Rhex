@@ -450,7 +450,7 @@ export function RefinedRichPostEditor({
             recipient={privateReplyRecipient}
             onClear={onClearPrivateReply}
           />
-          <div className={!viewState.isFullscreen ? "flex-1 min-h-0" : ""}>
+          <div className="flex-1 min-h-0">
             <EditorBody
               activeTab={viewState.activeTab}
               isFullscreen={viewState.isFullscreen}

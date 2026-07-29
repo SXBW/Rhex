@@ -543,7 +543,7 @@ export function CreatePostFormShell({
   )
 
   const editorContent = () => (
-    <div ref={editorRef} className="space-y-2">
+    <div ref={editorRef} className="flex min-h-0 flex-1 flex-col gap-2">
       {addonEditorBefore}
       <div className="flex flex-wrap items-center gap-2">
         <p className="mr-auto text-sm font-medium">公开正文</p>
@@ -552,7 +552,7 @@ export function CreatePostFormShell({
         <p className="text-xs text-muted-foreground">请遵守社区规则，文明发帖！</p>
       </div>
       <div className={cn(
-        "grid gap-4",
+        "grid min-h-0 flex-1 gap-4",
         desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr]" : "min-[1220px]:grid-cols-[1fr_200px]",
       )}>
         <AddonEditor
@@ -797,8 +797,8 @@ export function CreatePostFormShell({
   )
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="space-y-5">
+    <form className="flex flex-1 min-h-0 flex-col" onSubmit={handleSubmit}>
+      <div className="flex min-h-0 flex-1 flex-col gap-5">
         {addonFormBefore}
         <AddonSurfaceClientRenderer
           surface="post.create.form"
