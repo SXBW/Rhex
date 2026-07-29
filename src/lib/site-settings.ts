@@ -404,6 +404,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
   const authPageShowcaseSettings = resolveAuthPageShowcaseSettings({
     appStateJson: record.appStateJson,
     enabledFallback: true,
+    textFallback: "",
   })
   const smsProviderSettings = resolveSmsProviderSettings({
     appStateJson: record.appStateJson,
@@ -531,6 +532,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     registerInitialPoints: registrationRewardSettings.initialPoints,
     registrationEnabled: record.registrationEnabled,
     authPageShowcaseEnabled: authPageShowcaseSettings.enabled,
+    authPageShowcaseText: authPageShowcaseSettings.text,
     registrationRequireInviteCode: record.registrationRequireInviteCode,
     registerInviteCodeEnabled: record.registerInviteCodeEnabled,
     registerInviteCodeHelpEnabled: registerInviteCodeHelpSettings.enabled,

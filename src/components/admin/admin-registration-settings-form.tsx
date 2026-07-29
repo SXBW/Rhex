@@ -265,6 +265,13 @@ export function AdminRegistrationSettingsForm({
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <AdminBooleanSelectField label="允许新用户注册" checked={draft.registrationEnabled} onChange={(value) => updateDraftField("registrationEnabled", value)} />
             <AdminBooleanSelectField label="显示登录/注册页左侧内容" checked={draft.authPageShowcaseEnabled} onChange={(value) => updateDraftField("authPageShowcaseEnabled", value)} />
+            <TextField
+              label="登录/注册页展示文字"
+              value={draft.authPageShowcaseText}
+              onChange={(value) => updateDraftField("authPageShowcaseText", value)}
+              placeholder="如 Rhex 社区"
+              description="仅用于左侧动画；用空格分隔需要逐词切换的内容，不会改变浏览器标题。"
+            />
             <AdminBooleanSelectField label="显示邀请码输入框" checked={draft.registerInviteCodeEnabled} onChange={(value) => updateDraftField("registerInviteCodeEnabled", value)} />
             <AdminBooleanSelectField label="注册必须邀请码" checked={draft.registrationRequireInviteCode} onChange={(value) => updateDraftField("registrationRequireInviteCode", value)} />
             <AdminBooleanSelectField label="开启积分购买邀请码" checked={draft.inviteCodePurchaseEnabled} onChange={(value) => updateDraftField("inviteCodePurchaseEnabled", value)} />

@@ -59,7 +59,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
   }
   const page = (
     <AuthShell
-      showcaseName={settings.siteName}
+      showcaseName={settings.authPageShowcaseText || settings.siteName}
       showShowcase={settings.authPageShowcaseEnabled}
       panelTitle="登录账户"
       panelDescription="输入邮箱或用户名和密码，继续你的社区浏览与互动。"

@@ -362,6 +362,7 @@ export interface SmsProviderSettings {
 
 export interface AuthPageShowcaseSettings {
   enabled: boolean
+  text: string
 }
 
 export type VipLevelIconSettings = VipLevelIcons

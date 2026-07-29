@@ -677,6 +677,7 @@ export function mergeSmsProviderSettings(
 export function resolveAuthPageShowcaseSettings(options: {
   appStateJson?: string | null
   enabledFallback?: boolean
+  textFallback?: string
 } = {}): AuthPageShowcaseSettings {
   const siteSettingsState = readSiteSettingsState(options.appStateJson)
   const authPageShowcase = isRecord(siteSettingsState.authPageShowcase)
@@ -688,6 +689,10 @@ export function resolveAuthPageShowcaseSettings(options: {
       typeof authPageShowcase.enabled === "boolean"
         ? authPageShowcase.enabled
         : options.enabledFallback ?? true,
+    text:
+      typeof authPageShowcase.text === "string"
+        ? authPageShowcase.text.trim().slice(0, 120)
+        : (options.textFallback ?? "").trim().slice(0, 120),
   }
 }
 
@@ -701,6 +706,7 @@ export function mergeAuthPageShowcaseSettings(
     ...siteSettingsState,
     authPageShowcase: {
       enabled: Boolean(input.enabled),
+      text: input.text.trim().slice(0, 120),
     },
   })
 }

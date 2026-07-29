@@ -16,6 +16,7 @@ import {
   mergeSmsProviderSettings,
   mergeUsernameSensitiveWordSettings,
   resolveRegisterInviteCodeHelpSettings,
+  resolveAuthPageShowcaseSettings,
   resolveRegisterEmailWhitelistSettings,
   resolveRegistrationEmailTemplateSettings,
   resolveRegisterNicknameLengthSettings,
@@ -76,6 +77,11 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   const existingRegisterInviteCodeHelpSettings = resolveRegisterInviteCodeHelpSettings({
     appStateJson: existing.appStateJson,
   })
+  const existingAuthPageShowcaseSettings = resolveAuthPageShowcaseSettings({
+    appStateJson: existing.appStateJson,
+    enabledFallback: true,
+    textFallback: "",
+  })
   const existingRegisterEmailWhitelistSettings = resolveRegisterEmailWhitelistSettings({
     appStateJson: existing.appStateJson,
   })
@@ -92,6 +98,9 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   })
   const registrationEnabled = Boolean(body.registrationEnabled)
   const authPageShowcaseEnabled = "authPageShowcaseEnabled" in body ? Boolean(body.authPageShowcaseEnabled) : true
+  const authPageShowcaseText = "authPageShowcaseText" in body
+    ? (readOptionalStringField(body, "authPageShowcaseText") ?? "")
+    : existingAuthPageShowcaseSettings.text
   const registrationRequireInviteCode = Boolean(body.registrationRequireInviteCode)
   const registerInviteCodeEnabled = Boolean(body.registerInviteCodeEnabled)
   const registerInviteCodeHelpEnabled = registerInviteCodeEnabled && Boolean(body.registerInviteCodeHelpEnabled)
@@ -322,6 +331,7 @@ export async function updateRegistrationSiteSettingsSection(existing: SiteSettin
   })
   const appStateWithAuthPageShowcase = mergeAuthPageShowcaseSettings(appStateWithAuthProviders, {
     enabled: authPageShowcaseEnabled,
+    text: authPageShowcaseText,
   })
   const appStateWithRegisterNicknameLengths = mergeRegisterNicknameLengthSettings(appStateWithAuthPageShowcase, {
     minLength: registerNicknameMinLength,

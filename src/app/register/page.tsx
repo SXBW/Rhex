@@ -65,7 +65,7 @@ export default async function RegisterPage(props: PageProps<"/register">) {
   if (!settings.registrationEnabled) {
     return renderPage(
       <AuthShell
-        showcaseName={settings.siteName}
+        showcaseName={settings.authPageShowcaseText || settings.siteName}
         showShowcase={settings.authPageShowcaseEnabled}
         panelTitle="注册暂未开放"
         panelDescription="稍后再回来看看，或先使用现有账号继续访问社区。"
@@ -98,7 +98,7 @@ export default async function RegisterPage(props: PageProps<"/register">) {
 
   return renderPage(
     <AuthShell
-      showcaseName={settings.siteName}
+      showcaseName={settings.authPageShowcaseText || settings.siteName}
       showShowcase={settings.authPageShowcaseEnabled}
       panelTitle="创建账户"
       panelDescription="花一分钟创建账户，马上开始你的浏览、回复和收藏。"
