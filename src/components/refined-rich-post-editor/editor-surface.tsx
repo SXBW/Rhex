@@ -322,10 +322,10 @@ export function EditorBody({
   return (
     <div
       className={activeTab === "live-preview"
-        ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8 xl:grid xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0" : "grid min-h-0 flex-1 grid-cols-1 gap-4 px-3 pb-4 pt-3 sm:px-5 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0")
+        ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8 xl:grid xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0" : "grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden px-3 pb-4 pt-3 sm:px-5 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0")
         : activeTab === "write"
-          ? (isFullscreen ? "flex min-h-0 flex-1 flex-col px-3 pt-3 sm:px-5" : "flex min-h-0 flex-1 flex-col pl-1 pr-3 pt-3 sm:pl-1 sm:pr-5")
-          : (isFullscreen ? "flex min-h-0 flex-1 flex-col px-3 pb-4 pt-3 sm:px-5 sm:pb-8" : "flex min-h-0 flex-1 flex-col px-3 pb-4 pt-3 sm:px-5")}
+          ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pt-3 sm:px-5" : "flex min-h-0 flex-1 flex-col overflow-hidden pl-1 pr-3 pt-3 sm:pl-1 sm:pr-5")
+          : (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8" : "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5")}
     >
       {isLivePreview ? (
         <>
