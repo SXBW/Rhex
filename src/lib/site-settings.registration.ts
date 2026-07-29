@@ -7,6 +7,7 @@ import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
 export interface SiteSettingsRegistrationData extends UsernameSensitiveWordSettings {
   registrationEnabled: boolean
   authPageShowcaseEnabled: boolean
+  authPageShowcaseText: string
   registrationRequireInviteCode: boolean
   registerInviteCodeEnabled: boolean
   registerInviteCodeHelpEnabled: boolean

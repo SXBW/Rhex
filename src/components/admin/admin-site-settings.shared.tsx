@@ -60,6 +60,7 @@ export interface AdminBasicSettingsInitialSettings {
   registerInitialPoints: number
   registrationEnabled: boolean
   authPageShowcaseEnabled: boolean
+  authPageShowcaseText: string
   registrationRequireInviteCode: boolean
   registerInviteCodeEnabled: boolean
   registerInviteCodeHelpEnabled: boolean
@@ -249,6 +250,7 @@ export interface AdminBasicSettingsDraft {
   registerInitialPoints: string
   registrationEnabled: boolean
   authPageShowcaseEnabled: boolean
+  authPageShowcaseText: string
   registrationRequireInviteCode: boolean
   registerInviteCodeEnabled: boolean
   registerInviteCodeHelpEnabled: boolean
@@ -511,6 +513,7 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     registerInitialPoints: coerceNumberString(initialSettings.registerInitialPoints, 0),
     registrationEnabled: coerceBoolean(initialSettings.registrationEnabled, true),
     authPageShowcaseEnabled: coerceBoolean(initialSettings.authPageShowcaseEnabled, true),
+    authPageShowcaseText: coerceString(initialSettings.authPageShowcaseText),
     registrationRequireInviteCode: coerceBoolean(initialSettings.registrationRequireInviteCode, false),
     registerInviteCodeEnabled: coerceBoolean(initialSettings.registerInviteCodeEnabled, true),
     registerInviteCodeHelpEnabled: coerceBoolean(initialSettings.registerInviteCodeHelpEnabled, false),
@@ -693,6 +696,7 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       registerInitialPoints: Number(draft.registerInitialPoints),
       registrationEnabled: draft.registrationEnabled,
       authPageShowcaseEnabled: draft.authPageShowcaseEnabled,
+      authPageShowcaseText: draft.authPageShowcaseText,
       registrationRequireInviteCode: draft.registrationRequireInviteCode,
       registerInviteCodeEnabled: draft.registerInviteCodeEnabled,
       registerInviteCodeHelpEnabled: draft.registerInviteCodeHelpEnabled,
