@@ -72,6 +72,31 @@ function resolveGalleryCoverImage(coverImage: string | null | undefined, preview
   return previewMedia?.type === "image" ? previewMedia.src : null
 }
 
+function shouldUseActivityTimeForFeedSort(sort: FeedSort) {
+  return sort === "latest" || sort === "following" || sort === "featured"
+}
+
+export function resolveFeedPrimaryTime(item: ForumFeedItem, currentSort: FeedSort) {
+  if (currentSort === "new") {
+    return {
+      label: item.publishedAt,
+      raw: item.publishedAtRaw,
+    }
+  }
+
+  if (shouldUseActivityTimeForFeedSort(currentSort)) {
+    return {
+      label: item.activityAt,
+      raw: item.activityAtRaw,
+    }
+  }
+
+  return {
+    label: item.lastRepliedAt,
+    raw: item.lastRepliedAtRaw,
+  }
+}
+
 export function getFeedPinLabel(pinScope?: string | null) {
   if (pinScope === "GLOBAL") {
     return "全局置顶"
@@ -96,6 +121,7 @@ export function mapForumFeedItemsToDisplayItems(
     const authorIsVip = isVipActive({ vipLevel: item.authorVipLevel, vipExpiresAt: item.authorVipExpiresAt })
 
     const contentMarkdown = typeof item.contentMarkdown === "string" ? item.contentMarkdown : ""
+    const primaryTime = resolveFeedPrimaryTime(item, currentSort)
     const previewMedia = resolvePostListPreviewMedia(contentMarkdown, item.coverImage)
     const previewContent = buildPostListPreviewContent({
       contentMarkdown,
@@ -132,8 +158,8 @@ export function mapForumFeedItemsToDisplayItems(
       authorIsVip,
       authorVipLevel: item.authorVipLevel,
       authorNameClassName: getVipNameClass(authorIsVip, item.authorVipLevel, { emphasize: true }),
-      metaPrimary: currentSort === "new" ? item.publishedAt : item.lastRepliedAt,
-      metaPrimaryRaw: currentSort === "new" ? item.publishedAtRaw : item.lastRepliedAtRaw,
+      metaPrimary: primaryTime.label,
+      metaPrimaryRaw: primaryTime.raw,
       metaSecondary: (currentSort === "latest" || currentSort === "new" || currentSort === "hot" || currentSort === "following") && item.latestReplyAuthorName
         ? `最新回复 ${item.latestReplyAuthorName}`
         : null,

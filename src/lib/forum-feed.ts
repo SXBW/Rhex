@@ -41,6 +41,8 @@ export interface ForumFeedItem {
   authorVipExpiresAt?: string | null
   publishedAt: string
   publishedAtRaw: string
+  activityAt: string
+  activityAtRaw: string
   lastRepliedAt: string
   lastRepliedAtRaw: string
   latestReplyAuthorName: string | null
@@ -153,6 +155,7 @@ type FeedPost = {
   isFeatured: boolean
   type: LocalPostType | string
   publishedAt: Date | null
+  activityAt?: Date | null
   lastCommentedAt: Date | null
   createdAt: Date
   board: { name: string; slug: string; iconPath: string | null }
@@ -193,6 +196,9 @@ function mapFeedPost(post: FeedPostRecord | PinnedFeedPostRecord, anonymousMaskI
     : (latestReply ? latestReply.user.nickname ?? latestReply.user.username : null)
   const latestReplyAuthorUsername = latestReplyUsesAnonymousIdentity ? null : (latestReply?.user.username ?? null)
   const latestReplyCommentId = latestReply?.id ?? null
+  const publishedAtRaw = feedPost.publishedAt ?? feedPost.createdAt
+  const activityAtRaw = feedPost.activityAt ?? feedPost.lastCommentedAt ?? publishedAtRaw
+  const lastRepliedAtRaw = feedPost.lastCommentedAt ?? publishedAtRaw
 
   return {
     id: feedPost.id,
@@ -210,10 +216,12 @@ function mapFeedPost(post: FeedPostRecord | PinnedFeedPostRecord, anonymousMaskI
     authorStatus: maskedAuthor.authorStatus ?? "ACTIVE",
     authorVipLevel: maskedAuthor.authorVipLevel ?? null,
     authorVipExpiresAt: maskedAuthor.authorIsVip ? (feedPost.author.vipExpiresAt ? new Date(feedPost.author.vipExpiresAt).toISOString() : null) : null,
-    publishedAt: formatRelativeTime(feedPost.publishedAt ?? feedPost.createdAt),
-    publishedAtRaw: (feedPost.publishedAt ?? feedPost.createdAt).toISOString(),
-    lastRepliedAt: formatRelativeTime(feedPost.lastCommentedAt ?? feedPost.publishedAt ?? feedPost.createdAt),
-    lastRepliedAtRaw: (feedPost.lastCommentedAt ?? feedPost.publishedAt ?? feedPost.createdAt).toISOString(),
+    publishedAt: formatRelativeTime(publishedAtRaw),
+    publishedAtRaw: publishedAtRaw.toISOString(),
+    activityAt: formatRelativeTime(activityAtRaw),
+    activityAtRaw: activityAtRaw.toISOString(),
+    lastRepliedAt: formatRelativeTime(lastRepliedAtRaw),
+    lastRepliedAtRaw: lastRepliedAtRaw.toISOString(),
     latestReplyAuthorName,
     latestReplyAuthorUsername,
     latestReplyCommentId,

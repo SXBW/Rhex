@@ -181,7 +181,9 @@ export async function buildHookedFeedDisplayItems(input: {
     })
     const rewardConfig = parsePostRewardPoolConfigFromContent(post.content)
     const publishedAtRaw = resolveAddonPostDate(post.publishedAt, post.createdAt) ?? post.createdAt
+    const activityAtRaw = resolveAddonPostDate(post.activityAt, post.lastCommentedAt ?? publishedAtRaw) ?? publishedAtRaw
     const lastRepliedAtRaw = resolveAddonPostDate(post.lastCommentedAt, post.publishedAt ?? post.createdAt) ?? publishedAtRaw
+    const useActivityTime = input.sort === "latest" || input.sort === "following" || input.sort === "featured"
     const commentHeat = resolvePostHeatStyle({
       views: post.viewCount,
       comments: post.commentCount,
@@ -228,8 +230,8 @@ export async function buildHookedFeedDisplayItems(input: {
       authorNameClassName: getVipNameClass(authorIsVip, authorVipLevel, { emphasize: true }),
       metaPrimary: input.sort === "new"
         ? formatRelativeTime(publishedAtRaw)
-        : formatRelativeTime(lastRepliedAtRaw),
-      metaPrimaryRaw: input.sort === "new" ? publishedAtRaw : lastRepliedAtRaw,
+        : formatRelativeTime(useActivityTime ? activityAtRaw : lastRepliedAtRaw),
+      metaPrimaryRaw: input.sort === "new" ? publishedAtRaw : (useActivityTime ? activityAtRaw : lastRepliedAtRaw),
       metaSecondary: (
         input.sort === "latest"
         || input.sort === "new"
