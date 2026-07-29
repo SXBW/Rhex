@@ -106,7 +106,7 @@ export function useEditorViewState({
 
   useLayoutEffect(() => {
     measureLineHeights()
-  }, [measureLineHeights])
+  }, [measureLineHeights, activeTab])
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -122,7 +122,7 @@ export function useEditorViewState({
     return () => {
       observer.disconnect()
     }
-  }, [measureLineHeights, textareaRef])
+  }, [measureLineHeights, textareaRef, activeTab])
 
   useEffect(() => {
     if (!isFullscreen) {

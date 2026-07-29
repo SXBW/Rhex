@@ -555,14 +555,16 @@ export function CreatePostFormShell({
         "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-4",
         desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr]" : "min-[1220px]:grid-cols-[1fr_200px]",
       )}>
-        <AddonEditor
-          context="post"
-          value={draft.content}
-          onChange={(value) => updateDraftField("content", value)}
-          placeholder="文明社区，文明发言。支持 Markdown 语法"
-          markdownEmojiMap={markdownEmojiMap}
-          shellClassName="h-full"
-        />
+        <div className="max-h-[calc(100vh-10rem)] overflow-hidden">
+          <AddonEditor
+            context="post"
+            value={draft.content}
+            onChange={(value) => updateDraftField("content", value)}
+            placeholder="文明社区，文明发言。支持 Markdown 语法"
+            markdownEmojiMap={markdownEmojiMap}
+            shellClassName="h-full"
+          />
+        </div>
         <div className={cn(
           "hidden",
           !desktopPanelCollapsed && "min-[1220px]:block",
