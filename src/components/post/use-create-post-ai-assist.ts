@@ -126,6 +126,13 @@ export function resolveAiSuggestionNeeds(params: {
   }
 }
 
+export function shouldContinueAfterAiSuggestionError(params: {
+  needBoard: boolean
+  needTags: boolean
+}) {
+  return !params.needBoard && params.needTags
+}
+
 function mergeSuggestedTagsIntoDraft(draft: LocalPostDraft, tags: AiCategorizeTagLite[]) {
   if (tags.length === 0) {
     return draft
@@ -415,6 +422,9 @@ export function useCreatePostAiAssist({
       setAiSuggestedBoard(null)
       setAiSuggestedTags([])
       setAiSuggestionError(error instanceof Error ? error.message : "AI 建议生成失败")
+      if (shouldContinueAfterAiSuggestionError({ needBoard, needTags })) {
+        return currentDraft
+      }
       throw error
     } finally {
       setAiSuggestionPending(false)
