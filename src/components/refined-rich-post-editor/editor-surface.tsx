@@ -322,14 +322,14 @@ export function EditorBody({
   return (
     <div
       className={activeTab === "live-preview"
-        ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8 xl:grid xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0" : "grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden px-3 pb-4 pt-3 sm:px-5 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0")
+        ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8 xl:grid xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] xl:gap-0" : "grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden px-3 pb-4 pt-3 sm:px-5 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] xl:gap-0")
         : activeTab === "write"
           ? (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pt-3 sm:px-5" : "flex min-h-0 flex-1 flex-col overflow-hidden pl-1 pr-3 pt-3 sm:pl-1 sm:pr-5")
           : (isFullscreen ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5 sm:pb-8" : "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 pt-3 sm:px-5")}
     >
       {isLivePreview ? (
         <>
-          <div className={cn("min-w-0 xl:pr-5", isFullscreen && "min-h-0 flex-1 overflow-hidden")}>
+          <div className={cn("min-w-0 flex flex-col flex-1 min-h-0 overflow-hidden xl:pr-5")}>
             {writePanel}
           </div>
           <div className={cn("hidden bg-border xl:block", isFullscreen && "min-h-0")} aria-hidden="true" />

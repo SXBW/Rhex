@@ -555,7 +555,7 @@ export function CreatePostFormShell({
         "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-4",
         desktopPanelCollapsed ? "min-[1220px]:grid-cols-[1fr]" : "min-[1220px]:grid-cols-[1fr_200px]",
       )}>
-        <div className="max-h-[calc(100vh-10rem)] overflow-hidden">
+        <div className="h-full min-h-0 max-h-[calc(100vh-10rem)] overflow-hidden">
           <AddonEditor
             context="post"
             value={draft.content}
