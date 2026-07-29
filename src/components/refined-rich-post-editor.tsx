@@ -450,7 +450,7 @@ export function RefinedRichPostEditor({
             recipient={privateReplyRecipient}
             onClear={onClearPrivateReply}
           />
-          <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             <EditorBody
               activeTab={viewState.activeTab}
               isFullscreen={viewState.isFullscreen}
