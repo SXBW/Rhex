@@ -1,5 +1,6 @@
 import type { PlatformShortcutMap } from "@/lib/client-platform"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
+import type { ReactNode } from "react"
 
 export type EditorTab = "write" | "live-preview" | "preview"
 
@@ -48,6 +49,7 @@ export interface RefinedRichPostEditorProps {
   markdownImageUploadEnabled?: boolean
   shellClassName?: string
   renderFullscreenInDialogPortal?: boolean
+  desktopPanelResults?: ReactNode
   privateReplyPostId?: string
   privateReplyRecipient?: PrivateReplyRecipient | null
   onPrivateReplyInsert?: (payload: PrivateReplyInsertPayload) => void

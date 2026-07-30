@@ -10,6 +10,7 @@ import {
   BountySettingsSection,
   LotterySettingsSection,
   PollSettingsSection,
+  DesktopResultsSummary,
   PostEnhancementsSection,
 } from "@/components/post/create-post-form-sections"
 import { PostDraftNotice, type PostDraftNoticeAction } from "@/components/post/post-draft-notice"
@@ -563,6 +564,24 @@ export function CreatePostFormShell({
             placeholder="文明社区，文明发言。支持 Markdown 语法"
             markdownEmojiMap={markdownEmojiMap}
             shellClassName="h-full"
+            desktopPanelResults={
+              draft.manualTags.length > 0 || draft.redPacketEnabled
+                ? <DesktopResultsSummary
+                    pointName={pointName}
+                    finalTags={draft.manualTags}
+                    onRemoveManualTag={removeManualTag}
+                    redPacketEnabled={draft.redPacketEnabled}
+                    redPacketMode={draft.redPacketMode}
+                    redPacketGrantMode={draft.redPacketGrantMode}
+                    redPacketTriggerType={draft.redPacketTriggerType}
+                    jackpotInitialPoints={draft.jackpotInitialPoints}
+                    fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
+                    postJackpotMinInitialPoints={postJackpotMinInitialPoints}
+                    postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
+                    postJackpotHitProbability={postJackpotHitProbability}
+                  />
+                : undefined
+            }
           />
         </div>
         <div className={cn(

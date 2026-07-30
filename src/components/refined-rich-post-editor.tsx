@@ -142,6 +142,7 @@ export function RefinedRichPostEditor({
   markdownImageUploadEnabled: externalMarkdownImageUploadEnabled,
   shellClassName,
   renderFullscreenInDialogPortal = false,
+  desktopPanelResults,
   privateReplyPostId,
   privateReplyRecipient,
   onPrivateReplyInsert,
@@ -530,6 +531,7 @@ export function RefinedRichPostEditor({
             privateReplyRecipient={privateReplyRecipient}
           />
             {panels.message ? <p className="mt-2 text-xs text-muted-foreground">{panels.message}</p> : null}
+            {desktopPanelResults ? <div className="mt-3 border-t border-border pt-3">{desktopPanelResults}</div> : null}
           </div>
         </div>
       </div>

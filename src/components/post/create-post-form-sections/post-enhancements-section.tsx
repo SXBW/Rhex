@@ -200,6 +200,72 @@ function RewardPoolSummary({
   )
 }
 
+export function DesktopResultsSummary({
+  pointName,
+  finalTags,
+  onRemoveManualTag,
+  redPacketEnabled,
+  redPacketMode,
+  redPacketGrantMode,
+  redPacketTriggerType,
+  jackpotInitialPoints,
+  fixedRedPacketTotalPoints,
+  postJackpotMinInitialPoints,
+  postJackpotReplyIncrementPoints,
+  postJackpotHitProbability,
+}: {
+  pointName: string
+  finalTags: string[]
+  onRemoveManualTag: (tag: string) => void
+  redPacketEnabled: boolean
+  redPacketMode: "RED_PACKET" | "JACKPOT"
+  redPacketGrantMode: "FIXED" | "RANDOM"
+  redPacketTriggerType: "REPLY" | "LIKE" | "FAVORITE"
+  jackpotInitialPoints: string
+  fixedRedPacketTotalPoints: number | null
+  postJackpotMinInitialPoints: number
+  postJackpotReplyIncrementPoints: number
+  postJackpotHitProbability: number
+}) {
+  return (
+    <>
+      {finalTags.length > 0 ? (
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          {finalTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1"
+            >
+              <span>#{tag}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveManualTag(tag)}
+                className="transition-opacity hover:opacity-70"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {redPacketEnabled ? (
+        <RewardPoolSummary
+          pointName={pointName}
+          redPacketMode={redPacketMode}
+          redPacketGrantMode={redPacketGrantMode}
+          redPacketTriggerType={redPacketTriggerType}
+          jackpotInitialPoints={jackpotInitialPoints}
+          fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
+          postJackpotMinInitialPoints={postJackpotMinInitialPoints}
+          postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
+          postJackpotHitProbability={postJackpotHitProbability}
+        />
+      ) : null}
+    </>
+  )
+}
+
 interface PostEnhancementsSectionProps {
   pointName: string
   rewardPoolEnabled: boolean
@@ -738,39 +804,20 @@ export function PostEnhancementsSection({
             
             {hasDesktopSummary ? (
               <div className="mb-4 space-y-4 p-3">
-                {finalTags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    {finalTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1"
-                      >
-                        <span>#{tag}</span>
-                        <button
-                          type="button"
-                          onClick={() => actions.onRemoveManualTag(tag)}
-                          className="transition-opacity hover:opacity-70"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                {redPacketEnabled ? (
-                  <RewardPoolSummary
-                    pointName={pointName}
-                    redPacketMode={redPacketMode}
-                    redPacketGrantMode={redPacketGrantMode}
-                    redPacketTriggerType={redPacketTriggerType}
-                    jackpotInitialPoints={jackpotInitialPoints}
-                    fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
-                    postJackpotMinInitialPoints={postJackpotMinInitialPoints}
-                    postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
-                    postJackpotHitProbability={postJackpotHitProbability}
-                  />
-                ) : null}
+                <DesktopResultsSummary
+                  pointName={pointName}
+                  finalTags={finalTags}
+                  onRemoveManualTag={actions.onRemoveManualTag}
+                  redPacketEnabled={redPacketEnabled}
+                  redPacketMode={redPacketMode}
+                  redPacketGrantMode={redPacketGrantMode}
+                  redPacketTriggerType={redPacketTriggerType}
+                  jackpotInitialPoints={jackpotInitialPoints}
+                  fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
+                  postJackpotMinInitialPoints={postJackpotMinInitialPoints}
+                  postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
+                  postJackpotHitProbability={postJackpotHitProbability}
+                />
               </div>
             ) : null}
 
@@ -807,44 +854,6 @@ export function PostEnhancementsSection({
                 <X className="size-4" />
               </button>
             </div>
-            
-            {hasDesktopSummary ? (
-              <div className="mb-4 space-y-4 p-3">
-                {finalTags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    {finalTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1"
-                      >
-                        <span>#{tag}</span>
-                        <button
-                          type="button"
-                          onClick={() => actions.onRemoveManualTag(tag)}
-                          className="transition-opacity hover:opacity-70"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                {redPacketEnabled ? (
-                  <RewardPoolSummary
-                    pointName={pointName}
-                    redPacketMode={redPacketMode}
-                    redPacketGrantMode={redPacketGrantMode}
-                    redPacketTriggerType={redPacketTriggerType}
-                    jackpotInitialPoints={jackpotInitialPoints}
-                    fixedRedPacketTotalPoints={fixedRedPacketTotalPoints}
-                    postJackpotMinInitialPoints={postJackpotMinInitialPoints}
-                    postJackpotReplyIncrementPoints={postJackpotReplyIncrementPoints}
-                    postJackpotHitProbability={postJackpotHitProbability}
-                  />
-                ) : null}
-              </div>
-            ) : null}
 
             {desktopPanelContent}
           </div>
