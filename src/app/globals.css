@@ -1197,6 +1197,17 @@
       padding-right: 0;
     }
 
+    .forum-page-shell:is([data-sidebar-display-mode='default'], [data-sidebar-display-mode='tree']) .forum-page-sidebar-inner {
+      position: fixed;
+      z-index: 30;
+      left: calc((100vw - min(1200px, 100vw)) / 2 - 0.25rem);
+      width: 200px;
+    }
+
+    .forum-page-shell[data-sidebar-collapsed='true']:is([data-sidebar-display-mode='default'], [data-sidebar-display-mode='tree']) .forum-page-sidebar-inner {
+      width: 52px;
+    }
+
     .forum-page-shell[data-sidebar-collapsed='true']:is([data-sidebar-display-mode='default'], [data-sidebar-display-mode='tree']) .forum-page-sidebar-home-row {
       justify-content: center;
     }
