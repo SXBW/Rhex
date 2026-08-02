@@ -251,7 +251,7 @@ export function EditorBody({
     <div
       ref={previewPanelRef}
       key="preview-panel"
-      className="min-h-0 min-w-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      className="min-h-0 min-w-0 flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       style={previewStyle}
       onScroll={(event) => {
         if (!isLivePreview || scrollSyncSourceRef.current === "editor") {
@@ -333,7 +333,7 @@ export function EditorBody({
             {writePanel}
           </div>
           <div className={cn("hidden bg-border xl:block", isFullscreen && "min-h-0")} aria-hidden="true" />
-          <div className={cn("min-w-0 border-t border-border pt-4 xl:border-t-0 xl:pl-5 xl:pt-0", isFullscreen && "min-h-0 flex-1 overflow-hidden")}>
+          <div className={cn("min-w-0 flex flex-col flex-1 min-h-0 overflow-hidden border-t border-border pt-4 xl:border-t-0 xl:pl-5 xl:pt-0")}>
             {previewPanel}
           </div>
         </>
