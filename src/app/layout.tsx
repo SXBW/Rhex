@@ -91,6 +91,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <noscript>
           <style>{noScriptRootInitStyles}</style>
         </noscript>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function reveal(){if(document.documentElement.getAttribute("data-root-init")==="pending"){document.documentElement.setAttribute("data-root-init","ready")}var b=document.body;if(b){b.style.removeProperty("visibility");b.style.removeProperty("overflow")}}if(document.readyState==="complete"){reveal()}else{window.addEventListener("load",reveal,{once:true})}})();`,
+          }}
+        />
       </head>
       <body style={{ visibility: "hidden", overflow: "hidden" }}>
         <Suspense fallback={null}>

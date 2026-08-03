@@ -16,6 +16,7 @@ import {
   PUBLIC_PAGE_CACHE_TARGET_HEADER,
   PUBLIC_PAGE_CACHE_TTL_SECONDS,
 } from "@/lib/public-page-cache-policy"
+import { ensurePublicPageCacheWarmLoop } from "@/lib/public-page-cache-warm"
 
 export const dynamic = "force-dynamic"
 
@@ -185,6 +186,8 @@ async function handle(request: Request) {
   if (!isPublicPageCacheAvailable()) {
     return streamBypassResponse(request, target)
   }
+
+  ensurePublicPageCacheWarmLoop()
 
   try {
     const generation = await getPublicPageCacheGeneration(target)
