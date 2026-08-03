@@ -93,7 +93,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </noscript>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){function reveal(){if(document.documentElement.getAttribute("data-root-init")==="pending"){document.documentElement.setAttribute("data-root-init","ready")}var b=document.body;if(b){b.style.removeProperty("visibility");b.style.removeProperty("overflow")}}if(document.readyState==="complete"){reveal()}else{window.addEventListener("load",reveal,{once:true})}})();`,
+            __html: `(function(){var revealed=false;function reveal(){if(revealed){return}revealed=true;var el=document.documentElement;if(el&&el.getAttribute("data-root-init")==="pending"){el.setAttribute("data-root-init","ready")}var b=document.body;if(b){b.style.removeProperty("visibility");b.style.removeProperty("overflow")}}var bodyObserver=null;function ensureBodyObserved(){var b=document.body;if(!b||bodyObserver){return}if(b.firstElementChild){reveal();return}bodyObserver=new MutationObserver(reveal);bodyObserver.observe(b,{childList:true,subtree:true})}if(document.readyState==="complete"){reveal()}else{window.addEventListener("load",reveal,{once:true});new MutationObserver(ensureBodyObserved).observe(document.documentElement,{childList:true});ensureBodyObserved()}})();`,
           }}
         />
       </head>
