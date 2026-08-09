@@ -43,7 +43,7 @@ import {
 } from "@/lib/external-auth-helpers"
 import { createExternalAuthAccount, createPasskeyCredential, deleteExternalAuthAccountsByUserIdAndProvider, deletePasskeyCredentialByIdAndUserId, findExternalAuthAccount, findExternalAuthAccountByUserIdAndProvider, findPasskeyCredentialByCredentialId } from "@/lib/external-auth-store"
 import type { ExternalAuthIdentity, PendingExternalAuthState } from "@/lib/external-auth-types"
-import type { SiteSettingsData } from "@/lib/site-settings"
+import type { ServerSiteSettingsData } from "@/lib/site-settings"
 import type { StoredPasskeyCredential } from "@/lib/external-auth-store"
 import type { ExternalAuthProvider } from "@/lib/external-auth-types"
 import { findUsernameSensitiveWord } from "@/lib/username-sensitive-words"
@@ -107,7 +107,7 @@ async function createUserFromIdentity(input: {
   username: string
   inviteCode?: string
   request: Request
-  siteSettings: Pick<SiteSettingsData, "inviteRewardInvitee" | "inviteRewardInviter" | "pointName" | "registerEmailWhitelistDomains" | "registerEmailWhitelistEnabled" | "registerInitialPoints" | "registrationEnabled" | "registrationRequireInviteCode" | "usernameSensitiveWords" | "usernameSensitiveWordsEnabled">
+  siteSettings: Pick<ServerSiteSettingsData, "inviteRewardInvitee" | "inviteRewardInviter" | "pointName" | "registerEmailWhitelistDomains" | "registerEmailWhitelistEnabled" | "registerInitialPoints" | "registrationEnabled" | "registrationRequireInviteCode" | "usernameSensitiveWords" | "usernameSensitiveWordsEnabled">
 }) {
   if (!input.siteSettings.registrationEnabled) {
     apiError(403, "当前站点已关闭注册")
@@ -467,7 +467,7 @@ export async function disconnectPasskeyCredentialFromUser(userId: number, creden
   }, createAddonHookInput(request))
 }
 
-export async function resolveExternalAuth(identity: ExternalAuthIdentity, siteSettings: Pick<SiteSettingsData, "inviteRewardInvitee" | "inviteRewardInviter" | "pointName" | "registerEmailWhitelistDomains" | "registerEmailWhitelistEnabled" | "registerInitialPoints" | "registrationEnabled" | "registrationRequireInviteCode" | "usernameSensitiveWords" | "usernameSensitiveWordsEnabled">, request: Request): Promise<ExternalAuthResolutionResult> {
+export async function resolveExternalAuth(identity: ExternalAuthIdentity, siteSettings: Pick<ServerSiteSettingsData, "inviteRewardInvitee" | "inviteRewardInviter" | "pointName" | "registerEmailWhitelistDomains" | "registerEmailWhitelistEnabled" | "registerInitialPoints" | "registrationEnabled" | "registrationRequireInviteCode" | "usernameSensitiveWords" | "usernameSensitiveWordsEnabled">, request: Request): Promise<ExternalAuthResolutionResult> {
   if (identity.method === "oauth" && identity.provider && identity.providerAccountId) {
     const existingAccount = await findExternalAuthAccount(identity.provider, identity.providerAccountId)
 
@@ -545,7 +545,7 @@ export async function completePendingExternalAuthUsername(input: {
   state: PendingExternalAuthState
   username: string
   inviteCode?: string
-  siteSettings: Pick<SiteSettingsData, "inviteRewardInvitee" | "inviteRewardInviter" | "pointName" | "registerEmailWhitelistDomains" | "registerEmailWhitelistEnabled" | "registerInitialPoints" | "registrationEnabled" | "registrationRequireInviteCode" | "usernameSensitiveWords" | "usernameSensitiveWordsEnabled">
+  siteSettings: Pick<ServerSiteSettingsData, "inviteRewardInvitee" | "inviteRewardInviter" | "pointName" | "registerEmailWhitelistDomains" | "registerEmailWhitelistEnabled" | "registerInitialPoints" | "registrationEnabled" | "registrationRequireInviteCode" | "usernameSensitiveWords" | "usernameSensitiveWordsEnabled">
   request: Request
 }) {
   if (input.state.kind !== "username_required") {

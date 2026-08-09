@@ -4,7 +4,7 @@ import { apiSuccess, createRouteHandler, readJsonBody, requireStringField } from
 import { attachAuthenticatedSession, completePendingExternalAuthUsername } from "@/lib/external-auth-service"
 import { clearPendingExternalAuthState, readPendingExternalAuthState } from "@/lib/auth-flow-state"
 import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
-import { getSiteSettings } from "@/lib/site-settings"
+import { getServerSiteSettings } from "@/lib/site-settings"
 
 export const POST = createRouteHandler(async ({ request }) => {
   const body = await readJsonBody(request)
@@ -16,7 +16,7 @@ export const POST = createRouteHandler(async ({ request }) => {
     return NextResponse.json({ code: 410, message: "当前待处理认证流程已失效，请重新发起登录" }, { status: 410 })
   }
 
-  const settings = await getSiteSettings()
+  const settings = await getServerSiteSettings()
   const user = await completePendingExternalAuthUsername({
     state: pendingState,
     username,

@@ -51,7 +51,6 @@ import { isEmailInWhitelist } from "@/lib/email"
 import { validatePasswordPolicy } from "@/lib/password-policy"
 import type { SiteSettingsData } from "@/lib/site-settings"
 import { SMS_CODE_COOLDOWN_SECONDS } from "@/lib/sms-verification"
-import { findUsernameSensitiveWord } from "@/lib/username-sensitive-words"
 
 function getUsernameValidationMessage(value: string, settings: SiteSettingsData) {
   const username = value.trim()
@@ -64,8 +63,7 @@ function getUsernameValidationMessage(value: string, settings: SiteSettingsData)
     return "用户名需为 3-20 位字母、数字或下划线"
   }
 
-  const matchedWord = findUsernameSensitiveWord(username, settings)
-  return matchedWord ? `用户名包含敏感词：${matchedWord}` : ""
+  return ""
 }
 
 function getNicknameValidationMessage(value: string, settings: SiteSettingsData) {
@@ -90,8 +88,7 @@ function getNicknameValidationMessage(value: string, settings: SiteSettingsData)
     return `昵称长度不能超过 ${settings.registerNicknameMaxLength} 个字符`
   }
 
-  const matchedWord = findUsernameSensitiveWord(nickname, settings)
-  return matchedWord ? `昵称包含敏感词：${matchedWord}` : ""
+  return ""
 }
 
 function withRegisterSuccessToast(target: string) {

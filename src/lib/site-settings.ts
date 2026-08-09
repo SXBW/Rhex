@@ -23,7 +23,7 @@ import { normalizeCommentLoadMode } from "@/lib/comment-load-mode"
 import { normalizePostListLoadMode } from "@/lib/post-list-load-mode"
 import { normalizePostListDisplayMode } from "@/lib/post-list-display"
 import { resolveAnonymousPostSettings, resolveAttachmentFeatureSettings, resolveAuthProviderSettings, resolveAvatarChangePointCostSettings, resolveBoardApplicationSettings, resolveBoardTreasurySettings, resolveCheckInMakeUpPriceSettings, resolveCheckInRewardSettings, resolveCheckInStreakSettings, resolveCommentAccessSettings, resolveEmailBusinessSwitchSettings, resolveFooterCopyrightSettings, resolveForumAccessSettings, resolveHomeFeedPostListLoadSettings, resolveHomeHotFeedSettings, resolveHomeSidebarAnnouncementSettings, resolveImageWatermarkSettings, resolveInteractionGateSettings, resolveIntroductionChangePointCostSettings, resolveInviteCodePurchasePriceSettings, resolveLeftSidebarDisplaySettings, resolveLeftSidebarHomeSettings, resolveLeftSidebarNavigationSettings, resolveMarkdownImageUploadSettings, resolveMentionRecommendationSettings, resolveMessageMediaSettings, resolveNicknameChangePointCostSettings, resolvePostContentLengthSettings, resolvePostJackpotSettings, resolvePostPageSizeSettings, resolvePostRedPacketSettings, resolvePostSlugGenerationSettings, resolveRegisterEmailWhitelistSettings, resolveRegisterInviteCodeHelpSettings, resolveRegisterNicknameLengthSettings, resolveRegisterPasswordPolicySettings, resolveRegistrationEmailTemplateSettings, resolveRegistrationRewardSettings, resolveSiteBrandingSettings, resolveSiteChatSettings, resolveSiteSecuritySettings, resolveSmsProviderSettings, resolveThemeCustomizationSettingsFromAppState, resolveUploadObjectStorageSettings, resolveUserProfileDisplaySettings, resolveUsernameSensitiveWordSettings, resolveVipLevelIconSettings, resolveVipNameColorSettings } from "@/lib/site-settings-app-state"
-import { resolveAuthPageShowcaseSettings } from "@/lib/site-settings-app-state"
+import { isRecord, resolveAuthPageShowcaseSettings, SITE_SETTINGS_STATE_KEY } from "@/lib/site-settings-app-state"
 import { resolveAuthProviderSensitiveConfig, resolveCaptchaSensitiveConfig, resolveSmsSensitiveConfig, resolveUploadStorageSensitiveConfig } from "@/lib/site-settings-sensitive-state"
 import { ensureAdminActorPermission } from "@/lib/admin-scope-permissions"
 import { requireSiteAdminActor } from "@/lib/moderator-permissions"
@@ -177,6 +177,31 @@ function parseSiteSettingsAppState(raw: string | null | undefined) {
       : {}
   } catch {
     return {}
+  }
+}
+
+function stripSensitiveWordsFromAppStateJson(appStateJson: string | null | undefined) {
+  if (!appStateJson) {
+    return appStateJson
+  }
+
+  try {
+    const root = JSON.parse(appStateJson) as unknown
+    if (!isRecord(root)) {
+      return null
+    }
+
+    const siteSettingsState = root[SITE_SETTINGS_STATE_KEY]
+    if (!isRecord(siteSettingsState) || !("usernameSensitiveWords" in siteSettingsState)) {
+      return appStateJson
+    }
+
+    const { usernameSensitiveWords: _removedUsernameSensitiveWords, ...restSiteSettingsState } = siteSettingsState
+    void _removedUsernameSensitiveWords
+    root[SITE_SETTINGS_STATE_KEY] = restSiteSettingsState
+    return JSON.stringify(root)
+  } catch {
+    return null
   }
 }
 
@@ -779,6 +804,8 @@ function toPublicSiteSettings(data: ServerSiteSettingsData): SiteSettingsData {
     smtpPass,
     smtpFrom,
     smtpSecure,
+    usernameSensitiveWordsEnabled,
+    usernameSensitiveWords,
     ...rest
   } = data
   void githubClientId
@@ -801,7 +828,12 @@ function toPublicSiteSettings(data: ServerSiteSettingsData): SiteSettingsData {
   void smtpPass
   void smtpFrom
   void smtpSecure
-  return rest
+  void usernameSensitiveWordsEnabled
+  void usernameSensitiveWords
+  return {
+    ...rest,
+    appStateJson: stripSensitiveWordsFromAppStateJson(rest.appStateJson),
+  }
 }
 
 const getPersistentSiteSettings = unstable_cache(

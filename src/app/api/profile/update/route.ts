@@ -12,7 +12,7 @@ import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
 import { validateProfilePayload } from "@/lib/validators"
 import { verifyCode } from "@/lib/verification"
 import { logRouteWriteSuccess } from "@/lib/route-metadata"
-import { getSiteSettings } from "@/lib/site-settings"
+import { getServerSiteSettings } from "@/lib/site-settings"
 import { findUsernameSensitiveWord } from "@/lib/username-sensitive-words"
 import { revalidateUserProfileMutation } from "@/lib/user-profile-revalidation"
 import { isUserProfileVisibility, mapLegacyVisibilityBoolean, mergeUserProfileSettings, resolveUserProfileSettings, type UserProfileVisibility } from "@/lib/user-profile-settings"
@@ -115,7 +115,7 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
 
   const body = await readJsonBody(request)
   const requestUrl = new URL(request.url)
-  const settings = await getSiteSettings()
+  const settings = await getServerSiteSettings()
   const updateScope = typeof body.updateScope === "string" ? body.updateScope.trim() : ""
 
   if (updateScope === "avatar") {

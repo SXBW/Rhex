@@ -1,10 +1,9 @@
 import type { RegistrationEmailTemplateSettings } from "@/lib/site-settings-app-state"
-import type { UsernameSensitiveWordSettings } from "@/lib/username-sensitive-words"
 import type { PasswordStrength } from "@/lib/password-policy"
 import type { EmailBusinessSwitchSettings } from "@/lib/email-business-switches"
 import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
 
-export interface SiteSettingsRegistrationData extends UsernameSensitiveWordSettings {
+export interface SiteSettingsRegistrationData {
   registrationEnabled: boolean
   authPageShowcaseEnabled: boolean
   authPageShowcaseText: string

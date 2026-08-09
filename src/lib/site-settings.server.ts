@@ -1,4 +1,6 @@
 export interface ServerSiteSettingsSensitiveData {
+  usernameSensitiveWordsEnabled: boolean
+  usernameSensitiveWords: string[]
   githubClientId?: string | null
   githubClientSecret?: string | null
   googleClientId?: string | null
