@@ -1,5 +1,5 @@
 x-app-environment: &app-environment
-  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-bbs}?schema=public
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-bbs}?schema=public&connection_limit=${POSTGRES_CONNECTION_LIMIT:-12}&pool_timeout=${POSTGRES_POOL_TIMEOUT:-10000}
   REDIS_URL: redis://redis:6379
   REDIS_PASSWORD: ${REDIS_PASSWORD:-}
   REDIS_DB: ${REDIS_DB:-}
@@ -44,11 +44,12 @@ services:
       - |
         set -eu
         if [ -n "$${REDIS_PASSWORD:-}" ]; then
-          exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}"
+          exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}" --maxmemory "$${REDIS_MAXMEMORY:-2gb}" --maxmemory-policy volatile-lru
         fi
-        exec redis-server --appendonly yes
+        exec redis-server --appendonly yes --maxmemory "$${REDIS_MAXMEMORY:-2gb}" --maxmemory-policy volatile-lru
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_MAXMEMORY: ${REDIS_MAXMEMORY:-2gb}
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:

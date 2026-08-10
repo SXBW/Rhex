@@ -106,7 +106,7 @@ function shouldForceSeed() {
 function runSchemaStep() {
   const schemaArgs = buildSetupSchemaArgs({ argv: process.argv.slice(2) })
 
-  runStep("npx", schemaArgs.args, "同步数据库结构")
+  runStep("pnpm", ["exec", ...schemaArgs.args], "同步数据库结构")
 }
 
 function runPrismaScript<T>(script: string) {
@@ -115,7 +115,7 @@ function runPrismaScript<T>(script: string) {
 
   let result
   try {
-    result = spawnSync("npx", ["tsx", tmpFile], {
+    result = spawnSync("pnpm", ["exec", "tsx", tmpFile], {
       cwd: process.cwd(),
       encoding: "utf8",
       shell: process.platform === "win32",
@@ -242,7 +242,7 @@ function main() {
   validateEnv()
   console.log("数据库同步：自动应用 schema 变更，保护外部表和枚举")
 
-  runStep("npx", ["prisma", "generate"], "生成 Prisma Client")
+  runStep("pnpm", ["exec", "prisma", "generate"], "生成 Prisma Client")
   runSchemaStep()
 
   const databaseState = inspectDatabaseState()
@@ -251,7 +251,7 @@ function main() {
   const seedDecision = shouldRunSeed(databaseState)
 
   if (seedDecision === "run") {
-    runStep("npx", ["tsx", "prisma/seed.ts"], shouldForceSeed() ? "强制执行初始化数据写入" : "写入初始业务数据")
+    runStep("pnpm", ["exec", "tsx", "prisma/seed.ts"], shouldForceSeed() ? "强制执行初始化数据写入" : "写入初始业务数据")
   } else {
 
     console.log("\n>>> 跳过初始化数据写入")

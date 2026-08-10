@@ -42,7 +42,7 @@ function readDatabaseUrl() {
 async function collectExternalDatabaseObjects(databaseUrl: string) {
   const schemaName = resolvePostgresSchemaName(databaseUrl)
   const schemaPath = resolve(process.cwd(), "prisma", "schema.prisma")
-  const introspectionResult = spawnSync("npx", ["prisma", "db", "pull", "--force", "--print", "--schema", schemaPath], {
+  const introspectionResult = spawnSync("pnpm", ["exec", "prisma", "db", "pull", "--force", "--print", "--schema", schemaPath], {
     cwd: process.cwd(),
     stdio: "pipe",
     encoding: "utf8",
@@ -106,7 +106,7 @@ async function main() {
   } = await collectExternalDatabaseObjects(databaseUrl)
 
   if (pushOptions.cleanLegacyDeleted && currentTables.includes("Post") && currentTables.includes("Comment")) {
-    runStep("npx", ["prisma", "db", "execute", "--file", cleanupSqlPath, "--schema", schemaPath], "清理历史 DELETED 数据")
+    runStep("pnpm", ["exec", "prisma", "db", "execute", "--file", cleanupSqlPath, "--schema", schemaPath], "清理历史 DELETED 数据")
   } else if (pushOptions.cleanLegacyDeleted) {
     console.log(`\n>>> 跳过历史 DELETED 数据清理（schema: ${schemaName} 缺少 Post/Comment）`)
   } else {
@@ -115,7 +115,7 @@ async function main() {
 
   if (externalTables.length === 0 && externalEnums.length === 0) {
     console.log(`\n>>> 未发现需要保护的外部对象（schema: ${schemaName}）`)
-    runStep("npx", ["prisma", "db", "push", "--schema", schemaPath, ...finalPushArgs], "同步数据库结构")
+    runStep("pnpm", ["exec", "prisma", "db", "push", "--schema", schemaPath, ...finalPushArgs], "同步数据库结构")
     return
   }
 
@@ -136,7 +136,7 @@ async function main() {
   console.log(`- 外部枚举：${externalEnums.length}`)
 
   try {
-    runStep("npx", ["prisma", "db", "push", "--config", tempConfigPath, ...finalPushArgs], "同步数据库结构")
+    runStep("pnpm", ["exec", "prisma", "db", "push", "--config", tempConfigPath, ...finalPushArgs], "同步数据库结构")
   } finally {
     await fs.rm(tempConfigPath, { force: true }).catch(() => undefined)
   }

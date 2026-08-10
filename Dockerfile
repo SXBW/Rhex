@@ -1,6 +1,6 @@
 ARG NEXT_ASSET_PREFIX="https://rhex-runtime-asset-prefix.invalid"
 ARG NEXT_DEPLOYMENT_ID
-ARG NODE_IMAGE=node:20-bookworm-slim
+ARG NODE_IMAGE=node:24-bookworm-slim
 
 FROM ${NODE_IMAGE} AS base
 
