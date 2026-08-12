@@ -8,6 +8,8 @@ on:
     - "**.md"
     - "**.mdx"
     - "docs/**"
+    - ".github/**"
+
     tags:
       - "*.*.*"
   workflow_dispatch:
