@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Modal } from "@/components/ui/modal"
 import {
   Select,
   SelectContent,
@@ -152,6 +153,8 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
   const [applicationStatusFilter, setApplicationStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED">("ALL")
   const [applicationKeyword, setApplicationKeyword] = useState("")
   const [isPending, startTransition] = useTransition()
+  const [revokeTarget, setRevokeTarget] = useState<AdminVerificationApplicationItem | null>(null)
+  const [revokeReason, setRevokeReason] = useState("")
 
   const editingType = editingIndex === null ? null : types[editingIndex] ?? null
   const filteredApplications = useMemo(() => {
@@ -311,22 +314,18 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
     })
   }
 
-  async function revokeApplication(applicationId: string, displayName: string) {
-    const confirmed = await showConfirm({
-      title: "取消认证",
-      description: `确认取消「${displayName}」的认证吗？取消后前台将不再展示认证标识，该用户可重新提交认证申请。`,
-      confirmText: "确认取消",
-      variant: "danger",
-    })
-    if (!confirmed) {
+  function openRevokeModal(item: AdminVerificationApplicationItem) {
+    setRevokeReason("")
+    setRevokeTarget(item)
+  }
+
+  function submitRevoke() {
+    if (!revokeTarget) {
       return
     }
 
-    const rawReason = window.prompt(`请输入取消「${displayName}」认证的原因（可选，将通知用户）：`)
-    if (rawReason === null) {
-      return
-    }
-    const note = rawReason.trim()
+    const applicationId = revokeTarget.id
+    const note = revokeReason.trim()
 
     setFeedback("")
     startTransition(async () => {
@@ -632,7 +631,7 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
                           <div className="flex flex-wrap items-center gap-2">
                             <span className={item.status === "APPROVED" ? "rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] text-emerald-700" : item.status === "REJECTED" ? "rounded-full bg-rose-100 px-2.5 py-1 text-[11px] text-rose-700" : "rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600"}>{item.status === "APPROVED" ? "已通过" : item.status === "REJECTED" ? "已驳回" : "已取消"}</span>
                             {item.status === "APPROVED" ? (
-                              <Button type="button" variant="outline" className="h-7 gap-1 rounded-full px-2.5 text-xs text-rose-600" disabled={isPending} onClick={() => void revokeApplication(item.id, item.user.displayName)}>
+                              <Button type="button" variant="outline" className="h-7 gap-1 rounded-full px-2.5 text-xs text-rose-600" disabled={isPending} onClick={() => openRevokeModal(item)}>
                                 <ShieldOff className="h-3.5 w-3.5" />
                                 取消认证
                               </Button>
@@ -650,6 +649,76 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
           ) : null}
         </section>
       </div>
+
+      <Modal
+        open={revokeTarget !== null}
+        onClose={() => {
+          if (!isPending) {
+            setRevokeTarget(null)
+          }
+        }}
+        title="取消认证"
+        description="取消后前台将不再展示该用户的认证标识，该用户可重新提交认证申请。"
+        footer={(
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setRevokeTarget(null)}
+              disabled={isPending}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              className="bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600"
+              disabled={isPending}
+              onClick={submitRevoke}
+            >
+              {isPending ? "提交中..." : "确认取消"}
+            </Button>
+          </div>
+        )}
+      >
+        {revokeTarget ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-[18px] border border-border bg-secondary/30 p-3">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: `${revokeTarget.type.color}18`, color: revokeTarget.type.color }}
+              >
+                <LevelIcon
+                  icon={revokeTarget.type.iconText ?? ""}
+                  color={revokeTarget.type.color}
+                  className="h-5 w-5 text-[20px]"
+                  emojiClassName="text-inherit"
+                  svgClassName="[&>svg]:block"
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{revokeTarget.user.displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  @{revokeTarget.user.username} · {revokeTarget.type.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">取消原因（可选）</p>
+              <Textarea
+                value={revokeReason}
+                onChange={(event) => setRevokeReason(event.target.value)}
+                placeholder="填写取消认证的原因，将随系统通知告知该用户…"
+                className="min-h-[120px] rounded-[18px] bg-background px-4 py-3"
+                disabled={isPending}
+              />
+              <p className="text-xs text-muted-foreground">
+                原因将展示给用户，建议说明具体原因；不填写则仅通知认证已被取消。
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   )
 }

@@ -4,6 +4,12 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Changed
+
+- 后台认证审核中心「取消认证」改版为独立弹窗：展示目标用户信息与认证类型，取消原因支持多行填写，原因填写与确认操作合并在一个弹窗内完成，替代原先「系统确认框 + 浏览器 prompt」的两步交互
+
 ## 2026-08-13
 
 ### Added
