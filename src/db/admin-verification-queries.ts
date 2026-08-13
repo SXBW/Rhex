@@ -91,7 +91,7 @@ export async function runVerificationReviewTransaction(params: {
   applicationId: string
   userId: number
   adminId: number
-  status: "APPROVED" | "REJECTED"
+  status: "APPROVED" | "REJECTED" | "CANCELLED"
   note: string
   rejectReason: string
   afterReview?: (tx: Prisma.TransactionClient) => Promise<void>

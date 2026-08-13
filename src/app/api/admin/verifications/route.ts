@@ -48,7 +48,7 @@ export const PUT = createAdminRouteHandler(async ({ request, adminUser }) => {
 
   return NextResponse.json({
     code: 0,
-    message: result.reviewed ? (result.status === "APPROVED" ? "认证申请已通过" : "认证申请已驳回") : "认证类型已更新",
+    message: result.reviewed ? (result.status === "APPROVED" ? "认证申请已通过" : result.status === "CANCELLED" ? "认证已取消" : "认证申请已驳回") : "认证类型已更新",
   })
 }, {
   errorMessage: "更新认证管理数据失败",
