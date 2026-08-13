@@ -4,6 +4,13 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Fixed
+
+- 修复移动端右侧小边栏在首页与板块页空白的问题：被 `hidden` 类隐藏的侧栏内容经 `Suspense` 包裹时不再正常展开，现改为穿透容器、仅对真实 DOM 节点调整类名
+- 修复发帖页移动端「功能区」按钮与论坛页「全局右侧栏」按钮外观混淆：功能区按钮改用独立图标（`SlidersHorizontal`）并移至右下角，与右侧中部的全局侧栏按钮在位置与图标上彻底区分
+
 ## [1.0.43] - 2026-08-11
 
 ### 依赖升级

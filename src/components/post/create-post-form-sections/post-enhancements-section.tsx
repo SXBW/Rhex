@@ -15,6 +15,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Paperclip,
+  SlidersHorizontal,
   Sparkles,
   X,
 } from "lucide-react"
@@ -590,9 +591,9 @@ export function PostEnhancementsSection({
             aria-label="打开功能区"
             title="打开功能区"
             onClick={() => setMobilePanelOpen(true)}
-            className="fixed right-3 top-1/2 z-[10000] inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]"
+            className="fixed right-3 bottom-24 z-[10000] inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/92 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-md transition-transform hover:scale-[1.03] active:scale-[0.98]"
           >
-          <PanelRightOpen className="h-5 w-5" />
+          <SlidersHorizontal className="h-5 w-5" />
           {configuredCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-none text-background">
               {configuredCount > 9 ? "9+" : configuredCount}
