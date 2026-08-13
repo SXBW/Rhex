@@ -1,6 +1,13 @@
 "use client"
 
-import { cloneElement, isValidElement, useSyncExternalStore, type ReactNode } from "react"
+import {
+  cloneElement,
+  Fragment,
+  isValidElement,
+  Suspense,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react"
 import { PanelRightOpen } from "lucide-react"
 
 import { SidebarNavigation } from "@/components/sidebar-navigation"
@@ -70,16 +77,32 @@ function normalizeMobileRightSidebarClassName(className?: string) {
   return cn(filteredClassName, "mt-0 block pb-6")
 }
 
+function normalizeMobileRightSidebarNode(node: ReactNode): ReactNode {
+  if (!isValidElement(node)) {
+    return node
+  }
+
+  const element = node as React.ReactElement<MobileRightSidebarElementProps & { children?: ReactNode }>
+  if (element.type === Suspense || element.type === Fragment) {
+    return cloneElement(element, {
+      children: normalizeMobileRightSidebarNode(element.props.children),
+    })
+  }
+
+  return cloneElement(element, {
+    className: normalizeMobileRightSidebarClassName(element.props.className),
+    "data-mobile-right-sidebar": "true",
+  })
+}
+
 function buildMobileRightSidebarContent(rightSidebar: ReactNode) {
   if (!rightSidebar) {
     return null
   }
 
-  if (isValidElement<MobileRightSidebarElementProps>(rightSidebar)) {
-    return cloneElement(rightSidebar, {
-      className: normalizeMobileRightSidebarClassName(rightSidebar.props.className),
-      "data-mobile-right-sidebar": "true",
-    })
+  const prepared = normalizeMobileRightSidebarNode(rightSidebar)
+  if (isValidElement(prepared)) {
+    return prepared
   }
 
   return (
