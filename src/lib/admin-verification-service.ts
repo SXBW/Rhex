@@ -15,7 +15,7 @@ import type { AdminActor } from "@/lib/moderator-permissions"
 import { requireSiteAdminActor } from "@/lib/moderator-permissions"
 import { createSystemNotification } from "@/lib/notification-writes"
 import { getUserDisplayName } from "@/lib/user-display"
-import { revalidateUserProfileMutation } from "@/lib/user-profile-revalidation"
+import { revalidateVerificationMutation } from "@/lib/user-profile-revalidation"
 import { parseVerificationFormSchema } from "@/lib/verification-form-schema"
 
 function normalizeText(value: unknown, fallback = "") {
@@ -238,11 +238,57 @@ export async function updateVerificationTypeOrReview(params: {
     })
 
     await writeAdminLog(params.admin.id, `verification.review.${status.toLowerCase()}`, "USER_VERIFICATION", applicationId, `${status === "APPROVED" ? "通过" : "驳回"} ${getUserDisplayName(application.user)} 的 ${application.type.name} 认证申请`, requestIp)
-    revalidateUserProfileMutation({
+    revalidateVerificationMutation({
       userId: application.userId,
       username: application.user.username,
     })
     return { reviewed: true, status }
+  }
+
+  if (action === "revoke") {
+    const applicationId = normalizeText(params.body.applicationId)
+    const note = normalizeText(params.body.note) || "管理员取消认证"
+
+    if (!applicationId) {
+      apiError(400, "缺少申请记录")
+    }
+
+    const application = await findVerificationApplicationForReview(applicationId)
+
+    if (!application) {
+      apiError(404, "认证申请不存在")
+    }
+
+    if (application.status !== "APPROVED") {
+      apiError(400, "仅可取消已通过的认证，请刷新列表后再试")
+    }
+
+    await runVerificationReviewTransaction({
+      applicationId,
+      userId: application.userId,
+      adminId: params.admin.id,
+      status: "CANCELLED",
+      note,
+      rejectReason: "",
+      afterReview: async (tx) => {
+        await createSystemNotification({
+          client: tx,
+          userId: application.userId,
+          senderId: params.admin.id,
+          relatedType: "ANNOUNCEMENT",
+          relatedId: applicationId,
+          title: `你的${application.type.name}认证已被取消`,
+          content: `你已获得的${application.type.name}认证已被管理员取消。${note ? ` 原因：${note}` : ""}`,
+        })
+      },
+    })
+
+    await writeAdminLog(params.admin.id, "verification.revoke", "USER_VERIFICATION", applicationId, `取消 ${getUserDisplayName(application.user)} 的 ${application.type.name} 认证`, requestIp)
+    revalidateVerificationMutation({
+      userId: application.userId,
+      username: application.user.username,
+    })
+    return { reviewed: true, status: "CANCELLED" }
   }
 
   const payload = buildVerificationTypeWriteInput(params.body)
