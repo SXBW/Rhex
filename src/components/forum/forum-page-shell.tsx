@@ -140,7 +140,7 @@ function MobileRightSidebarSheet({ content }: { content: ReactNode }) {
       className="bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted))_100%)] text-foreground"
     >
 
-      <SidebarContent className="px-0 pb-4 pt-0">
+      <SidebarContent data-mobile-right-sidebar="true" className="px-0 pb-4 pt-0">
         {content}
       </SidebarContent>
     </Sidebar>
