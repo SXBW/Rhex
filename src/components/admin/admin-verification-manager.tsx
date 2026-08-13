@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { Pencil, Plus, Save, ShieldCheck, ShieldQuestion, Trash2, XCircle } from "lucide-react"
+import { Pencil, Plus, Save, ShieldCheck, ShieldOff, ShieldQuestion, Trash2, XCircle } from "lucide-react"
 
 import {
   AdminFilterCard,
@@ -311,6 +311,42 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
     })
   }
 
+  async function revokeApplication(applicationId: string, displayName: string) {
+    const confirmed = await showConfirm({
+      title: "取消认证",
+      description: `确认取消「${displayName}」的认证吗？取消后前台将不再展示认证标识，该用户可重新提交认证申请。`,
+      confirmText: "确认取消",
+      variant: "danger",
+    })
+    if (!confirmed) {
+      return
+    }
+
+    const rawReason = window.prompt(`请输入取消「${displayName}」认证的原因（可选，将通知用户）：`)
+    if (rawReason === null) {
+      return
+    }
+    const note = rawReason.trim()
+
+    setFeedback("")
+    startTransition(async () => {
+      const response = await fetch("/api/admin/verifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "revoke",
+          applicationId,
+          note,
+        }),
+      })
+      const result = await response.json()
+      setFeedback(result.message ?? (response.ok ? "认证已取消" : "取消失败"))
+      if (response.ok) {
+        window.location.reload()
+      }
+    })
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -586,14 +622,22 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
                     最近处理记录
                   </div>
                   <div className="mt-3 space-y-3">
-                    {handledApplications.slice(0, 12).map((item) => (
+                    {handledApplications.map((item) => (
                       <div key={item.id} className="rounded-[18px] border border-border bg-secondary/20 p-3 text-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-medium">{item.user.displayName}</span>
                             <span className="text-muted-foreground">{item.type.name}</span>
                           </div>
-                          <span className={item.status === "APPROVED" ? "rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] text-emerald-700" : item.status === "REJECTED" ? "rounded-full bg-rose-100 px-2.5 py-1 text-[11px] text-rose-700" : "rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600"}>{item.status === "APPROVED" ? "已通过" : item.status === "REJECTED" ? "已驳回" : "已取消"}</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={item.status === "APPROVED" ? "rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] text-emerald-700" : item.status === "REJECTED" ? "rounded-full bg-rose-100 px-2.5 py-1 text-[11px] text-rose-700" : "rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600"}>{item.status === "APPROVED" ? "已通过" : item.status === "REJECTED" ? "已驳回" : "已取消"}</span>
+                            {item.status === "APPROVED" ? (
+                              <Button type="button" variant="outline" className="h-7 gap-1 rounded-full px-2.5 text-xs text-rose-600" disabled={isPending} onClick={() => void revokeApplication(item.id, item.user.displayName)}>
+                                <ShieldOff className="h-3.5 w-3.5" />
+                                取消认证
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">处理时间：{item.reviewedAt ? formatDateTime(item.reviewedAt) : "-"}{item.reviewer ? ` · 审核人 ${item.reviewer.displayName}` : ""}</p>
                       </div>

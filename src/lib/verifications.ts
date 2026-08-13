@@ -16,7 +16,7 @@ import { isSvgMarkup } from "@/lib/icon-source"
 import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
 import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
 import { getSiteSettings } from "@/lib/site-settings"
-import { revalidateUserProfileMutation } from "@/lib/user-profile-revalidation"
+import { revalidateVerificationMutation } from "@/lib/user-profile-revalidation"
 import { revalidateUserSurfaceCache } from "@/lib/user-surface"
 import { getUserAvatarPath, getUserDisplayName } from "@/lib/user-display"
 import { parseVerificationFormSchema, type VerificationFormField } from "@/lib/verification-form-schema"
@@ -525,7 +525,7 @@ export async function unbindCurrentUserVerification(userId: number) {
     note: "用户主动解除认证绑定",
     reviewedAt: new Date(),
   })
-  revalidateUserProfileMutation({
+  revalidateVerificationMutation({
     userId,
     username: approvedApplication.user.username,
   })
