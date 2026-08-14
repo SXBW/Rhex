@@ -128,6 +128,7 @@ function enhanceMarkdownLinks(container: HTMLElement) {
       || link.classList.contains("footnote-ref")
       || link.classList.contains("footnote-backref")
       || link.querySelector("img")
+      || link.closest(".md-link-card")
     ) {
       continue
     }

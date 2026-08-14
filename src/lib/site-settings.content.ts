@@ -1,4 +1,4 @@
-import type { InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings-app-state"
+import type { ExternalLinkCardSettings, InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings-app-state"
 import type { SiteTippingGiftItem } from "@/lib/tipping-gifts"
 
 export interface SiteSettingsContentData {
@@ -9,6 +9,7 @@ export interface SiteSettingsContentData {
   forumRequireLoginToBrowse: boolean
   commentInitialVisibleReplies: number
   mentionRecommendations: MentionRecommendationSettings
+  linkCard: ExternalLinkCardSettings
   anonymousPostEnabled: boolean
   anonymousPostPrice: number
   anonymousPostDailyLimit: number

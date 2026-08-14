@@ -481,6 +481,8 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
               searchParams: postPageSearchParams,
               allowedOrigins: [new URL(canonicalUrl).origin],
               postLinkDisplayMode: settings.postLinkDisplayMode,
+              linkCardEnabled: settings.linkCard.enabled,
+              linkCardBlockedDomains: settings.linkCard.blockedDomains,
             })
           : ""
 
@@ -499,6 +501,8 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
           searchParams: postPageSearchParams,
           allowedOrigins: [new URL(canonicalUrl).origin],
           postLinkDisplayMode: settings.postLinkDisplayMode,
+          linkCardEnabled: settings.linkCard.enabled,
+          linkCardBlockedDomains: settings.linkCard.blockedDomains,
         }),
       })),
     ),

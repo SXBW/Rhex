@@ -14,6 +14,8 @@ export async function renderAddonPostContentHtml(input: {
   allowedOrigins?: readonly string[]
   currentPostId?: string
   postLinkDisplayMode?: PostLinkDisplayMode
+  linkCardEnabled?: boolean
+  linkCardBlockedDomains?: readonly string[]
 }) {
   const normalizedContent = input.content.replace(/\r\n/g, "\n").trim()
   if (!normalizedContent) {
@@ -28,6 +30,8 @@ export async function renderAddonPostContentHtml(input: {
   })
   const renderedHtml = renderMarkdown(contentWithCards, input.markdownEmojiMap, {
     postLinkDisplayMode: input.postLinkDisplayMode,
+    linkCardEnabled: input.linkCardEnabled,
+    linkCardBlockedDomains: input.linkCardBlockedDomains,
   })
   const result = await executeAddonAsyncWaterfallHook("post.content.render", renderedHtml, {
     pathname: input.pathname,

@@ -61,7 +61,10 @@ export default async function HelpPage({ params }: HelpPageProps) {
 
   const sidebarUser = await resolveSidebarUser(currentUser, settings)
   const renderedActiveItemHtml = helpData.activeItem?.content.trim()
-    ? renderMarkdown(helpData.activeItem.content, settings.markdownEmojiMap)
+    ? renderMarkdown(helpData.activeItem.content, settings.markdownEmojiMap, {
+        linkCardEnabled: settings.linkCard.enabled,
+        linkCardBlockedDomains: settings.linkCard.blockedDomains,
+      })
     : ""
   const normalizedActiveItemMarkdown = normalizeRenderedMarkdownHtmlHeadings(renderedActiveItemHtml, new Map())
   const helpTableOfContents = normalizedActiveItemMarkdown.headings
@@ -100,23 +103,24 @@ export default async function HelpPage({ params }: HelpPageProps) {
               <AddonSurfaceRenderer surface="help.sidebar" props={{ announcements, hotTopics, settings }}>
                 <div className="mobile-sidebar-stack flex min-w-0 w-full max-w-full flex-col gap-4 lg:isolate lg:h-full">
                   {helpTableOfContents.length > 0 ? (
-                    <div className="min-h-0 w-full lg:sticky lg:top-20 lg:z-10 lg:self-start">
+                    <div className="min-h-0 w-full lg:sticky lg:top-20 lg:self-start">
                       <PostTableOfContents items={helpTableOfContents} title="帮助目录" ariaLabel="帮助文档目录" />
                     </div>
-                  ) : null}
-                  <div className="relative z-0 min-w-0">
-                    <HomeSidebarPanels
-                      user={sidebarUser}
-                      hotTopics={hotTopics}
-                      announcements={announcements}
-                      showAnnouncements={settings.homeSidebarAnnouncementsEnabled}
-                      siteName={settings.siteName}
-                      siteDescription={settings.siteDescription}
-                      siteLogoPath={settings.siteLogoPath}
-                      siteIconPath={settings.siteIconPath}
-                      sticky={false}
-                    />
-                  </div>
+                  ) : (
+                    <div className="relative z-0 min-w-0">
+                      <HomeSidebarPanels
+                        user={sidebarUser}
+                        hotTopics={hotTopics}
+                        announcements={announcements}
+                        showAnnouncements={settings.homeSidebarAnnouncementsEnabled}
+                        siteName={settings.siteName}
+                        siteDescription={settings.siteDescription}
+                        siteLogoPath={settings.siteLogoPath}
+                        siteIconPath={settings.siteIconPath}
+                        sticky={false}
+                      />
+                    </div>
+                  )}
                 </div>
               </AddonSurfaceRenderer>
               <AddonSlotRenderer slot="help.sidebar.after" />

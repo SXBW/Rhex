@@ -12,7 +12,7 @@ import { normalizePostListDisplayMode, POST_LIST_DISPLAY_MODE_DEFAULT, type Post
 import { defaultSiteSettingsCreateInput } from "@/lib/site-settings-defaults"
 import { DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD } from "@/lib/god-comment-settings"
 import { DEFAULT_THEME_CUSTOMIZATION_SETTINGS, type BuiltInThemePreset, type EditableThemePresetDefinition, type FontSizePreset, type FontSizePresetDefinition, type PostContentImageMode, type ThemeCustomizationSettings, type ThemePreference, type ThemeRuntimeSettings } from "@/lib/theme"
-import type { InteractionGateCondition, InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings"
+import type { ExternalLinkCardSettings, InteractionGateCondition, InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings"
 import type { LeftSidebarDisplayMode, LeftSidebarHomeSettings, LeftSidebarNavigationMode, PostSlugGenerationMode, RegistrationEmailTemplateSettings, SiteSearchSettings, SiteTippingGiftItem } from "@/lib/site-settings"
 import type { PasswordStrength } from "@/lib/password-policy"
 import type { SmsBuiltinProvider } from "@/lib/site-settings-app-state.types"
@@ -79,6 +79,7 @@ export interface AdminBasicSettingsInitialSettings {
   forumRequireLoginToBrowse: boolean
   commentInitialVisibleReplies: number
   mentionRecommendations: MentionRecommendationSettings
+  linkCard: ExternalLinkCardSettings
   siteChatEnabled: boolean
   anonymousPostEnabled: boolean
   anonymousPostPrice: number
@@ -232,6 +233,8 @@ export interface AdminBasicSettingsDraft {
   forumRequireLoginToBrowse: boolean
   commentInitialVisibleReplies: string
   mentionDefaultUsernames: string
+  linkCardEnabled: boolean
+  linkCardBlockedDomains: string
   siteChatEnabled: boolean
   anonymousPostEnabled: boolean
   anonymousPostPrice: string
@@ -495,6 +498,10 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     forumRequireLoginToBrowse: coerceBoolean(initialSettings.forumRequireLoginToBrowse, false),
     commentInitialVisibleReplies: coerceNumberString(initialSettings.commentInitialVisibleReplies, 10),
     mentionDefaultUsernames: (initialSettings.mentionRecommendations?.defaultUsernames ?? []).join("\n"),
+    linkCardEnabled: coerceBoolean(initialSettings.linkCard?.enabled, true),
+    linkCardBlockedDomains: Array.isArray(initialSettings.linkCard?.blockedDomains)
+      ? initialSettings.linkCard.blockedDomains.join("\n")
+      : "",
     siteChatEnabled: coerceBoolean(initialSettings.siteChatEnabled, false),
     anonymousPostEnabled: coerceBoolean(initialSettings.anonymousPostEnabled, false),
     anonymousPostPrice: coerceNumberString(initialSettings.anonymousPostPrice, 0),
@@ -801,6 +808,8 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
     forumRequireLoginToBrowse: draft.forumRequireLoginToBrowse,
     commentInitialVisibleReplies: Number(draft.commentInitialVisibleReplies),
     mentionDefaultUsernames: draft.mentionDefaultUsernames,
+    linkCardEnabled: draft.linkCardEnabled,
+    linkCardBlockedDomains: draft.linkCardBlockedDomains,
     siteChatEnabled: draft.siteChatEnabled,
     postEditableMinutes: Number(draft.postEditableMinutes),
     commentEditableMinutes: Number(draft.commentEditableMinutes),

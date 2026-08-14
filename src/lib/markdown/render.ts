@@ -16,6 +16,7 @@ import { renderMarkdownEmojiHtml, type MarkdownEmojiItem } from "@/lib/markdown-
 import { isSupportedMarkdownEmbedSrc, normalizeMarkdownMediaSrc } from "@/lib/markdown/media"
 import { escapeHtml } from "@/lib/markdown/shared"
 import { renderPostCardEmbedHtml } from "@/lib/post-card-embed"
+import { renderExternalLinkCardHtml } from "@/lib/link-card-embed"
 import type { PostLinkDisplayMode } from "@/lib/site-settings"
 
 interface MarkdownHeadingToken {
@@ -50,7 +51,7 @@ const LINK_CANDIDATE_PATTERN = new RegExp(
   "giu",
 )
 
-export const MARKDOWN_RENDER_OUTPUT_VERSION = "raw-html-sanitize-2026-06-12-image-flow-attrs-safe"
+export const MARKDOWN_RENDER_OUTPUT_VERSION = "raw-html-sanitize-2026-06-12-image-flow-attrs-safe-link-card-v2"
 
 type CalloutType = (typeof CALLOUT_TYPES)[number]
 const MARKDOWN_RENDERER_CACHE_LIMIT = 8
@@ -62,6 +63,8 @@ interface MarkdownRenderEnv {
 
 interface MarkdownRenderOptions {
   postLinkDisplayMode?: PostLinkDisplayMode
+  linkCardEnabled?: boolean
+  linkCardBlockedDomains?: readonly string[]
 }
 
 interface EscapedHtmlPlaceholder {
@@ -1215,6 +1218,16 @@ export function renderMarkdown(input: string, emojiItems: MarkdownEmojiItem[], o
     if (mediaHtml) {
       flushMarkdownBuffer()
       htmlChunks.push(mediaHtml)
+      continue
+    }
+
+    const linkCardHtml = renderExternalLinkCardHtml(line, {
+      enabled: options.linkCardEnabled,
+      blockedDomains: options.linkCardBlockedDomains,
+    })
+    if (linkCardHtml) {
+      flushMarkdownBuffer()
+      htmlChunks.push(linkCardHtml)
       continue
     }
 

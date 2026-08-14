@@ -1,4 +1,5 @@
 export * from "@/lib/site-settings-app-state.types"
+export * from "@/lib/site-settings-app-state.link-card"
 export * from "@/lib/site-settings-app-state.branding"
 export * from "@/lib/site-settings-app-state.upload"
 export * from "@/lib/site-settings-app-state.registration"

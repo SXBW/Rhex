@@ -364,6 +364,28 @@ export function AdminInteractionSettingsForm({
         </div>
       ) : null}
 
+      {activeSubTab === "link-cards" ? (
+        <div className="rounded-xl border border-border p-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold">外链卡片</h3>
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">当 Markdown 正文中独立成行出现单个 http(s) 链接时，自动渲染为外链卡片，不加载任何外部内容；命中黑名单的域名渲染为红色风险警示卡片。</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <AdminBooleanSelectField label="开启外链卡片" checked={draft.linkCardEnabled} onChange={(value) => updateDraftField("linkCardEnabled", value)} description="关闭后，独立成行的链接按普通文本链接展示。" />
+          </div>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">风险域名黑名单</span>
+            <textarea
+              value={draft.linkCardBlockedDomains}
+              onChange={(event) => updateDraftField("linkCardBlockedDomains", event.target.value)}
+              placeholder={"每行一个域名，例如\nexample.com"}
+              className="min-h-36 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 outline-hidden"
+            />
+          </label>
+          <p className="text-xs leading-6 text-muted-foreground">命中黑名单的链接会渲染为红色风险警示卡片，提示用户谨慎访问；未命中则显示普通外链卡片。支持按子域名精确匹配：填 `example.com` 会同时命中 `www.example.com`、`sub.example.com`。</p>
+        </div>
+      ) : null}
+
       {activeSubTab === "preview" ? (
         <div className="rounded-xl border border-border p-5 space-y-4">
           <div>

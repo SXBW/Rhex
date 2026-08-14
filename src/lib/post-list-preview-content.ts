@@ -76,6 +76,7 @@ export function buildPostListPreviewContent(input: {
     markdown,
     html: markdown ? renderMarkdown(markdown, input.markdownEmojiMap, {
       postLinkDisplayMode: input.postLinkDisplayMode,
+      linkCardEnabled: false,
     }) : "",
   }
 
