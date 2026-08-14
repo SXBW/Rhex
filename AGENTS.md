@@ -1240,36 +1240,146 @@ Core / Plugin Isolation
 
 ## CHANGELOG.md 规则
 
-每次代码、功能、修复、重构、配置、数据库、插件系统或架构更新完成后，必须同步检查并按实际情况更新根目录：
+每次代码、功能、修复、重构、配置、数据库、插件系统或架构更新完成后，必须同步检查并按实际情况更新项目根目录：
 
-```text
+``` text
 CHANGELOG.md
 ```
 
-### 强制要求
+如果仓库实际文件名为：
 
-- 用户要求的功能开发、Bug 修复、重构、插件开发、架构调整、配置调整、数据库调整，必须更新 `CHANGELOG.md`。
-- 每次实际变更都必须判断是否需要记录。
-- 用户可感知的功能变化不得遗漏。
-- 不得把 `CHANGELOG.md` 写成 Git commit 日志。
-- 不得简单复制 Commit Message 到 `CHANGELOG.md`。
-- 已发布版本的历史记录不得删除、覆盖或重写。
-- 新版本记录添加在已有发布历史之前。
-- 日期使用 `YYYY-MM-DD`。
-- CHANGELOG 采用 Keep a Changelog 风格。
-- 如果仓库实际文件名为 `CHANGELOG.MD`，必须沿用仓库现有文件名，不得同时创建 `CHANGELOG.md`。
+``` text
+CHANGELOG.MD
+```
 
-### 标准结构
+必须沿用现有文件名，不得同时创建：
 
-```md
+``` text
+CHANGELOG.md
+```
+
+------------------------------------------------------------------------
+
+## 强制要求
+
+-   用户要求的功能开发、Bug
+    修复、重构、插件开发、架构调整、配置调整、数据库调整，必须更新
+    `CHANGELOG`。
+-   每次实际变更必须判断是否需要记录。
+-   用户可感知的功能变化不得遗漏。
+-   不得把 `CHANGELOG` 写成 Git Commit 日志。
+-   不得简单复制 Commit Message 到 `CHANGELOG`。
+-   CHANGELOG 描述必须面向用户说明实际变化和影响。
+-   已发布版本历史不得删除、覆盖或重写。
+-   新版本记录必须添加在已有版本记录之前。
+-   日期格式必须使用：
+
+``` text
+YYYY-MM-DD
+```
+
+-   CHANGELOG 采用 Keep a Changelog 风格。
+-   不得自动创建：
+
+``` md
+## [Unreleased]
+```
+
+除非用户明确要求使用 Unreleased 工作流。
+
+------------------------------------------------------------------------
+
+## 版本号规则
+
+CHANGELOG 版本号必须使用项目实际版本。
+
+版本确定优先级：
+
+``` text
+1. 用户明确指定版本号
+2. 当前 Git Tag / Release 版本
+3. package.json version
+4. 项目已有 CHANGELOG 最新版本号
+5. 无法确定时询问用户
+```
+
+------------------------------------------------------------------------
+
+## 默认行为
+
+如果用户没有指定版本号：
+
+### 情况 1：项目存在当前版本
+
+例如：
+
+``` json
+{
+  "version": "1.5.0"
+}
+```
+
+生成：
+
+``` md
+## [1.5.0] - 2026-08-14
+```
+
+------------------------------------------------------------------------
+
+### 情况 2：CHANGELOG 已存在版本
+
+例如：
+
+``` md
+## [1.4.0] - 2026-08-01
+```
+
+并且项目没有其他版本信息。
+
+默认沿用：
+
+``` md
+## [1.4.0] - 2026-08-14
+```
+
+禁止自动创建：
+
+``` md
+## [Unreleased]
+```
+
+------------------------------------------------------------------------
+
+### 情况 3：无法确定版本
+
+禁止：
+
+-   猜测版本号。
+-   自动增加 Patch / Minor / Major。
+-   创建 Unreleased。
+
+必须询问用户：
+
+``` text
+当前无法确定 CHANGELOG 版本号，
+请确认本次更新版本：
+例如 1.5.0 / 1.4.1
+```
+
+------------------------------------------------------------------------
+
+## 标准结构
+
+``` md
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on Keep a Changelog,
+and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [1.5.0] - 2026-08-14
 
 ### Added
 
@@ -1291,26 +1401,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - xxx
 
-## [1.2.0] - 2026-08-12
+## [1.4.0] - 2026-08-01
 
 ### Added
 
 - xxx
-
-### Changed
-
-- xxx
-
-### Fixed
-
-- xxx
 ```
 
-### 变更分类
+------------------------------------------------------------------------
+
+## 变更分类
 
 根据实际变化选择：
 
-```text
+``` text
 Added
 Changed
 Deprecated
@@ -1319,7 +1423,82 @@ Fixed
 Security
 ```
 
-不要为了凑分类而创建空分类。
+规则：
+
+-   只创建实际存在的分类。
+-   不为了格式完整创建空分类。
+-   不允许生成空结构：
+
+``` md
+### Added
+
+### Changed
+
+### Fixed
+```
+
+------------------------------------------------------------------------
+
+## CHANGELOG 与 Git Commit 区别
+
+Git Commit：
+
+关注：
+
+``` text
+开发者做了什么
+```
+
+例如：
+
+``` text
+fix(plugin): repair plugin loader
+```
+
+CHANGELOG：
+
+关注：
+
+``` text
+用户获得什么变化
+```
+
+例如：
+
+``` md
+### Fixed
+
+- Fixed plugin loading failure when optional dependencies are missing.
+```
+
+禁止直接复制：
+
+``` md
+- fix(plugin): repair plugin loader
+```
+
+------------------------------------------------------------------------
+
+## 发布版本保护
+
+已发布版本：
+
+``` md
+## [1.4.0]
+```
+
+禁止：
+
+-   修改历史内容。
+-   删除历史版本。
+-   覆盖已有 Release 记录。
+
+新版本必须：
+
+``` text
+添加在顶部
+保留完整历史
+```
 
 ### 插件变更
 
