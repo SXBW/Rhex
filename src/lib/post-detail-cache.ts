@@ -168,6 +168,7 @@ export async function renderCachedPostContentHtml(input: {
   postLinkDisplayMode?: PostLinkDisplayMode
   linkCardEnabled?: boolean
   linkCardBlockedDomains?: readonly string[]
+  linkCardInternalHosts?: readonly string[]
 }) {
   const pathname = input.pathname ?? ""
   const searchParamsString = typeof input.searchParams === "string"
@@ -181,7 +182,7 @@ export async function renderCachedPostContentHtml(input: {
   ])
   const contentDigest = digest(input.content)
   const emojiDigest = digest(stableJson(input.markdownEmojiMap))
-  const requestContextDigest = digest(`${pathname}\n${searchParamsString}\n${stableJson(allowedOrigins)}\n${postLinkDisplayMode}\n${input.linkCardEnabled ?? true}\n${stableJson(input.linkCardBlockedDomains ?? [])}`)
+  const requestContextDigest = digest(`${pathname}\n${searchParamsString}\n${stableJson(allowedOrigins)}\n${postLinkDisplayMode}\n${input.linkCardEnabled ?? true}\n${stableJson(input.linkCardBlockedDomains ?? [])}\n${stableJson(input.linkCardInternalHosts ?? [])}`)
 
   return unstable_cache(
     async () => renderAddonPostContentHtml({
@@ -194,6 +195,7 @@ export async function renderCachedPostContentHtml(input: {
       postLinkDisplayMode,
       linkCardEnabled: input.linkCardEnabled,
       linkCardBlockedDomains: input.linkCardBlockedDomains,
+      linkCardInternalHosts: input.linkCardInternalHosts,
     }),
     [
       POST_RENDERED_CONTENT_CACHE_TAG,

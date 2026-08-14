@@ -13,6 +13,7 @@ import { getBoards } from "@/lib/boards"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
 import { renderMarkdown } from "@/lib/markdown/render"
 import { normalizeRenderedMarkdownHtmlHeadings } from "@/lib/markdown/toc"
+import { resolveSiteOrigin } from "@/lib/site-origin"
 import { getHelpDocumentPageData } from "@/lib/site-documents"
 import { getSiteSettings } from "@/lib/site-settings"
 import { getZones } from "@/lib/zones"
@@ -60,10 +61,13 @@ export default async function HelpPage({ params }: HelpPageProps) {
   }
 
   const sidebarUser = await resolveSidebarUser(currentUser, settings)
+  const siteOrigin = await resolveSiteOrigin()
+  const siteInternalHost = new URL(siteOrigin).hostname
   const renderedActiveItemHtml = helpData.activeItem?.content.trim()
     ? renderMarkdown(helpData.activeItem.content, settings.markdownEmojiMap, {
         linkCardEnabled: settings.linkCard.enabled,
         linkCardBlockedDomains: settings.linkCard.blockedDomains,
+        linkCardInternalHosts: [siteInternalHost],
       })
     : ""
   const normalizedActiveItemMarkdown = normalizeRenderedMarkdownHtmlHeadings(renderedActiveItemHtml, new Map())
