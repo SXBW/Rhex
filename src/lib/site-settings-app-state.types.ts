@@ -189,6 +189,11 @@ export interface MessageMediaSettings {
   realtimeHeartbeatSeconds: number
 }
 
+export interface ExternalLinkCardSettings {
+  enabled: boolean
+  blockedDomains: string[]
+}
+
 export interface HomeSidebarAnnouncementSettings {
   enabled: boolean
   homeSidebarEnabled: boolean

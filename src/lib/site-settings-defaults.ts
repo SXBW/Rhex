@@ -263,6 +263,10 @@ export const defaultSiteSettingsCreateInput = {
         initialVisibleReplies: 10,
         loadMode: "PAGINATION",
       },
+      linkCard: {
+        enabled: true,
+        blockedDomains: [],
+      },
       editorToolbar: {
         order: DEFAULT_EDITOR_TOOLBAR_ORDER,
         hidden: [],

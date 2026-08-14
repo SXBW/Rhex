@@ -95,6 +95,7 @@ export const INTERNAL_SETTING_TABS: Record<
     { key: "gates", label: "发布门槛" },
     { key: "reward-pool", label: "红包与聚宝盆" },
     { key: "heat", label: "热度算法" },
+    { key: "link-cards", label: "链接卡片" },
     { key: "preview", label: "热度预览" },
   ],
   "board-applications": [

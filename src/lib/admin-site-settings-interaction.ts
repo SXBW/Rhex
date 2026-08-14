@@ -10,6 +10,7 @@ import {
   mergeBoardTreasurySettings,
   mergeCommentAccessSettings,
   mergeForumAccessSettings,
+  mergeExternalLinkCardSettings,
   mergeHomeHotFeedSettings,
   mergeInteractionGateSettings,
   mergeMentionRecommendationSettings,
@@ -21,6 +22,7 @@ import {
   resolveAnonymousPostSettings,
   resolveBoardTreasurySettings,
   resolveCommentAccessSettings,
+  resolveExternalLinkCardSettings,
   resolveForumAccessSettings,
   resolveHomeHotFeedSettings,
   normalizeMentionRecommendationUsernames,
@@ -212,6 +214,17 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
     )
     const heatStageThresholds = normalizeHeatThresholds(body.heatStageThresholds)
     const heatStageColors = normalizeHeatColors(body.heatStageColors)
+    const existingExternalLinkCardSettings = resolveExternalLinkCardSettings({
+      appStateJson: existing.appStateJson,
+      enabledFallback: true,
+    })
+    const linkCardEnabled = body.linkCardEnabled === undefined
+      ? existingExternalLinkCardSettings.enabled
+      : Boolean(body.linkCardEnabled)
+    const rawLinkCardBlockedDomains = readOptionalStringField(body, "linkCardBlockedDomains")
+    const linkCardBlockedDomains = typeof rawLinkCardBlockedDomains === "string"
+      ? rawLinkCardBlockedDomains
+      : existingExternalLinkCardSettings.blockedDomains.join("\n")
 
     if (tippingEnabled && tippingAmounts.length === 0) {
       apiError(400, "开启打赏后，至少配置一个积分打赏档位")
@@ -295,9 +308,12 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
     const appStateWithSiteChat = mergeSiteChatSettings(appStateWithPostContentLengths, {
       enabled: siteChatEnabled,
     })
-    const appStateJson = mergeBoardTreasurySettings(appStateWithSiteChat, {
+    const appStateJson = mergeExternalLinkCardSettings(mergeBoardTreasurySettings(appStateWithSiteChat, {
       tipGiftTaxEnabled,
       tipGiftTaxRateBps,
+    }), {
+      enabled: linkCardEnabled,
+      blockedDomains: linkCardBlockedDomains,
     })
 
     if (heatStageThresholds.length !== 9) {

@@ -22,7 +22,7 @@ import { parseMarkdownEmojiMapJson } from "@/lib/markdown-emoji"
 import { normalizeCommentLoadMode } from "@/lib/comment-load-mode"
 import { normalizePostListLoadMode } from "@/lib/post-list-load-mode"
 import { normalizePostListDisplayMode } from "@/lib/post-list-display"
-import { resolveAnonymousPostSettings, resolveAttachmentFeatureSettings, resolveAuthProviderSettings, resolveAvatarChangePointCostSettings, resolveBoardApplicationSettings, resolveBoardTreasurySettings, resolveCheckInMakeUpPriceSettings, resolveCheckInRewardSettings, resolveCheckInStreakSettings, resolveCommentAccessSettings, resolveEmailBusinessSwitchSettings, resolveFooterCopyrightSettings, resolveForumAccessSettings, resolveHomeFeedPostListLoadSettings, resolveHomeHotFeedSettings, resolveHomeSidebarAnnouncementSettings, resolveImageWatermarkSettings, resolveInteractionGateSettings, resolveIntroductionChangePointCostSettings, resolveInviteCodePurchasePriceSettings, resolveLeftSidebarDisplaySettings, resolveLeftSidebarHomeSettings, resolveLeftSidebarNavigationSettings, resolveMarkdownImageUploadSettings, resolveMentionRecommendationSettings, resolveMessageMediaSettings, resolveNicknameChangePointCostSettings, resolvePostContentLengthSettings, resolvePostJackpotSettings, resolvePostPageSizeSettings, resolvePostRedPacketSettings, resolvePostSlugGenerationSettings, resolveRegisterEmailWhitelistSettings, resolveRegisterInviteCodeHelpSettings, resolveRegisterNicknameLengthSettings, resolveRegisterPasswordPolicySettings, resolveRegistrationEmailTemplateSettings, resolveRegistrationRewardSettings, resolveSiteBrandingSettings, resolveSiteChatSettings, resolveSiteSecuritySettings, resolveSmsProviderSettings, resolveThemeCustomizationSettingsFromAppState, resolveUploadObjectStorageSettings, resolveUserProfileDisplaySettings, resolveUsernameSensitiveWordSettings, resolveVipLevelIconSettings, resolveVipNameColorSettings } from "@/lib/site-settings-app-state"
+import { resolveAnonymousPostSettings, resolveAttachmentFeatureSettings, resolveAuthProviderSettings, resolveAvatarChangePointCostSettings, resolveBoardApplicationSettings, resolveBoardTreasurySettings, resolveCheckInMakeUpPriceSettings, resolveCheckInRewardSettings, resolveCheckInStreakSettings, resolveCommentAccessSettings, resolveEmailBusinessSwitchSettings, resolveExternalLinkCardSettings, resolveFooterCopyrightSettings, resolveForumAccessSettings, resolveHomeFeedPostListLoadSettings, resolveHomeHotFeedSettings, resolveHomeSidebarAnnouncementSettings, resolveImageWatermarkSettings, resolveInteractionGateSettings, resolveIntroductionChangePointCostSettings, resolveInviteCodePurchasePriceSettings, resolveLeftSidebarDisplaySettings, resolveLeftSidebarHomeSettings, resolveLeftSidebarNavigationSettings, resolveMarkdownImageUploadSettings, resolveMentionRecommendationSettings, resolveMessageMediaSettings, resolveNicknameChangePointCostSettings, resolvePostContentLengthSettings, resolvePostJackpotSettings, resolvePostPageSizeSettings, resolvePostRedPacketSettings, resolvePostSlugGenerationSettings, resolveRegisterEmailWhitelistSettings, resolveRegisterInviteCodeHelpSettings, resolveRegisterNicknameLengthSettings, resolveRegisterPasswordPolicySettings, resolveRegistrationEmailTemplateSettings, resolveRegistrationRewardSettings, resolveSiteBrandingSettings, resolveSiteChatSettings, resolveSiteSecuritySettings, resolveSmsProviderSettings, resolveThemeCustomizationSettingsFromAppState, resolveUploadObjectStorageSettings, resolveUserProfileDisplaySettings, resolveUsernameSensitiveWordSettings, resolveVipLevelIconSettings, resolveVipNameColorSettings } from "@/lib/site-settings-app-state"
 import { isRecord, resolveAuthPageShowcaseSettings, SITE_SETTINGS_STATE_KEY } from "@/lib/site-settings-app-state"
 import { resolveAuthProviderSensitiveConfig, resolveCaptchaSensitiveConfig, resolveSmsSensitiveConfig, resolveUploadStorageSensitiveConfig } from "@/lib/site-settings-sensitive-state"
 import { ensureAdminActorPermission } from "@/lib/admin-scope-permissions"
@@ -53,6 +53,7 @@ export type { LeftSidebarHomeSettings } from "@/lib/site-settings-app-state"
 export type { PostSlugGenerationMode } from "@/lib/site-settings-app-state"
 export type { RegistrationEmailTemplateSettings } from "@/lib/site-settings-app-state"
 export type { PostLinkDisplayMode, ServerSiteSettingsData, SiteSettingsData } from "@/lib/site-settings.types"
+export type { ExternalLinkCardSettings } from "@/lib/site-settings-app-state"
 export type { EditorToolbarItemKey, EditorToolbarSettings } from "@/lib/editor-toolbar-settings"
 
 function filterMessageNavigationLinks<T extends { href: string }>(links: T[], messageEnabled: boolean): T[] {
@@ -359,6 +360,10 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     promptAudioPathFallback: DEFAULT_MESSAGE_PROMPT_AUDIO_PATH,
     realtimeEnabledFallback: true,
     realtimeHeartbeatSecondsFallback: 15,
+  })
+  const externalLinkCardSettings = resolveExternalLinkCardSettings({
+    appStateJson: record.appStateJson,
+    enabledFallback: true,
   })
   const commentAccessSettings = resolveCommentAccessSettings({
     appStateJson: record.appStateJson,
@@ -741,6 +746,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     messagePromptAudioPath: messageMediaSettings.promptAudioPath,
     messageRealtimeEnabled: messageMediaSettings.realtimeEnabled,
     messageRealtimeHeartbeatSeconds: messageMediaSettings.realtimeHeartbeatSeconds,
+    linkCard: externalLinkCardSettings,
     markdownEmojiMap: parseMarkdownEmojiMapJson(record.markdownEmojiMapJson),
     editorToolbar: editorToolbarSettings,
     appStateJson: record.appStateJson,
