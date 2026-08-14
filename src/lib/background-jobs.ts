@@ -211,6 +211,9 @@ export interface BackgroundJobPayloadMap {
     bonusPoints?: number | null
     totalPoints?: number | null
   }
+  "link-card.fetch-title": {
+    urls: string[]
+  }
 }
 
 export type BackgroundJobName = keyof BackgroundJobPayloadMap

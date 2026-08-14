@@ -17,6 +17,7 @@ export async function renderAddonPostContentHtml(input: {
   linkCardEnabled?: boolean
   linkCardBlockedDomains?: readonly string[]
   linkCardInternalHosts?: readonly string[]
+  linkCardTitles?: ReadonlyMap<string, string>
 }) {
   const normalizedContent = input.content.replace(/\r\n/g, "\n").trim()
   if (!normalizedContent) {
@@ -34,6 +35,7 @@ export async function renderAddonPostContentHtml(input: {
     linkCardEnabled: input.linkCardEnabled,
     linkCardBlockedDomains: input.linkCardBlockedDomains,
     linkCardInternalHosts: input.linkCardInternalHosts,
+    linkCardTitles: input.linkCardTitles,
   })
   const result = await executeAddonAsyncWaterfallHook("post.content.render", renderedHtml, {
     pathname: input.pathname,

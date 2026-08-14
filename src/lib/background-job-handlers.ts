@@ -28,6 +28,7 @@ export async function registerDefaultBackgroundJobHandlers() {
     import("@/lib/user-notification-delivery"),
     import("@/lib/post-auctions"),
     import("@/lib/payment-gateway-email-notifications"),
+    import("@/lib/link-card-title"),
   ])
 
   globalForBackgroundJobHandlers.__bbsBackgroundJobHandlersRegistered = true

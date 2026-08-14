@@ -45,6 +45,7 @@ import { getBoardTreasuryCreditFromConfiguredCharge } from "@/lib/board-treasury
 import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
 import { buildPostSlug } from "@/lib/post-slug"
 import { hasBlockedExternalLinkInMarkdown, normalizeLinkCardBlockedDomains } from "@/lib/link-card-embed"
+import { enqueueLinkCardTitleFetch } from "@/lib/link-card-title"
 import { getSiteSettings } from "@/lib/site-settings"
 import { validatePostPayload } from "@/lib/validators"
 import { resolveAdminActorFromSessionUser } from "@/lib/moderator-permissions"
@@ -566,6 +567,11 @@ export async function createPostFlow(body: unknown, options: CreatePostFlowOptio
   }
 
   const taxonomyResult = await syncPostTaxonomy(post.id, titleSafety.sanitizedText, serializedContent, sanitizedManualTags)
+
+  enqueueLinkCardTitleFetch({
+    content: contentSafety.sanitizedText,
+    blockedDomains: settings.linkCard?.blockedDomains,
+  })
 
   if (createdAuction?.status === "ACTIVE") {
     await enqueuePostAuctionSettlement(createdAuction.id, createdAuction.endsAt)

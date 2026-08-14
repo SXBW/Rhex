@@ -16,6 +16,7 @@ import { processInternalPostCardEmbeds } from "@/lib/post-card-embed.server"
 import { buildPostContentDocument, getAllPostContentText, getPostContentMeta, serializePostContentDocument } from "@/lib/post-content"
 import { isPostStillEditable, resolvePostEditWindowMinutes } from "@/lib/post-edit-window"
 import { normalizeManualTags, syncPostTaxonomy } from "@/lib/post-editor"
+import { enqueueLinkCardTitleFetch } from "@/lib/link-card-title"
 import { getSiteSettings } from "@/lib/site-settings"
 import { validatePostPayload } from "@/lib/validators"
 import { resolveAdminActorFromSessionUser } from "@/lib/moderator-permissions"
@@ -290,6 +291,11 @@ export async function updatePostFlow(input: {
       ...(updatedPost ? { post: updatedPost } : {}),
     }, hookContext)
 
+    enqueueLinkCardTitleFetch({
+      content: contentSafety.sanitizedText,
+      blockedDomains: settings.linkCard?.blockedDomains,
+    })
+
     return {
       post,
       mode: "edit" as const,
@@ -379,6 +385,11 @@ export async function updatePostFlow(input: {
     changes: { appendedContent: appendedContentWithCards, mode: "append" },
     ...(updatedPost ? { post: updatedPost } : {}),
   }, hookContext)
+
+  enqueueLinkCardTitleFetch({
+    content: appendedContent,
+    blockedDomains: settings.linkCard?.blockedDomains,
+  })
 
   return {
     post,

@@ -4,6 +4,7 @@ export interface ExternalLinkCardRenderOptions {
   enabled?: boolean
   blockedDomains?: readonly string[]
   internalHosts?: readonly string[]
+  titles?: ReadonlyMap<string, string>
 }
 
 const STANDALONE_URL_PATTERN = /^https?:\/\/\S+$/i
@@ -159,6 +160,53 @@ function isInternalSiteHost(url: URL, internalHosts: readonly string[]) {
   return internalHosts.some((host) => host.trim().toLowerCase() === hostname)
 }
 
+export function collectExternalLinkCardUrls(
+  markdown: string,
+  options: ExternalLinkCardRenderOptions = {},
+): string[] {
+  const blockedDomains = normalizeLinkCardBlockedDomains(options.blockedDomains)
+  const urls = new Map<string, URL>()
+
+  for (const line of markdown.split(/\r?\n/)) {
+    const url = parseStandaloneExternalUrl(line)
+    if (!url) {
+      continue
+    }
+
+    if (isLikelyInternalPostUrl(url) || isInternalSiteHost(url, options.internalHosts ?? [])) {
+      continue
+    }
+
+    if (isHostnameBlocked(url.hostname, blockedDomains)) {
+      continue
+    }
+
+    const normalizedHref = url.href
+    if (!urls.has(normalizedHref)) {
+      urls.set(normalizedHref, url)
+    }
+  }
+
+  return [...urls.values()].map((url) => url.href)
+}
+
+function renderExternalLinkCardTitle(title: string | undefined, displayHost: string, displayUrl: string) {
+  const normalizedTitle = title?.trim()
+  if (!normalizedTitle || normalizedTitle === displayHost) {
+    return null
+  }
+
+  return [
+    '<div class="flex items-center gap-2">',
+    '<span class="md-link-card-badge inline-flex shrink-0 items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">外链</span>',
+    `<span class="truncate font-semibold text-foreground" title="${escapeHtml(normalizedTitle)}">${escapeHtml(normalizedTitle)}</span>`,
+    "</div>",
+    `<span class="truncate text-xs text-muted-foreground">${displayHost}</span>`,
+    `<span class="break-all text-xs text-muted-foreground">${displayUrl}</span>`,
+    '<p class="text-xs leading-6 text-muted-foreground">外部链接：不加载任何外部内容，点击后在新标签页打开。</p>',
+  ].join("")
+}
+
 export function renderExternalLinkCardHtml(
   line: string,
   options: ExternalLinkCardRenderOptions = {},
@@ -181,6 +229,7 @@ export function renderExternalLinkCardHtml(
   const href = escapeHtml(url.href)
   const displayHost = escapeHtml(url.host)
   const displayUrl = escapeHtml(url.href)
+  const title = options.titles?.get(url.href)?.trim()
 
   if (blocked) {
     return [
@@ -194,6 +243,17 @@ export function renderExternalLinkCardHtml(
       `<span class="break-all text-xs text-muted-foreground">${displayUrl}</span>`,
       '<p class="text-xs leading-6 text-rose-600/90 dark:text-rose-300/90">该域名已被管理员列入风险黑名单。请勿输入账号密码或支付信息，谨慎访问。</p>',
       "</div>",
+      "</a>",
+      "</div>",
+    ].join("")
+  }
+
+  const titledCardBody = renderExternalLinkCardTitle(title, displayHost, displayUrl)
+  if (titledCardBody) {
+    return [
+      '<div class="md-link-card my-4 overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-colors hover:bg-secondary/40">',
+      `<a\nclass="md-link-card-link block no-underline" href="${href}" target="_blank" rel="noreferrer nofollow ugc" data-md-link-card-link="true">`,
+      `<div class="flex flex-col gap-2 p-4">${titledCardBody}</div>`,
       "</a>",
       "</div>",
     ].join("")

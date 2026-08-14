@@ -66,6 +66,7 @@ interface MarkdownRenderOptions {
   linkCardEnabled?: boolean
   linkCardBlockedDomains?: readonly string[]
   linkCardInternalHosts?: readonly string[]
+  linkCardTitles?: ReadonlyMap<string, string>
 }
 
 interface EscapedHtmlPlaceholder {
@@ -1226,6 +1227,7 @@ export function renderMarkdown(input: string, emojiItems: MarkdownEmojiItem[], o
       enabled: options.linkCardEnabled,
       blockedDomains: options.linkCardBlockedDomains,
       internalHosts: options.linkCardInternalHosts,
+      titles: options.linkCardTitles,
     })
     if (linkCardHtml) {
       flushMarkdownBuffer()

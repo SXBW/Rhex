@@ -4,6 +4,8 @@ import { createHash } from "node:crypto"
 import { revalidateTag, unstable_cache } from "next/cache"
 
 import { renderAddonPostContentHtml } from "@/lib/addon-post-content-render"
+import { collectExternalLinkCardUrls } from "@/lib/link-card-embed"
+import { readLinkCardTitleCache } from "@/lib/link-card-title"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import { MARKDOWN_RENDER_OUTPUT_VERSION } from "@/lib/markdown/render"
 import { schedulePublicPostPageCacheInvalidation } from "@/lib/public-page-cache"
@@ -183,6 +185,13 @@ export async function renderCachedPostContentHtml(input: {
   const contentDigest = digest(input.content)
   const emojiDigest = digest(stableJson(input.markdownEmojiMap))
   const requestContextDigest = digest(`${pathname}\n${searchParamsString}\n${stableJson(allowedOrigins)}\n${postLinkDisplayMode}\n${input.linkCardEnabled ?? true}\n${stableJson(input.linkCardBlockedDomains ?? [])}\n${stableJson(input.linkCardInternalHosts ?? [])}`)
+  const linkCardTitles = await readLinkCardTitleCache(
+    collectExternalLinkCardUrls(input.content, {
+      blockedDomains: input.linkCardBlockedDomains,
+      internalHosts: input.linkCardInternalHosts,
+    }),
+  )
+  const linkCardTitlesDigest = digest(stableJson(Array.from(linkCardTitles.entries()).sort(([a], [b]) => a.localeCompare(b))))
 
   return unstable_cache(
     async () => renderAddonPostContentHtml({
@@ -196,6 +205,7 @@ export async function renderCachedPostContentHtml(input: {
       linkCardEnabled: input.linkCardEnabled,
       linkCardBlockedDomains: input.linkCardBlockedDomains,
       linkCardInternalHosts: input.linkCardInternalHosts,
+      linkCardTitles,
     }),
     [
       POST_RENDERED_CONTENT_CACHE_TAG,
@@ -204,6 +214,7 @@ export async function renderCachedPostContentHtml(input: {
       contentDigest,
       emojiDigest,
       requestContextDigest,
+      linkCardTitlesDigest,
       MARKDOWN_RENDER_OUTPUT_VERSION,
     ],
     {
