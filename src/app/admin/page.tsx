@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 
 import { AdminAnnouncementManager } from "@/components/admin/admin-announcement-manager"
 import { AdminAttachmentManager } from "@/components/admin/admin-attachment-manager"
+import { AdminAutoRefresh } from "@/components/admin/admin-auto-refresh"
 import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { AdminOverviewDashboard } from "@/components/admin/admin-overview-dashboard"
 import { AdminPillTabs } from "@/components/admin/admin-pill-tabs"
@@ -275,6 +276,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       headerSearch={<AdminModuleSearch className="w-full" />}
     >
       <div className="space-y-6">
+        <AdminAutoRefresh />
         {tab === "overview" ? <AdminOverviewDashboard data={dashboardData!} /> : null}
 
         {canGrantVerifications && tab === "verifications" ? (

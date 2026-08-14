@@ -1,4 +1,5 @@
 import { apiSuccess, createUserRouteHandler, readJsonBody } from "@/lib/api-route"
+import { revalidateAdminDashboardCache } from "@/db/admin-dashboard-queries"
 import { executeCommentCreation } from "@/lib/comment-create-execution"
 
 export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
@@ -16,6 +17,10 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
       action: "create-comment",
     },
   })
+
+  if (result.reviewRequired) {
+    revalidateAdminDashboardCache()
+  }
 
   return apiSuccess({
     id: result.created.id,

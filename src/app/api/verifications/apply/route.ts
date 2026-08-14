@@ -1,4 +1,5 @@
 import { apiSuccess, createUserRouteHandler, readJsonBody, readOptionalStringField, requireStringField } from "@/lib/api-route"
+import { revalidateAdminDashboardCache } from "@/db/admin-dashboard-queries"
 import { logRouteWriteSuccess } from "@/lib/route-metadata"
 import { submitVerificationApplication } from "@/lib/verifications"
 import { withRequestWriteGuard } from "@/lib/write-guard"
@@ -46,6 +47,8 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
         contentAdjusted: application.contentAdjusted,
       },
     })
+
+    revalidateAdminDashboardCache()
 
     return apiSuccess({
       id: application.id,

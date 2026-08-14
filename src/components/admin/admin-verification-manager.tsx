@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Pencil, Plus, Save, ShieldCheck, ShieldOff, ShieldQuestion, Trash2, XCircle } from "lucide-react"
 
 import {
@@ -144,8 +145,9 @@ function parseApplicationFormResponse(input?: string | null) {
 }
 
 export function AdminVerificationManager({ initialTypes, initialApplications, mode = "types" }: AdminVerificationManagerProps) {
+  const router = useRouter()
   const [types, setTypes] = useState(initialTypes)
-  const [applications] = useState(initialApplications)
+  const [applications, setApplications] = useState(initialApplications)
   const [editingIndex, setEditingIndex] = useState<number | null>(initialTypes[0] ? 0 : null)
   const [feedback, setFeedback] = useState("")
   const [reviewMessage, setReviewMessage] = useState<Record<string, string>>({})
@@ -157,6 +159,11 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
   const [revokeReason, setRevokeReason] = useState("")
 
   const editingType = editingIndex === null ? null : types[editingIndex] ?? null
+
+  useEffect(() => {
+    setApplications(initialApplications)
+  }, [initialApplications])
+
   const filteredApplications = useMemo(() => {
     const keyword = applicationKeyword.trim().toLowerCase()
     return applications.filter((item) => {
@@ -248,7 +255,7 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
       const result = await response.json()
       setFeedback(result.message ?? (response.ok ? "保存成功" : "保存失败"))
       if (response.ok) {
-        window.location.reload()
+        router.refresh()
       }
     })
   }
@@ -287,7 +294,7 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
       const result = await response.json()
       setFeedback(result.message ?? (response.ok ? "删除成功" : "删除失败"))
       if (response.ok) {
-        window.location.reload()
+        router.refresh()
       }
     })
   }
@@ -309,7 +316,7 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
       const result = await response.json()
       setFeedback(result.message ?? (response.ok ? "审核完成" : "审核失败"))
       if (response.ok) {
-        window.location.reload()
+        router.refresh()
       }
     })
   }
@@ -341,7 +348,7 @@ export function AdminVerificationManager({ initialTypes, initialApplications, mo
       const result = await response.json()
       setFeedback(result.message ?? (response.ok ? "认证已取消" : "取消失败"))
       if (response.ok) {
-        window.location.reload()
+        router.refresh()
       }
     })
   }

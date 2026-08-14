@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache"
+import { revalidateTag, unstable_cache } from "next/cache"
 
 import { countPendingSelfServeOrders } from "@/db/self-serve-ads"
 
@@ -8,6 +8,8 @@ import { Prisma, type Prisma as PrismaType } from "@/db/types"
 import { BUSINESS_TIME_ZONE, getBusinessDayRange, getLocalDateKey } from "@/lib/formatters"
 
 const ADMIN_DASHBOARD_CACHE_REVALIDATE_SECONDS = 30
+
+export const ADMIN_DASHBOARD_CACHE_TAG = "admin-dashboard-cache"
 
 type NumericLike = bigint | number | null | undefined
 
@@ -253,8 +255,27 @@ async function getAdminDashboardRawDataUncached() {
 const getCachedAdminDashboardRawData = unstable_cache(
   async () => getAdminDashboardRawDataUncached(),
   ["admin-dashboard-raw-data"],
-  { revalidate: ADMIN_DASHBOARD_CACHE_REVALIDATE_SECONDS },
+  {
+    revalidate: ADMIN_DASHBOARD_CACHE_REVALIDATE_SECONDS,
+    tags: [ADMIN_DASHBOARD_CACHE_TAG],
+  },
 )
+
+export function revalidateAdminDashboardCache() {
+  try {
+    revalidateTag(ADMIN_DASHBOARD_CACHE_TAG, { expire: 0 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (
+      message.startsWith("Invariant: static generation store missing in revalidateTag")
+      || message.includes('used "revalidateTag ')
+    ) {
+      return
+    }
+
+    throw error
+  }
+}
 
 export async function getAdminDashboardRawData() {
   return getCachedAdminDashboardRawData()

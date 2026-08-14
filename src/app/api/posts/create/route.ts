@@ -1,4 +1,5 @@
 import { apiSuccess, createUserRouteHandler, readJsonBody } from "@/lib/api-route"
+import { revalidateAdminDashboardCache } from "@/db/admin-dashboard-queries"
 import { executePostCreation } from "@/lib/post-create-execution"
 
 export const POST = createUserRouteHandler(async ({ request }) => {
@@ -10,6 +11,10 @@ export const POST = createUserRouteHandler(async ({ request }) => {
       action: "create-post",
     },
   })
+
+  if (result.shouldPending) {
+    revalidateAdminDashboardCache()
+  }
 
   return apiSuccess({
     id: result.post.id,
