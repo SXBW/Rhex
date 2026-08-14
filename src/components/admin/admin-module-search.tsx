@@ -83,6 +83,7 @@ const ADMIN_MODULE_SEARCH_ITEMS: AdminModuleSearchItem[] = [
   { href: getAdminSettingsHref("interaction", "gates"), label: "发布门槛", category: "站点设置子页", description: "配置发帖、评论的邮箱验证、手机验证和注册时长门槛。", keywords: ["发布门槛", "发帖门槛", "评论门槛", "邮箱验证门槛", "手机验证门槛", "验证手机", "绑定手机", "注册时长门槛", "注册分钟数", "发帖限制", "评论限制"] },
   { href: getAdminSettingsHref("interaction", "reward-pool"), label: "红包与聚宝盆", category: "站点设置子页", description: "配置帖子红包、随机命中概率、聚宝盆积分池和中奖概率。", keywords: ["红包与聚宝盆", "帖子红包", "红包最大积分", "每日发红包积分上限", "红包随机命中概率", "聚宝盆", "初始积分", "回复递增积分", "聚宝盆回复中奖概率"] },
   { href: getAdminSettingsHref("interaction", "heat"), label: "热度算法", category: "站点设置子页", description: "配置帖子热度权重、阈值和颜色色板。", keywords: ["热度算法", "浏览权重", "回复权重", "点赞权重", "打赏次数权重", "打赏积分权重", "热度阈值", "热度颜色", "颜色色板"] },
+  { href: getAdminSettingsHref("interaction", "link-cards"), label: "链接卡片", category: "站点设置子页", description: "配置外链卡片全局开关和风险域名黑名单。", keywords: ["链接卡片", "外链卡片", "风险域名", "黑名单", "域名黑名单", "外链", "链接预览"] },
   { href: getAdminSettingsHref("interaction", "preview"), label: "热度预览", category: "站点设置子页", description: "实时预览热度分数和颜色阶段表现。", keywords: ["热度预览", "热度分数", "颜色预览", "浏览数", "回复数", "点赞数", "打赏次数", "打赏积分"] },
   { href: getAdminSettingsHref("friend-links"), label: "友情链接", category: "站点设置", description: "管理友情链接展示、申请和审核。", keywords: ["友情链接", "友链", "link", "合作站点", "友链审核"] },
   { href: getAdminSettingsHref("registration", "invite-codes"), label: "邀请码管理", category: "站点设置子页", description: "在注册与邀请设置里管理邀请码列表、购买和使用。", keywords: ["邀请码", "邀请", "注册码", "invite code", "购买邀请码", "邀请码列表", "邀请码管理"] },
