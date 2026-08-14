@@ -172,6 +172,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
 
   const canonicalPath = getCanonicalPostPath(basePost, { mode: settings.postLinkDisplayMode })
   const canonicalUrl = await toAbsoluteSiteUrl(canonicalPath)
+  const siteInternalHost = new URL(canonicalUrl).hostname
   const isFollowingPost = currentUser
     ? await isUserFollowingTarget({
         userId: currentUser.id,
@@ -483,6 +484,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
               postLinkDisplayMode: settings.postLinkDisplayMode,
               linkCardEnabled: settings.linkCard.enabled,
               linkCardBlockedDomains: settings.linkCard.blockedDomains,
+              linkCardInternalHosts: [siteInternalHost],
             })
           : ""
 
@@ -503,6 +505,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
           postLinkDisplayMode: settings.postLinkDisplayMode,
           linkCardEnabled: settings.linkCard.enabled,
           linkCardBlockedDomains: settings.linkCard.blockedDomains,
+          linkCardInternalHosts: [siteInternalHost],
         }),
       })),
     ),

@@ -3,6 +3,7 @@ import { escapeHtml } from "@/lib/markdown/shared"
 export interface ExternalLinkCardRenderOptions {
   enabled?: boolean
   blockedDomains?: readonly string[]
+  internalHosts?: readonly string[]
 }
 
 const STANDALONE_URL_PATTERN = /^https?:\/\/\S+$/i
@@ -61,6 +62,66 @@ export function isHostnameBlocked(hostname: string, blockedDomains: readonly str
   })
 }
 
+const MARKDOWN_INLINE_LINK_URL_PATTERN = /\]\(\s*(https?:\/\/[^\s<>"')]+)/gi
+const MARKDOWN_RAW_URL_PATTERN = /https?:\/\/[^\s<>"')\]]+/gi
+
+export function hasBlockedExternalLinkInMarkdown(
+  markdown: string,
+  blockedDomains: readonly string[],
+): boolean {
+  if (!markdown || blockedDomains.length === 0) {
+    return false
+  }
+
+  const candidates: string[] = []
+  let inFence = false
+
+  for (const line of markdown.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+
+    if (inFence) {
+      continue
+    }
+
+    const codeFreeLine = line.replace(/`[^`]*`/g, "")
+
+    for (const match of codeFreeLine.matchAll(MARKDOWN_INLINE_LINK_URL_PATTERN)) {
+      const raw = match[1]?.trim()
+      if (raw) {
+        candidates.push(trimTrailingUrlPunctuation(raw))
+      }
+    }
+
+    for (const match of codeFreeLine.matchAll(MARKDOWN_RAW_URL_PATTERN)) {
+      candidates.push(trimTrailingUrlPunctuation(match[0]))
+    }
+  }
+
+  const normalizedBlocked = normalizeLinkCardBlockedDomains(blockedDomains)
+
+  for (const candidate of candidates) {
+    let url: URL
+    try {
+      url = new URL(candidate)
+    } catch {
+      continue
+    }
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      continue
+    }
+
+    if (isHostnameBlocked(url.hostname, normalizedBlocked)) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function parseStandaloneExternalUrl(line: string): URL | null {
   const trimmed = line.trim()
   if (!STANDALONE_URL_PATTERN.test(trimmed)) {
@@ -89,6 +150,15 @@ function isLikelyInternalPostUrl(url: URL) {
   return /^\/posts\/[^/]+$/.test(pathname)
 }
 
+function isInternalSiteHost(url: URL, internalHosts: readonly string[]) {
+  if (internalHosts.length === 0) {
+    return false
+  }
+
+  const hostname = url.hostname.toLowerCase()
+  return internalHosts.some((host) => host.trim().toLowerCase() === hostname)
+}
+
 export function renderExternalLinkCardHtml(
   line: string,
   options: ExternalLinkCardRenderOptions = {},
@@ -102,7 +172,7 @@ export function renderExternalLinkCardHtml(
     return null
   }
 
-  if (isLikelyInternalPostUrl(url)) {
+  if (isLikelyInternalPostUrl(url) || isInternalSiteHost(url, options.internalHosts ?? [])) {
     return null
   }
 

@@ -44,6 +44,7 @@ import { normalizeManualTags, syncPostTaxonomy } from "@/lib/post-editor"
 import { getBoardTreasuryCreditFromConfiguredCharge } from "@/lib/board-treasury"
 import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
 import { buildPostSlug } from "@/lib/post-slug"
+import { hasBlockedExternalLinkInMarkdown, normalizeLinkCardBlockedDomains } from "@/lib/link-card-embed"
 import { getSiteSettings } from "@/lib/site-settings"
 import { validatePostPayload } from "@/lib/validators"
 import { resolveAdminActorFromSessionUser } from "@/lib/moderator-permissions"
@@ -345,11 +346,14 @@ export async function createPostFlow(body: unknown, options: CreatePostFlowOptio
       boardContext.board.zoneId,
     ),
   )
+  const blockedLinkCardDomains = normalizeLinkCardBlockedDomains(settings.linkCard?.blockedDomains)
+  const containsBlockedExternalLink = blockedLinkCardDomains.length > 0
+    && hasBlockedExternalLinkInMarkdown(contentSafety.sanitizedText, blockedLinkCardDomains)
   const shouldPending = statusMode === "PENDING"
     ? true
     : statusMode === "PUBLISHED"
       ? false
-      : !skipsAutoReview && Boolean(boardContext.settings.requirePostReview)
+      : !skipsAutoReview && (Boolean(boardContext.settings.requirePostReview) || containsBlockedExternalLink)
   const postEditableMinutes = resolvePostEditWindowMinutes(
     settings.postEditableMinutes,
     boardContext.settings.postEditRules,
@@ -403,7 +407,7 @@ export async function createPostFlow(body: unknown, options: CreatePostFlowOptio
           activityAt: createdAt,
           editableUntil: resolvePostEditableUntil(createdAt, postEditableMinutes),
           publishedAt: shouldPending ? null : createdAt,
-          reviewNote: shouldPending ? "当前节点开启发帖审核，帖子已进入审核" : null,
+          reviewNote: shouldPending ? (containsBlockedExternalLink ? "帖子内容包含风险外链，帖子已进入审核" : "当前节点开启发帖审核，帖子已进入审核") : null,
           pollOptions: postType === "POLL" ? { create: pollOptions.map((option, index) => ({ content: option, sortOrder: index })) } : undefined,
           lotteryPrizes: postType === "LOTTERY" ? { create: buildLotteryPrizeCreateInputs(lotteryData?.prizes ?? [], settings) } : undefined,
           lotteryConditions: postType === "LOTTERY" ? { create: (lotteryData?.conditions ?? []).map((condition, index) => ({ type: condition.type, operator: condition.operator ?? "GTE", value: condition.value, description: condition.description, groupKey: condition.groupKey ?? "default", sortOrder: index })) } : undefined,

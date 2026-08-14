@@ -5,7 +5,17 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Slide } from "yet-another-react-lightbox"
 
 import { useMarkdownEmojiMap } from "@/components/site-settings-provider"
-import { bindBase64Inspector, bindBrokenImagePlaceholders, bindImageLightbox, enhanceMarkdown, type LightboxImage } from "@/lib/markdown/enhance"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { bindBase64Inspector, bindBrokenImagePlaceholders, bindExternalLinkRiskConfirmation, bindImageLightbox, enhanceMarkdown, type ExternalLinkRiskInfo, type LightboxImage } from "@/lib/markdown/enhance"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import type { PostContentImageMode } from "@/lib/theme"
 import { cn } from "@/lib/utils"
@@ -26,6 +36,7 @@ interface MarkdownBodyProps {
   html: string
   className?: string
   onOpenLightbox: (images: LightboxImage[], index: number) => void
+  onRequestExternalLink: (info: ExternalLinkRiskInfo) => void
   imageDisplayMode?: PostContentImageMode
   isImageOnly?: boolean
   collapseLongCodeBlocks?: boolean
@@ -159,7 +170,7 @@ function LightboxPortal({ lightbox, onClose, onChange }: LightboxPortalProps) {
   )
 }
 
-const MarkdownBody = memo(function MarkdownBody({ html, className, onOpenLightbox, imageDisplayMode = "auto", isImageOnly = false, collapseLongCodeBlocks = false }: MarkdownBodyProps) {
+const MarkdownBody = memo(function MarkdownBody({ html, className, onOpenLightbox, onRequestExternalLink, imageDisplayMode = "auto", isImageOnly = false, collapseLongCodeBlocks = false }: MarkdownBodyProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -170,6 +181,7 @@ const MarkdownBody = memo(function MarkdownBody({ html, className, onOpenLightbo
 
     const removeBase64Inspector = bindBase64Inspector(container)
     const removeBrokenImagePlaceholders = bindBrokenImagePlaceholders(container)
+    const removeExternalLinkConfirmation = bindExternalLinkRiskConfirmation(container, onRequestExternalLink)
     let removeMarkdownEnhancements = () => {}
     let removeImageLightbox = () => {}
     let cancelled = false
@@ -192,10 +204,11 @@ const MarkdownBody = memo(function MarkdownBody({ html, className, onOpenLightbo
       cancelled = true
       removeBase64Inspector()
       removeBrokenImagePlaceholders()
+      removeExternalLinkConfirmation()
       removeMarkdownEnhancements()
       removeImageLightbox()
     }
-  }, [collapseLongCodeBlocks, html, onOpenLightbox])
+  }, [collapseLongCodeBlocks, html, onOpenLightbox, onRequestExternalLink])
 
   return (
     <div
@@ -215,6 +228,7 @@ const MarkdownBody = memo(function MarkdownBody({ html, className, onOpenLightbo
 
 export function MarkdownContentClient({ content, html, className, emptyText, markdownEmojiMap, expandImagesWhenImageOnly = false, imageDisplayMode = "auto", imageOnly, collapseLongCodeBlocks = false }: MarkdownContentClientProps) {
   const [lightbox, setLightbox] = useState<LightboxState | null>(null)
+  const [pendingExternalLink, setPendingExternalLink] = useState<ExternalLinkRiskInfo | null>(null)
   const [clientRenderedHtml, setClientRenderedHtml] = useState("")
   const [clientRenderedImageOnly, setClientRenderedImageOnly] = useState(false)
   const normalized = useMemo(() => content.replace(/\r\n/g, "\n").trim(), [content])
@@ -266,6 +280,17 @@ export function MarkdownContentClient({ content, html, className, emptyText, mar
   const handleOpenLightbox = useCallback((images: LightboxImage[], index: number) => {
     setLightbox({ images, index })
   }, [])
+  const handleRequestExternalLink = useCallback((info: ExternalLinkRiskInfo) => {
+    setPendingExternalLink(info)
+  }, [])
+  const handleOpenExternalLink = useCallback(() => {
+    if (!pendingExternalLink) {
+      return
+    }
+
+    window.open(pendingExternalLink.href, "_blank", "noopener,noreferrer")
+    setPendingExternalLink(null)
+  }, [pendingExternalLink])
 
   if (!resolvedHtml) {
     return !normalized && emptyText ? <p className="text-sm text-muted-foreground">{emptyText}</p> : null
@@ -273,7 +298,7 @@ export function MarkdownContentClient({ content, html, className, emptyText, mar
 
   return (
     <>
-      <MarkdownBody html={resolvedHtml} className={className} onOpenLightbox={handleOpenLightbox} imageDisplayMode={imageDisplayMode} isImageOnly={isImageOnly} collapseLongCodeBlocks={collapseLongCodeBlocks} />
+      <MarkdownBody html={resolvedHtml} className={className} onOpenLightbox={handleOpenLightbox} onRequestExternalLink={handleRequestExternalLink} imageDisplayMode={imageDisplayMode} isImageOnly={isImageOnly} collapseLongCodeBlocks={collapseLongCodeBlocks} />
       {lightbox ? (
         <LightboxPortal
           lightbox={lightbox}
@@ -281,6 +306,39 @@ export function MarkdownContentClient({ content, html, className, emptyText, mar
           onChange={(index) => setLightbox((previous) => previous ? { ...previous, index } : previous)}
         />
       ) : null}
+      <AlertDialog
+        open={Boolean(pendingExternalLink)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingExternalLink(null)
+          }
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingExternalLink?.blocked ? "风险外链警告" : "外部链接提示"}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line leading-6">
+              {pendingExternalLink?.blocked
+                ? "该链接指向的外部域名已被本站列入风险黑名单，请谨慎访问，注意个人信息与账户安全，不要在陌生站点输入密码或支付信息。\n\n确认仍要打开吗？"
+                : "该链接为外部网站，请谨慎访问，注意安全性。\n\n确认后将在新标签页打开。"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-w-24">取消</AlertDialogCancel>
+            <AlertDialogAction
+              className={cn(
+                "min-w-24",
+                pendingExternalLink?.blocked
+                  ? "bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600"
+                  : ""
+              )}
+              onClick={handleOpenExternalLink}
+            >
+              {pendingExternalLink?.blocked ? "仍要访问" : "继续访问"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

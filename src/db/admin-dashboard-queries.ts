@@ -1,4 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache"
+import { after } from "next/server"
 
 import { countPendingSelfServeOrders } from "@/db/self-serve-ads"
 
@@ -262,18 +263,30 @@ const getCachedAdminDashboardRawData = unstable_cache(
 )
 
 export function revalidateAdminDashboardCache() {
-  try {
-    revalidateTag(ADMIN_DASHBOARD_CACHE_TAG, { expire: 0 })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    if (
-      message.startsWith("Invariant: static generation store missing in revalidateTag")
-      || message.includes('used "revalidateTag ')
-    ) {
-      return
-    }
+  const invalidate = () => {
+    try {
+      revalidateTag(ADMIN_DASHBOARD_CACHE_TAG, "max")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (
+        message.startsWith("Invariant: static generation store missing in revalidateTag")
+        || message.includes('used "revalidateTag ')
+      ) {
+        return
+      }
 
-    throw error
+      throw error
+    }
+  }
+
+  try {
+    // 延后到请求响应之后执行，避免在前台写操作请求路径上同步做缓存失效，
+    // 并用 stale-while-revalidate 语义标记失效（后台下次访问时后台刷新），
+    // 防止 admin dashboard 缓存被立即删除后触发阻塞式全量重算而拖慢前台。
+    after(() => invalidate())
+  } catch {
+    // 非请求上下文（脚本 / Worker 等）中 after 不可用，降级为同步失效。
+    invalidate()
   }
 }
 

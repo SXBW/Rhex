@@ -731,3 +731,71 @@ export async function enhanceMarkdown(container: HTMLElement, options: MarkdownE
     removeLongCodeBlockToggles()
   }
 }
+
+export interface ExternalLinkRiskInfo {
+  href: string
+  blocked: boolean
+}
+
+export function bindExternalLinkRiskConfirmation(
+  container: HTMLElement,
+  onRequestOpen: (info: ExternalLinkRiskInfo) => void,
+) {
+  const handleContainerClick = (event: Event) => {
+    if (event.defaultPrevented) {
+      return
+    }
+
+    const target = event.target
+    if (!(target instanceof Element)) {
+      return
+    }
+
+    const link = target.closest<HTMLAnchorElement>("a[href]")
+    if (!link) {
+      return
+    }
+
+    if (
+      link.classList.contains("md-heading-anchor")
+      || link.classList.contains("footnote-ref")
+      || link.classList.contains("footnote-backref")
+      || link.querySelector("img")
+    ) {
+      return
+    }
+
+    const href = link.getAttribute("href")?.trim() ?? ""
+    if (!href || href.startsWith("#") || /^(javascript|vbscript|data):/i.test(href)) {
+      return
+    }
+
+    let resolvedUrl: URL
+    try {
+      resolvedUrl = new URL(href, window.location.origin)
+    } catch {
+      return
+    }
+
+    if (!["http:", "https:"].includes(resolvedUrl.protocol)) {
+      return
+    }
+
+    if (resolvedUrl.origin === window.location.origin) {
+      return
+    }
+
+    event.preventDefault()
+    onRequestOpen({
+      href: resolvedUrl.href,
+      blocked: link.dataset.mdLinkCardBlocked === "true"
+        || Boolean(link.closest("[data-md-link-card-blocked]")),
+    })
+  }
+
+  container.addEventListener("click", handleContainerClick)
+
+  return () => {
+    container.removeEventListener("click", handleContainerClick)
+  }
+}
