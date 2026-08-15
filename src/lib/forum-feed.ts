@@ -15,6 +15,7 @@ import { getPublicPostContentText } from "@/lib/post-content"
 import { parsePostRewardPoolConfigFromContent } from "@/lib/post-red-packets"
 import { getPostStatusLabel, getPostTypeLabel, type LocalPostType } from "@/lib/post-types"
 import { getUserAvatarPath, getUserDisplayName } from "@/lib/user-display"
+import { getVipLevel } from "@/lib/vip-status"
 import type { PostRewardPoolMode } from "@/lib/post-reward-pool-config"
 
 export type FeedSort = "latest" | "new" | "hot" | "featured" | "weekly" | "following"
@@ -190,6 +191,11 @@ function mapFeedPost(post: FeedPostRecord | PinnedFeedPostRecord, anonymousMaskI
     authorVipLevel: feedPost.author.vipLevel,
     authorIsVip: Boolean(feedPost.author.vipExpiresAt && new Date(feedPost.author.vipExpiresAt).getTime() > Date.now()),
   }, anonymousMaskIdentity)
+  const isAnonymousPost = Boolean(feedPost.isAnonymous)
+  const authorVipExpiresAt = isAnonymousPost
+    ? (maskedAuthor.authorIsVip && feedPost.author.vipExpiresAt ? new Date(feedPost.author.vipExpiresAt).toISOString() : null)
+    : (feedPost.author.vipExpiresAt ? new Date(feedPost.author.vipExpiresAt).toISOString() : null)
+  const authorVipLevel = isAnonymousPost ? (maskedAuthor.authorVipLevel ?? null) : getVipLevel(feedPost.author)
   const latestReplyUsesAnonymousIdentity = Boolean(feedPost.isAnonymous && latestReply?.useAnonymousIdentity)
   const latestReplyAuthorName = latestReplyUsesAnonymousIdentity
     ? (anonymousMaskIdentity?.name ?? anonymousMaskIdentity?.username ?? "匿名用户")
@@ -214,8 +220,8 @@ function mapFeedPost(post: FeedPostRecord | PinnedFeedPostRecord, anonymousMaskI
     authorUsername: maskedAuthor.authorUsername ?? maskedAuthor.author,
     authorAvatarPath: maskedAuthor.authorAvatarPath ?? null,
     authorStatus: maskedAuthor.authorStatus ?? "ACTIVE",
-    authorVipLevel: maskedAuthor.authorVipLevel ?? null,
-    authorVipExpiresAt: maskedAuthor.authorIsVip ? (feedPost.author.vipExpiresAt ? new Date(feedPost.author.vipExpiresAt).toISOString() : null) : null,
+    authorVipLevel,
+    authorVipExpiresAt,
     publishedAt: formatRelativeTime(publishedAtRaw),
     publishedAtRaw: publishedAtRaw.toISOString(),
     activityAt: formatRelativeTime(activityAtRaw),
