@@ -6,6 +6,11 @@
 
 ## [1.0.43] - 2026-08-15
 
+### Added
+
+- 补充项目 ESLint 配置（新增 `eslint.config.mjs`，采用 ESLint 9 flat config）：此前仓库缺少 ESLint 配置文件，`pnpm lint` 一直无法运行；现基于 Next.js 官方 `eslint-config-next` 启用 `next/core-web-vitals` 与 `next/typescript` 规则集，插件目录 `addons/` 与静态资源 `public/` 不参与 lint，同时将 `react-hooks/set-state-in-effect` 降级，避免既有代码中 effect 内同步 state 的旧模式阻塞 lint
+- `pnpm lint` 现有警告清零：后台帖子管理编辑跳转、后台节点结构删除成功跳转改为 App Router 客户端导航（`useRouter().push()`）；附件下载接口与 OAuth 授权端点属于资源/重定向跳转而非页面导航，予以豁免并保留原行为
+
 ### Fixed
 
 - 修复后台「互动与热度」「注册与邀请」设置页在移动端顶栏展开菜单按钮（左上角）点按无效的问题：这两个分区的路由级子选项卡较多（10-12 个），窄屏下选项卡条会把页面撑出横向滚动，导致顶栏菜单按钮点击被浏览器当作滚动手势吞掉；现移动端内容网格不再随内容撑宽，子选项卡条改为容器内横向滚动，所有子选项卡均可正常滑动查看和点击

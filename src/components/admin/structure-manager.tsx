@@ -87,6 +87,7 @@ export function StructureManager({
 }: StructureManagerProps) {
   const [modal, setModal] = useState<ModalMode>(null)
   const [filters, setFilters] = useState(initialFilters)
+  const router = useRouter()
 
   useEffect(() => {
     setFilters(initialFilters)
@@ -218,7 +219,7 @@ export function StructureManager({
       }
 
       toast.success(message)
-      window.location.href = "/admin?tab=structure"
+      router.push("/admin?tab=structure")
     } catch {
       toast.error("网络异常，请稍后重试")
     }

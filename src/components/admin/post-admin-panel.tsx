@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 
 import { Modal } from "@/components/ui/modal"
 import { AdminUserStatusModal } from "@/components/admin/admin-user-status-modal"
@@ -62,6 +63,7 @@ export function PostAdminPanel({
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmError, setConfirmError] = useState("")
   const [pendingAction, startTransition] = useTransition()
+  const router = useRouter()
 
   const currentBoardLabel = useMemo(() => {
     for (const group of boardOptions) {
@@ -115,7 +117,7 @@ export function PostAdminPanel({
   }
 
   function openEditPage() {
-    window.location.href = `/write?mode=edit&post=${encodeURIComponent(postSlug)}`
+    router.push(`/write?mode=edit&post=${encodeURIComponent(postSlug)}`)
   }
 
   function openMoveDialog() {

@@ -143,6 +143,8 @@ export function ProfileAccountBindingSettings({ providers, passkey }: ProfileAcc
 
     setActiveProvider(binding.provider)
     const separator = binding.connectUrl.includes("?") ? "&" : "?"
+    // OAuth 授权由服务端重定向到第三方登录页，属于端点跳转而非站内页面导航
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(`${binding.connectUrl}${separator}redirectTo=${encodeURIComponent(ACCOUNT_BINDINGS_REDIRECT_PATH)}`)
   }
 

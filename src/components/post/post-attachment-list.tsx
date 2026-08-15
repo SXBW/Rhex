@@ -223,6 +223,8 @@ export function PostAttachmentList({ postId, attachments, pointName }: { postId:
       return
     }
 
+    // 下载接口是资源端点而非页面导航，需浏览器整页跳转触发下载
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(`/api/post-attachments/download?attachmentId=${encodeURIComponent(attachmentId)}`)
   }
 
