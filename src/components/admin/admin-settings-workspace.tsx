@@ -47,7 +47,7 @@ export function AdminSettingsWorkspace({
   const settingsGroups = getAdminSettingsGroups(adminTier, effectivePermissionSet)
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[220px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
    
         <Card>

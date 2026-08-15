@@ -42,16 +42,18 @@ export function AdminSettingsSubTabs({
       }}
       className={cn("w-full", className)}
     >
-      <TabsList>
-        {items.map((item) => (
-          <TabsTrigger
-            key={item.key}
-            value={item.key}
-          >
-            {item.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      <div className="w-full max-w-full overflow-x-auto pb-0.5 [scrollbar-width:thin]">
+        <TabsList>
+          {items.map((item) => (
+            <TabsTrigger
+              key={item.key}
+              value={item.key}
+            >
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
     </Tabs>
   )
 }
