@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Modal } from "@/components/ui/modal"
 import {
   Table,
   TableBody,
@@ -92,6 +93,17 @@ const text = {
   batchDisable: "批量停用",
   batchDelete: "批量删除",
   clearAll: "一键清空",
+  edit: "编辑",
+  editTitle: "编辑敏感词规则",
+  editWord: "敏感词",
+  editMatchType: "匹配方式",
+  editActionType: "处理方式",
+  editSave: "保存修改",
+  editSaving: "保存中...",
+  editSuccess: "规则已更新",
+  editFailed: "更新失败",
+  editWordEmpty: "敏感词不能为空",
+  editWordDuplicate: "该敏感词已存在",
   clearSelection: "取消选择",
   selectCurrentPage: "选择当前页规则",
   word: "敏感词",
@@ -109,6 +121,14 @@ const text = {
   deleteConfirmSuffix: "吗？删除后将立即失效。",
   batchDeleteTitle: "批量删除敏感词规则",
   batchDeleteConfirm: "确认删除已选中的",
+  batchEditMatchType: "修改匹配方式",
+  batchEditActionType: "修改处理方式",
+  batchEditSuccess: "已修改",
+  batchEditFailed: "修改失败",
+  batchEditSaving: "修改中...",
+  batchEditConfirm: "确认将已选中的",
+  batchEditMatchTypeSuffix: "条规则的匹配方式改为",
+  batchEditActionTypeSuffix: "条规则的处理方式改为",
   clearAllTitle: "清空敏感词库",
   clearAllConfirm: "确认清空全部敏感词规则吗？删除后所有敏感词拦截和替换规则将立即失效。",
   pagePrefix: "第",
@@ -118,8 +138,7 @@ const text = {
   pageSizeSuffix: "条",
   totalPrefix: "共",
   totalSuffix: "条规则",
-  previousPage: "上一页",
-  nextPage: "下一页",
+
   contains: "包含匹配",
   exact: "完全匹配",
   regex: "正则匹配",
@@ -147,7 +166,14 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
   const [message, setMessage] = useState("")
   const [saving, setSaving] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingWord, setEditingWord] = useState("")
+  const [editingMatchType, setEditingMatchType] = useState("CONTAINS")
+  const [editingActionType, setEditingActionType] = useState("REJECT")
+  const [editSaving, setEditSaving] = useState(false)
+  const [editMessage, setEditMessage] = useState("")
+  const [batchMatchType, setBatchMatchType] = useState("CONTAINS")
+  const [batchActionType, setBatchActionType] = useState("REJECT")
   const summary = useMemo(() => data.summary, [data.summary])
   const batchCount = useMemo(() => {
     return new Set(wordInput.split(/\r?\n/).map((item) => item.trim()).filter(Boolean)).size
@@ -223,6 +249,35 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
     router.refresh()
   }
 
+  async function batchUpdateField(field: "matchType" | "actionType", value: string, label: string) {
+    if (selectedIds.length === 0) {
+      return
+    }
+
+    const confirmed = await showConfirm({
+      title: field === "matchType" ? text.batchEditMatchType : text.batchEditActionType,
+      description: `${text.batchEditConfirm} ${selectedIds.length} ${field === "matchType" ? text.batchEditMatchTypeSuffix : text.batchEditActionTypeSuffix}${label}？`,
+      confirmText: text.batchEditSaving,
+      variant: "danger",
+    })
+
+    if (!confirmed) {
+      return
+    }
+
+    setSaving(true)
+    const response = await fetch("/api/admin/sensitive-words", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedIds, [field]: value }),
+    })
+    setSaving(false)
+    if (response.ok) {
+      setSelectedIds([])
+      router.refresh()
+    }
+  }
+
   async function removeRule(id: string, wordLabel: string) {
     const confirmed = await showConfirm({
       title: text.deleteTitle,
@@ -296,6 +351,50 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
     if (response.ok) {
       setSelectedIds([])
       router.refresh()
+    }
+  }
+
+  function openEditModal(item: SensitiveWordItem) {
+    setEditingId(item.id)
+    setEditingWord(item.word)
+    setEditingMatchType(item.matchType)
+    setEditingActionType(item.actionType)
+    setEditMessage("")
+  }
+
+  function closeEditModal() {
+    setEditingId(null)
+    setEditMessage("")
+  }
+
+  async function submitEdit() {
+    if (!editingId) {
+      return
+    }
+    if (!editingWord.trim()) {
+      setEditMessage(text.editWordEmpty)
+      return
+    }
+
+    setEditSaving(true)
+    setEditMessage("")
+    const response = await fetch("/api/admin/sensitive-words", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingId,
+        word: editingWord.trim(),
+        matchType: editingMatchType,
+        actionType: editingActionType,
+      }),
+    })
+    const result = await response.json()
+    setEditSaving(false)
+    if (response.ok) {
+      closeEditModal()
+      router.refresh()
+    } else {
+      setEditMessage(result.message ?? text.editFailed)
     }
   }
 
@@ -401,6 +500,30 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
               <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || saving} onClick={() => batchToggleStatus(false)}>
                 {text.batchDisable}
               </Button>
+              <span className="hidden h-4 w-px bg-border sm:block" />
+              <Select value={batchMatchType} onValueChange={setBatchMatchType}>
+                <SelectTrigger className="h-8 w-auto min-w-[100px] rounded-full bg-background text-xs" disabled={selectedCount === 0 || saving}>
+                  <SelectValue placeholder={text.matchType} />
+                </SelectTrigger>
+                <SelectContent>
+                  {matchTypeOptions.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || saving} onClick={() => batchUpdateField("matchType", batchMatchType, getMatchTypeLabel(batchMatchType))}>
+                {text.batchEditMatchType}
+              </Button>
+              <Select value={batchActionType} onValueChange={setBatchActionType}>
+                <SelectTrigger className="h-8 w-auto min-w-[100px] rounded-full bg-background text-xs" disabled={selectedCount === 0 || saving}>
+                  <SelectValue placeholder={text.actionType} />
+                </SelectTrigger>
+                <SelectContent>
+                  {actionTypeOptions.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || saving} onClick={() => batchUpdateField("actionType", batchActionType, getActionTypeLabel(batchActionType))}>
+                {text.batchEditActionType}
+              </Button>
+              <span className="hidden h-4 w-px bg-border sm:block" />
               <Button type="button" size="sm" className="rounded-full bg-red-600 px-3 text-xs text-white hover:bg-red-500" disabled={selectedCount === 0 || saving} onClick={batchRemoveRules}>
                 {text.batchDelete}
               </Button>
@@ -421,10 +544,7 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
             pagination={data.pagination}
             buildPageHref={buildPageHref}
             itemLabel={text.totalSuffix}
-            className="border-b border-border px-6 py-3"
-            align="center"
-            previousLabel={text.previousPage}
-            nextLabel={text.nextPage}
+            className="border-b border-border px-4 py-3"
           />
         ) : null}
         <CardContent className="px-0 py-0">
@@ -477,6 +597,9 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
                     </TableCell>
                     <TableCell className="align-top">
                       <div className="flex flex-wrap justify-end gap-1.5">
+                        <Button type="button" variant="outline" className="h-7 rounded-full px-2.5 text-xs" onClick={() => openEditModal(item)}>
+                          {text.edit}
+                        </Button>
                         <Button type="button" variant="outline" className="h-7 rounded-full px-2.5 text-xs" onClick={() => toggleStatus(item.id, item.status)}>
                           {item.status ? text.disable : text.enable}
                         </Button>
@@ -497,12 +620,60 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
             buildPageHref={buildPageHref}
             itemLabel={text.totalSuffix}
             className="w-full"
-            align="center"
-            previousLabel={text.previousPage}
-            nextLabel={text.nextPage}
           />
         </CardFooter>
       </Card>
+
+      <Modal
+        open={editingId !== null}
+        onClose={closeEditModal}
+        title={text.editTitle}
+        footer={
+          <div className="flex items-center gap-2">
+            <Button type="button" className="rounded-full px-4 text-xs" disabled={editSaving} onClick={submitEdit}>
+              {editSaving ? text.editSaving : text.editSave}
+            </Button>
+            <Button type="button" variant="ghost" className="rounded-full px-4 text-xs" disabled={editSaving} onClick={closeEditModal}>
+              取消
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{text.editWord}</label>
+            <input
+              type="text"
+              value={editingWord}
+              onChange={(event) => setEditingWord(event.target.value)}
+              className="h-10 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{text.editMatchType}</label>
+            <Select value={editingMatchType} onValueChange={setEditingMatchType}>
+              <SelectTrigger className="h-10 rounded-xl bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {matchTypeOptions.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{text.editActionType}</label>
+            <Select value={editingActionType} onValueChange={setEditingActionType}>
+              <SelectTrigger className="h-10 rounded-xl bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {actionTypeOptions.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {editMessage ? <p className="text-sm text-destructive">{editMessage}</p> : null}
+        </div>
+      </Modal>
     </div>
   )
 }

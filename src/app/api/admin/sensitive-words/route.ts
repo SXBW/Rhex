@@ -69,7 +69,73 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
 export const PUT = createAdminRouteHandler(async ({ request, adminUser }) => {
   const requestIp = getRequestIp(request)
   const body = await readJsonBody(request)
+
+  if (Array.isArray(body.ids)) {
+    const ids = [...new Set(body.ids.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()))]
+
+    if (ids.length === 0) {
+      apiError(400, "请选择要修改的规则")
+    }
+
+    const hasFieldUpdate = "matchType" in body || "actionType" in body
+    if (!hasFieldUpdate) {
+      apiError(400, "请指定要修改的字段")
+    }
+
+    const updateData: Record<string, string> = {}
+    if ("matchType" in body) {
+      updateData.matchType = normalizeSensitiveMatchType(String(body.matchType).trim().toUpperCase())
+    }
+    if ("actionType" in body) {
+      updateData.actionType = normalizeSensitiveActionType(String(body.actionType).trim().toUpperCase())
+    }
+
+    const result = await prisma.sensitiveWord.updateMany({
+      where: { id: { in: ids } },
+      data: updateData,
+    })
+    invalidateSensitiveWordRulesCache()
+    const fields = Object.keys(updateData).join("与")
+    await writeAdminLog(adminUser.id, "sensitiveWord.batchUpdate", "CONFIG", "batch", `批量修改敏感词规则 ${result.count} 条的${fields}`, requestIp)
+    return apiSuccess({ updatedCount: result.count }, `已修改 ${result.count} 条规则`)
+  }
+
   const id = requireStringField(body, "id", "缺少规则ID")
+
+  const hasFieldUpdate = "matchType" in body || "actionType" in body || "word" in body
+
+  if (hasFieldUpdate) {
+    const updateData: Record<string, string> = {}
+
+    if ("matchType" in body) {
+      updateData.matchType = normalizeSensitiveMatchType(String(body.matchType).trim().toUpperCase())
+    }
+    if ("actionType" in body) {
+      updateData.actionType = normalizeSensitiveActionType(String(body.actionType).trim().toUpperCase())
+    }
+    if ("word" in body) {
+      const newWord = String(body.word).trim()
+      if (newWord.length === 0) {
+        apiError(400, "敏感词不能为空")
+      }
+      const existing = await prisma.sensitiveWord.findFirst({
+        where: { word: newWord, id: { not: id } },
+        select: { id: true },
+      })
+      if (existing) {
+        apiError(400, "该敏感词已存在，请勿重复添加")
+      }
+      updateData.word = newWord
+    }
+
+    const updated = await prisma.sensitiveWord.update({
+      where: { id },
+      data: updateData,
+    })
+    invalidateSensitiveWordRulesCache()
+    await writeAdminLog(adminUser.id, "sensitiveWord.update", "CONFIG", id, `编辑敏感词规则「${updated.word}」`, requestIp)
+    return apiSuccess(undefined, "规则已更新")
+  }
 
   await prisma.sensitiveWord.update({
     where: { id },
