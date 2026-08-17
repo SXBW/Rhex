@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { IconPicker } from "@/components/ui/icon-picker"
 import { Input } from "@/components/ui/input"
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { toast } from "@/components/ui/toast"
 import { saveAdminSiteSettings, uploadAdminMarkdownEmojiFiles } from "@/lib/admin-site-settings-client"
 import {
@@ -54,6 +55,7 @@ interface VisibleEmojiEntry {
 }
 
 const ALL_GROUPS_VALUE = "__all__"
+const EMOJI_PAGE_SIZE = 20
 
 function cloneDefaultMarkdownEmojiItems() {
   return DEFAULT_MARKDOWN_EMOJI_ITEMS.map((item) => ({ ...item }))
@@ -165,6 +167,7 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   const [itemDisplaySizeDrafts, setItemDisplaySizeDrafts] = useState<Record<number, string>>({})
   const [moveTargetGroup, setMoveTargetGroup] = useState(() => normalizeMarkdownEmojiGroup(initialItems[0]?.group))
   const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const [isUploadPending, startUploadTransition] = useTransition()
   const [isPending, startTransition] = useTransition()
 
@@ -204,6 +207,18 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   }, [activeConcreteGroup, activeGroup, items])
   const activeGroupDisplaySize = useMemo(() => getUnifiedDisplaySize(activeGroupItems), [activeGroupItems])
   const activeGroupHasMixedDisplaySizes = useMemo(() => hasMixedDisplaySizes(activeGroupItems), [activeGroupItems])
+
+  const totalPages = Math.max(1, Math.ceil(visibleEntries.length / EMOJI_PAGE_SIZE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedEntries = useMemo(() => {
+    const start = (safeCurrentPage - 1) * EMOJI_PAGE_SIZE
+    return visibleEntries.slice(start, start + EMOJI_PAGE_SIZE)
+  }, [visibleEntries, safeCurrentPage])
+  const paginatedIndexes = useMemo(() => paginatedEntries.map((entry) => entry.index), [paginatedEntries])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeGroup, searchQuery])
 
   useEffect(() => {
     if (activeGroup === ALL_GROUPS_VALUE || groups.some((group) => group.name === activeGroup)) {
@@ -769,7 +784,7 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
 
             {visibleEntries.length > 0 ? (
               <div className="flex flex-col gap-3">
-                {visibleEntries.map(({ item, index, group }) => {
+                {paginatedEntries.map(({ item, index, group }) => {
                   const selected = selectedIndexes.has(index)
 
                   return (
@@ -850,6 +865,60 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
                 当前筛选没有匹配的表情。
               </div>
             )}
+
+            {totalPages > 1 ? (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      text="上一页"
+                      onClick={(event) => { event.preventDefault(); setCurrentPage((p) => Math.max(1, p - 1)) }}
+                      aria-disabled={safeCurrentPage <= 1}
+                      className={cn(safeCurrentPage <= 1 && "pointer-events-none opacity-50")}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      if (totalPages <= 7) return true
+                      if (page === 1 || page === totalPages) return true
+                      if (Math.abs(page - safeCurrentPage) <= 1) return true
+                      return false
+                    })
+                    .reduce<(number | "ellipsis")[]>((acc, page, i, arr) => {
+                      if (i > 0) {
+                        const prev = arr[i - 1]
+                        if (page - prev > 1) acc.push("ellipsis")
+                      }
+                      acc.push(page)
+                      return acc
+                    }, [])
+                    .map((page, i) => (
+                      page === "ellipsis" ? (
+                        <PaginationItem key={`ellipsis-${i}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            isActive={page === safeCurrentPage}
+                            onClick={(event) => { event.preventDefault(); setCurrentPage(page) }}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      text="下一页"
+                      onClick={(event) => { event.preventDefault(); setCurrentPage((p) => Math.min(totalPages, p + 1)) }}
+                      aria-disabled={safeCurrentPage >= totalPages}
+                      className={cn(safeCurrentPage >= totalPages && "pointer-events-none opacity-50")}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            ) : null}
 
             <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border bg-card/40 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
