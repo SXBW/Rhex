@@ -48,7 +48,8 @@ COPY . .
 
 RUN pnpm run prisma:generate \
   && pnpm run build \
-  && pnpm run verify:docker-build
+  && pnpm run verify:docker-build \
+  && rm -rf .next/cache .next/dev
 
 FROM base AS runner
 
