@@ -51,6 +51,41 @@ RUN pnpm run prisma:generate \
   && pnpm run verify:docker-build \
   && rm -rf .next/cache .next/dev
 
+RUN ARCH=$(dpkg --print-architecture) \
+  && echo "[cleanup] Architecture: $ARCH" \
+  && find node_modules -type d \( \
+    -name "linux-x64" -o -name "linux-arm64" -o \
+    -name "darwin-x64" -o -name "darwin-arm64" -o \
+    -name "win32-x64" -o -name "win32-arm64" \
+  \) 2>/dev/null | while read dir; do \
+    case "$ARCH" in \
+      amd64) echo "$dir" | grep -q "linux-x64" || { echo "[cleanup] Removing $dir"; rm -rf "$dir"; } ;; \
+      arm64) echo "$dir" | grep -q "linux-arm64" || { echo "[cleanup] Removing $dir"; rm -rf "$dir"; } ;; \
+    esac; \
+  done \
+  && find node_modules -maxdepth 5 -type d -name "@napi-rs" -path "*/node_modules/@napi-rs" 2>/dev/null | while read napi_dir; do \
+    find "$napi_dir" -maxdepth 1 -type d \( \
+      -name "canvas-linux-x64*" -o -name "canvas-linux-arm64*" -o \
+      -name "canvas-darwin*" -o -name "canvas-win32*" \
+    \) 2>/dev/null | while read pkg_dir; do \
+      case "$ARCH" in \
+        amd64) echo "$pkg_dir" | grep -q "linux-x64" || { echo "[cleanup] Removing $pkg_dir"; rm -rf "$pkg_dir"; } ;; \
+        arm64) echo "$pkg_dir" | grep -q "linux-arm64" || { echo "[cleanup] Removing $pkg_dir"; rm -rf "$pkg_dir"; } ;; \
+      esac; \
+    done; \
+  done
+
+RUN find node_modules -type f \( \
+    -name "README*" -o -name "CHANGELOG*" -o -name "LICENSE*" -o \
+    -name "*.md" -o -name "*.test.*" -o -name "*.spec.*" -o \
+    -name "*.map" -o -name ".npmignore" \
+  \) -delete 2>/dev/null; \
+  find node_modules -type d \( \
+    -name "test" -o -name "tests" -o -name "__tests__" -o \
+    -name "docs" -o -name "example" -o -name "examples" \
+  \) -exec rm -rf {} + 2>/dev/null; \
+  true
+
 FROM base AS runner
 
 ARG NEXT_DEPLOYMENT_ID
