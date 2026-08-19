@@ -70,41 +70,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=min
 
-      - name: Clean up old untagged images (keep latest untagged as fallback)
-        if: github.ref_name == 'main'
-        shell: bash
-        run: |
-          set -o pipefail
-          PACKAGE="rhex"
-          
-          API_URL="https://api.github.com/user/packages/container/$PACKAGE/versions?per_page=100"
-          
-          VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
-          
-          UNTAGGED_DELETE=$(echo "$VERSIONS" | jq -r '
-            [.[] | select(.metadata.container.tags == []) | {id, created_at}]
-            | sort_by(.created_at)
-            | .[:length-1][]
-            | .id
-          ')
-          
-          TOTAL=$(echo "$VERSIONS" | jq '[.[] | select(.metadata.container.tags == [])] | length')
-          DELETE=$(( TOTAL > 1 ? TOTAL - 1 : 0 ))
-          
-          if [ "$DELETE" -gt 0 ]; then
-            echo "Found $TOTAL untagged images, deleting $DELETE (keeping 1 as fallback)"
-            echo "$UNTAGGED_DELETE" | while read -r version_id; do
-              if [ -n "$version_id" ]; then
-                echo "Deleting version $version_id..."
-                curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                  "$API_URL/$version_id"
-              fi
-            done
-          else
-            echo "No untagged images to delete (keeping $TOTAL as fallback)"
-          fi
-
-      - name: Clean up old tagged versions (keep 2 most recent)
+      - name: Clean up old images (keep 2 most recent builds)
         if: github.ref_name == 'main'
         shell: bash
         run: |
@@ -115,30 +81,30 @@ jobs:
 
           VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
 
-          TAGGED_TOTAL=$(echo "$VERSIONS" | jq '[.[] | select(.metadata.container.tags | length > 0)] | length')
+          TOTAL=$(echo "$VERSIONS" | jq 'length')
 
-          if [ "$TAGGED_TOTAL" -le 2 ]; then
-            echo "Found $TAGGED_TOTAL tagged version(s), nothing to delete (keeping all)"
+          if [ "$TOTAL" -le 2 ]; then
+            echo "Found $TOTAL version(s), nothing to delete (keeping all)"
             exit 0
           fi
 
-          DELETE_COUNT=$(( TAGGED_TOTAL - 2 ))
+          DELETE_COUNT=$(( TOTAL - 2 ))
 
           DELETE_IDS=$(echo "$VERSIONS" | jq -r '
-            [.[] | select(.metadata.container.tags | length > 0) | {id, created_at}]
+            [.[] | {id, created_at, tags: (.metadata.container.tags // [])}]
             | sort_by(.created_at)
             | reverse
             | .[2:][]
             | .id
           ')
 
-          echo "Found $TAGGED_TOTAL tagged versions, deleting $DELETE_COUNT (keeping 2 most recent)"
+          echo "Found $TOTAL versions, deleting $DELETE_COUNT (keeping 2 most recent)"
           echo "$DELETE_IDS" | while read -r version_id; do
             if [ -n "$version_id" ]; then
-              TAGS=$(echo "$VERSIONS" | jq -r --argjson vid "$version_id" '.[] | select(.id == $vid) | .metadata.container.tags | join(",")')
+              TAGS=$(echo "$VERSIONS" | jq -r --argjson vid "$version_id" '.[] | select(.id == $vid) | .metadata.container.tags | join(",") // "untagged"')
               echo "Deleting version $version_id (tags: $TAGS)..."
               curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 "$API_URL/$version_id"
             fi
           done
-          echo "Tagged version cleanup complete"
+          echo "Cleanup complete"
