@@ -72,39 +72,40 @@ jobs:
 
       - name: Clean up old images (keep 2 most recent builds)
         if: github.ref_name == 'main'
-        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -o pipefail
+          OWNER="${{ github.repository_owner }}"
           PACKAGE="rhex"
 
-          API_URL="https://api.github.com/user/packages/container/$PACKAGE/versions?per_page=100"
+          # Detect whether the owner is an org or a user
+          if gh api "orgs/$OWNER" >/dev/null 2>&1; then
+            API_PREFIX="orgs/$OWNER/packages/container/$PACKAGE/versions"
+          else
+            API_PREFIX="user/packages/container/$PACKAGE/versions"
+          fi
 
-          VERSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$API_URL")
+          echo "Using API endpoint: $API_PREFIX"
+
+          VERSIONS=$(gh api --paginate "$API_PREFIX" --jq '.')
 
           TOTAL=$(echo "$VERSIONS" | jq 'length')
+          echo "Found $TOTAL version(s)"
 
           if [ "$TOTAL" -le 2 ]; then
-            echo "Found $TOTAL version(s), nothing to delete (keeping all)"
+            echo "Nothing to delete (keeping all)"
             exit 0
           fi
 
           DELETE_COUNT=$(( TOTAL - 2 ))
 
-          DELETE_IDS=$(echo "$VERSIONS" | jq -r '
-            [.[] | {id, created_at, tags: (.metadata.container.tags // [])}]
-            | sort_by(.created_at)
-            | reverse
-            | .[2:][]
-            | .id
-          ')
-
-          echo "Found $TOTAL versions, deleting $DELETE_COUNT (keeping 2 most recent)"
-          echo "$DELETE_IDS" | while read -r version_id; do
-            if [ -n "$version_id" ]; then
-              TAGS=$(echo "$VERSIONS" | jq -r --argjson vid "$version_id" '.[] | select(.id == $vid) | .metadata.container.tags | join(",") // "untagged"')
-              echo "Deleting version $version_id (tags: $TAGS)..."
-              curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                "$API_URL/$version_id"
-            fi
+          echo "Deleting $DELETE_COUNT old version(s), keeping 2 most recent..."
+          echo "$VERSIONS" | jq -r '
+            sort_by(.created_at) | reverse | .[2:][]
+          ' | jq -c '.' | while read -r version; do
+            VERSION_ID=$(echo "$version" | jq -r '.id')
+            TAGS=$(echo "$version" | jq -r '.metadata.container.tags | join(",") // "untagged"')
+            echo "  Deleting version $VERSION_ID (tags: $TAGS)"
+            gh api -X DELETE "$API_PREFIX/$VERSION_ID" || echo "  Failed to delete $VERSION_ID"
           done
           echo "Cleanup complete"
